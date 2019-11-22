@@ -100,7 +100,7 @@ def mount_instance_storage():
     for device_pair in zip(devices, devices[1:] + [""]):
         if not any(device.startswith("└─") or device.startswith("├─") for device in device_pair):
             
-            name, majmin, rm, size, ro, devtype, mountpoint = (device_pair[0].split()  + [""])[:6]
+            name, majmin, rm, size, ro, devtype, mountpoint = (device_pair[0].split()  + [""])[:7]
             devname = "/dev/{}".format(name)
             if devtype == "disk" and mountpoint == "":
                 completed = run(["sudo", "file", "-s", devname])
