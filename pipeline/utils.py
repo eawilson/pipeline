@@ -93,7 +93,7 @@ def mount_instance_storage():
     # Dont try and mount again if already mounted
     completed = run(["mount"], universal_newlines=True)
     for line in completed.stdout.split("\n"):
-        if " on {} type ".format(workspace_dir) in line:
+        if " on {} type ".format(ephemoral_path) in line:
             print("Instance storage already mounted.")
             return ephemoral_path
 
