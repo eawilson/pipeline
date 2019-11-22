@@ -1,0 +1,4 @@
+pipeline.egg-info/**
+pipeline/__pycache__/**
+pipeline/*.so
+build/**

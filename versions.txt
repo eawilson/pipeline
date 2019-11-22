@@ -1,0 +1,48 @@
+Source	Version (GRCh38)	Version (GRCh37)
+Ensembl database version 	98 	98
+Genome assembly 	GRCh38.p12 	GRCh37.p13
+GENCODE 	31 	19
+RefSeq 	2019-06-28
+(GCF_000001405.39_GRCh38.p13_genomic.gff) 	2015-01
+Regulatory build 	1.0 	1.0
+PolyPhen 	2.2.2 	2.2.2
+SIFT 	5.2.2 	5.2.2
+dbSNP 	152 	152
+COSMIC 	89 	86
+HGMD-PUBLIC 	2018.4 	2017.4
+ClinVar 	2019-04 	2018-10
+1000 Genomes 	Phase 3 (remapped) 	Phase 3
+NHLBI-ESP 	V2-SSA137 (remapped) 	V2-SSA137
+gnomAD 	r2.1, exomes only (remapped) 	r2.1, exomes only
+
+GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna
+GCA_000001405.14_GRCh37.p13_no_alt_analysis_set.fna
+
+picard-2.21.2
+samtools-1.9
+htslib-1.9
+bwa-0.7.17
+basemount
+varscan-2.3.9
+ensembl-vep-98
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
