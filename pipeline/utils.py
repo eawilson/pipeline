@@ -6,6 +6,7 @@ import gzip
 import shutil
 from collections import defaultdict, namedtuple
 
+import covermi
 import boto3
 
 
@@ -14,8 +15,9 @@ __all__ = ["run", "mount_basespace", "mount_instance_storage", "unmount_basespac
 
 
 
-def ungzip_and_combine_illumina_fastqs(*filepaths, destination=None):
+def ungzip_and_combine_illumina_fastqs(*filepaths, destination=""):
     """ Accepts list of fastqs to be ungzipped and combined. Fastqs will be merged if they only differ by lane number.
+        Output will be written to current working directory.
     """
     fastqs = defaultdict(list)
     for filepath in filepaths:
@@ -28,7 +30,7 @@ def ungzip_and_combine_illumina_fastqs(*filepaths, destination=None):
         if parts[-2] not in ("R1", "R2") or not parts[-3].startswith("L") or not len(parts[-3]) == 4:
             raise RuntimeError("Malformed fastq name {}.".format(filepath))
         parts[-3] = "L000"
-        fastqs[os.path.join(destination or dirname, "_".join(parts))] += [filepath]
+        fastqs[os.path.join(destination, "_".join(parts))] += [filepath]
 
     for dest, sources in fastqs.items():
         with open(dest, "wb") as f:
@@ -38,20 +40,6 @@ def ungzip_and_combine_illumina_fastqs(*filepaths, destination=None):
                 else:
                     run(["cat", source], stdout=f)
     return fastqs.keys()
-    
-
-
-def reference_genome(build):
-    reference_dir = os.path.join(ngsdata_path(), "bwa_reference", build)
-    fastas = [name for name in os.listdir(reference_dir) if name.endswith(".fna")]
-    if len(fastas) != 1:
-        raise RuntimeError("More than one fasta in {}.".format(reference_dir))
-    return os.path.join(reference_dir, fastas[0])
-    
-
-
-def ngsdata_path():
-    return os.path.join(os.path.expanduser("~"), "ngsdata")
 
 
 
@@ -103,7 +91,7 @@ def mount_instance_storage():
         os.mkdir(ephemoral_path)
     
     # Dont try and mount again if already mounted
-    completed = run(["mount"])
+    completed = run(["mount"], text=True)
     for line in completed.stdout.split("\n"):
         if " on {} type ".format(workspace_dir) in line:
             print("Instance storage already mounted.")
@@ -165,8 +153,52 @@ def list_basespace_fastqs(project="", sample=""):
     
 
 
+def reference_genome(build):
+    reference_dir = os.path.join(ngsdata_path(), "bwa_reference", build)
+    fastas = [name for name in os.listdir(reference_dir) if name.endswith(".fna")]
+    if len(fastas) != 1:
+        raise RuntimeError("More than one fasta in {}.".format(reference_dir))
+    return os.path.join(reference_dir, fastas[0])
 
 
 
+def load_panel_from_s3(panelname):
+    if not os.path.exists("reference"):
+        os.mkdir("reference")
+    
+    s3 = boto3.client('s3')
 
+    if not os.path.exists(panelname):
+        print("Downloading {}".formar(panel))
+        gziped_panel = "{}.tar.gz".format(panelname)
+        s3.download_file("omdc-data", "panels/{}".format(gziped_panel), gziped_panel)
+        run(["tar", "xzf", gziped_panel])
+        os.unlink(gziped_panel)
+        
+    panel = covermi.Panel(panelname)
+    assembly = panel.properties.get("assembly", "GRCh37")
+    assembly = assembly[-2:]
+    transcript_source = panel.properties.get("transcript_source", "refseq")
+
+    if not os.path.exists("genome"):
+        objects = s3.list_objects(Bucket="omdc-data", Prefix="reference/{}/sequence".format(assembly)).get("Contents", [])
+        if len(objects) != 1:
+            raise RuntimeError("Not able to identify reference genome on S3.")
+        s3.download_file("omdc-data", objects[0]["Key"], "genome.tar.gz")
+        run(["tar", "xzf", "genome.tar.gz"])
+        os.unlink("genome.tar.gz")
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
