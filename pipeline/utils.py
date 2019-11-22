@@ -36,9 +36,9 @@ def ungzip_and_combine_illumina_fastqs(*filepaths, destination=""):
         with open(dest, "wb") as f:
             for source in sources:
                 if source.endswith(".gz"):
-                    run(["gzip", "-dc", source], stdout=f)      
+                    run(["gzip", "-dc", source], stdout=f, universal_newlines=False)      
                 else:
-                    run(["cat", source], stdout=f)
+                    run(["cat", source], stdout=f, universal_newlines=False)
     return fastqs.keys()
 
 
@@ -49,10 +49,7 @@ def basespace_path():
 
 
 def run(*args, **kwargs):
-    for k, v in (("stdout", subprocess.PIPE), ("check", True)):
-        if k not in kwargs:
-            kwargs[k] = v
-    return subprocess.run(*args, **kwargs)
+    return subprocess.run(*args, **{"stdout": subprocess.PIPE, "check": True, "universal_newlines": True, **kwargs})
 
 
 
@@ -91,7 +88,7 @@ def mount_instance_storage():
         os.mkdir(ephemoral_path)
     
     # Dont try and mount again if already mounted
-    completed = run(["mount"], universal_newlines=True)
+    completed = run(["mount"])
     for line in completed.stdout.split("\n"):
         if " on {} type ".format(ephemoral_path) in line:
             print("Instance storage already mounted.")
