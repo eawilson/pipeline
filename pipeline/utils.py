@@ -53,12 +53,16 @@ def illumina_readgroup(filepath):
     with open(filepath) as f:
         identifier = f.readline().split(":")
     flowcell = identifier[2]
-    return "@RG\tID:{}\tSM:{}".format(flowcell, sample)
+    return "@RG\\tID:{}\\tSM:{}".format(flowcell, sample)
 
 
 
 def run(*args, **kwargs):
-    return subprocess.run(*args, **{"stdout": subprocess.PIPE, "check": True, "universal_newlines": True, **kwargs})
+    completed =  subprocess.run(*args, **{"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "universal_newlines": True, **kwargs})
+    if completed.returncode != 0:
+        print(completed.stderr)
+        raise RuntimeError("Subprocess failed.")
+    return completed
 
 
 
@@ -130,9 +134,9 @@ def mount_instance_storage():
     
 
 
-def s3_put(name, folder=""):
+def s3_put(filename, folder=""):
     s3 = boto3.client("s3")
-    s3.upload_file()
+    s3.upload_file(filename, "omdc-data", "{}/{}".format(folder, filename) if folder else filename)
     for bucket in s3.buckets.all():
         print(bucket.name)
 

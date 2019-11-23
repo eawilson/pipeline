@@ -55,7 +55,7 @@ def main():
 
         print("Mpileup.")
         pileup_file = "{}.pileup".format(sample)
-        run(["bcftools", "mpileup", "-A", "-d", "10000000", "-Ou", "-o", pileup_file, "-f", panel.properties["reference_fasta"], bam_file])
+        run(["samtools", "mpileup", "-A", "-d", "10000000", "-o", pileup_file, "-f", panel.properties["reference_fasta"], bam_file])
         
         print("Varscan.")
         vcf_file = "{}.vcf".format(sample)
