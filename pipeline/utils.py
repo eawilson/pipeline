@@ -154,7 +154,7 @@ def load_panel_from_s3(panelname):
     s3 = boto3.client('s3')
 
     if not os.path.exists(panelname):
-        print("Downloading {} from S3.".formar(panel))
+        print("Downloading {} from S3.".formart(panel))
         os.mkdir(panelname)
         os.chdir(panelname)
         gziped_panel = "{}.tar.gz".format(panelname)

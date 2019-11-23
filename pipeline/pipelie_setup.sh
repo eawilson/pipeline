@@ -81,7 +81,7 @@ wget -O picard-2.21.2.jar https://github.com/broadinstitute/picard/releases/down
 sudo mv picard-2.21.2.jar /usr/local/bin
 sudo ln -s /usr/local/bin/picard-2.21.2.jar /usr/local/bin/picard.jar
 
-git clone https://github.com/eawilson/pipeline.git
+git clone git@github.com:eawilson/pipeline.git
 cd pipeline
 sudo python3 setup.py develop
 cd ..
