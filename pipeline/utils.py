@@ -189,7 +189,7 @@ def load_panel_from_s3(panelname):
         if len(objects) != 1:
             raise RuntimeError("Unable to identify vep data on S3.")
         s3.download_file("omdc-data", objects[0]["Key"], "vep.tar.gz")
-        print(("Unpacking vep data.")
+        print("Unpacking vep data.")
         run(["tar", "xzf", "vep.tar.gz"])
         os.unlink("vep.tar.gz")
         os.chdir("..")
