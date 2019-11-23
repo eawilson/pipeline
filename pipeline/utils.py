@@ -111,7 +111,7 @@ def mount_instance_storage():
         raise RuntimeError("No instance storage devices found.")
     elif len(unformatted_block_devices) > 1:
         raise RuntimeError("{} instance storage devices found.".format(len(unformatted_block_devices)))
-    else:sample, paths, "."
+    else:
         devname = unformatted_block_devices[0]
         run(["sudo", "mkfs", "-t", "ext4", devname])
         print("Mounting instance storage.")
