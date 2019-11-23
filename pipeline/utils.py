@@ -159,7 +159,7 @@ def load_panel_from_s3(panelname):
         os.chdir(panelname)
         gziped_panel = "{}.tar.gz".format(panelname)
         s3.download_file("omdc-data", "panels/{}".format(gziped_panel), gziped_panel)
-        print(("Unpacking {}.")
+        print("Unpacking {}.")
         run(["tar", "xzf", gziped_panel])
         os.unlink(gziped_panel)
         os.chdir("..")
