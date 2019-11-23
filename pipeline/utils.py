@@ -139,11 +139,12 @@ def s3_put(name, folder=""):
 
 
 def list_basespace_fastqs(project="", sample=""):
+    basespace_path = os.path.join(os.path.expanduser("~"), "basespace")
     project_regex = re.compile(project)
     sample_regex = re.compile(sample)
 
     matches = []
-    projects_dir = os.path.join(basespace_path(), "Projects")
+    projects_dir = os.path.join(basespace_path, "Projects")
     projects = [project for project in os.listdir(projects_dir) if not project.startswith(".") and project_regex.search(project)]    
     
     for project in projects:
