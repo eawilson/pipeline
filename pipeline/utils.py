@@ -38,7 +38,7 @@ def ungzip_and_combine_illumina_fastqs(*filepaths, destination="", paired_end=Tr
 
     for dest, sources in fastqs.items():
         with open(dest, "wb") as f:
-            for source in sources:
+            for source in sorted(sources):
                 if source.endswith(".gz"):
                     run(["gzip", "-dc", source], stdout=f, universal_newlines=False)      
                 else:
@@ -49,8 +49,8 @@ def ungzip_and_combine_illumina_fastqs(*filepaths, destination="", paired_end=Tr
 
 def illumina_readgroup(filepath):
     basename = os.path.basename(filepath)
-    sample = "_".join(basename.split("_")[-4]) # remove the _Sx_Lxxx_Rx_001.fastq from the name
-    with open(filepth) as f:
+    sample = "_".join(basename.split("_")[:-4]) # remove the _Sx_Lxxx_Rx_001.fastq from the name
+    with open(filepath) as f:
         identifier = f.readline().split(":")
     flowcell = identifier[2]
     return "@RG\tID:{}\tSM:{}".format(flowcell, sample)

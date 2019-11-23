@@ -23,15 +23,15 @@ def main():
     fastqs = list_basespace_fastqs(project=project, sample=sample)
     print("Fetching fastqs.")
     fastqs = ungzip_and_combine_illumina_fastqs(*fastqs)
-    unmount_basespace()
+    #unmount_basespace()
 
     panel = load_panel_from_s3(panelname)
     
     for r1_fastq, r2_fastq in zip(fastqs[::2], fastqs[1::2]):
         print("Shaw.")
         dedup(r1_fastq, r2_fastq, allowed=3, thruplex=False)
-        //os.unlink(r1_fastq)
-        //os.unlink(r2_fastq)
+        #os.unlink(r1_fastq)
+        #os.unlink(r2_fastq)
         r1_fastq = "{}.deduped.fastq".format(r1_fastq[:-6])
         r2_fastq = "{}.deduped.fastq".format(r2_fastq[:-6])
     
@@ -57,7 +57,7 @@ def main():
         pileup_file = "{}.pileup".format(sample)
         run(["bcftools", "mpileup", "-A", "-d", "10000000", "-Ou", "-o", pileup_file, "-f", panel.properties["reference_fasta"], bam_file])
         
-        print("Varscan.")java
+        print("Varscan.")
         vcf_file = "{}.vcf".format(sample)
         with open(vcf_file, "wb") as f:
             run(["java", "-jar", "/usr/local/bin/varscan.jar", "pileup2cns", "--variants", "--output-vcf", "1", "--min-coverage", "1",
