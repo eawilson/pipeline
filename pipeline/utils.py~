@@ -194,7 +194,7 @@ def load_panel_from_s3(panelname):
         os.unlink("vep.tar.gz")
         os.chdir("..")
     
-    return panel    
+    
     
     
     

@@ -20,28 +20,29 @@ def main():
     mount_basespace()
     fastqs = list_basespace_fastqs(project=project, sample=sample)
     print("Fetching fastqs.")
-    r1_fastq, r2_fastq = ungzip_and_combine_illumina_fastqs(*fastqs)
+    fastqs = ungzip_and_combine_illumina_fastqs(*fastqs)
     unmount_basespace()
-    
-    load_panel_from_s3(panelname)
-    
-    dedup(r1_fastq, r2_fastq, allowed=3, thruplex=False)
-    
-    print("Aligning {} with BWA mem.".format(sample))
-    sam_file = "{}.sam".format(sample)
-    with open(sam_file, "wb") as f:
-        completed = run(["bwa", "mem", "-t", "4", reference_genome("grch38")] + fastqs, stdout=f, universal_newlines=False)
 
-    print("Converting sam to bam.")
-    unsorted_bam_file = "{}.unsorted.bam".format(sample)
-    with open(unsorted_bam_file, "wb") as f:
-        run(["samtools", "view", "-S", "-b", sam_file], stdout=f)
-    os.unlink(sam_file)
+    panel = load_panel_from_s3(panelname)
     
-    print("Sorting bam.")
-    bam_file = "{}.bam".format(sample)
-    run(["samtools", "sort", unsorted_bam_file, "-o" bam_file])
-    os.unlink(unsorted_bam_file)
+    for r1_fastq, r2_fastq in zip(fastqs[::2], fastqs[1::2]):
+        dedup(r1_fastq, r2_fastq, allowed=3, thruplex=False)
+    
+        print("Aligning {} with BWA mem.".format(sample))
+        sam_file = "{}.sam".format(sample)
+        with open(sam_file, "wb") as f:
+            completed = run(["bwa", "mem", "-t", "4", reference_genome("grch38")] + fastqs, stdout=f, universal_newlines=False)
+
+        print("Converting sam to bam.")
+        unsorted_bam_file = "{}.unsorted.bam".format(sample)
+        with open(unsorted_bam_file, "wb") as f:
+            run(["samtools", "view", "-S", "-b", sam_file], stdout=f)
+        os.unlink(sam_file)
+    
+        print("Sorting bam.")
+        bam_file = "{}.bam".format(sample)
+        run(["samtools", "sort", unsorted_bam_file, "-o" bam_file])
+        os.unlink(unsorted_bam_file)
 
 
 
