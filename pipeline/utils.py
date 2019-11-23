@@ -154,15 +154,12 @@ def load_panel_from_s3(panelname):
     s3 = boto3.client('s3')
 
     if not os.path.exists(panelname):
-        print("Downloading {} from S3.".formart(panel))
-        os.mkdir(panelname)
-        os.chdir(panelname)
+        print("Downloading {} from S3.".format(panelname))
         gziped_panel = "{}.tar.gz".format(panelname)
         s3.download_file("omdc-data", "panels/{}".format(gziped_panel), gziped_panel)
-        print("Unpacking {}.")
+        print("Unpacking {}.".format(panelname))
         run(["tar", "xzf", gziped_panel])
         os.unlink(gziped_panel)
-        os.chdir("..")
         
     panel = covermi.Panel(panelname)
     assembly = panel.properties.get("assembly", "GRCh37")
