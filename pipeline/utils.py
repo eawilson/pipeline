@@ -176,7 +176,7 @@ def load_panel_from_s3(panelname):
         if len(objects) != 1:
             raise RuntimeError("Unable to identify reference genome on S3.")
         s3.download_file("omdc-data", objects[0]["Key"], "genome.tar.gz")
-        print(("Unpacking genome.")
+        print("Unpacking genome.")
         run(["tar", "xzf", "genome.tar.gz"])
         os.unlink("genome.tar.gz")
         os.chdir("..")
