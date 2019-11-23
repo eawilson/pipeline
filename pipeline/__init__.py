@@ -1,2 +1,2 @@
-from .utils import run, mount_basespace, mount_instance_storage, unmount_basespace, list_basespace_fastqs, reference_genome, ungzip_and_combine_illumina_fastqs
+from .utils import run, mount_basespace, mount_instance_storage, unmount_basespace, list_basespace_fastqs, ungzip_and_combine_illumina_fastqs, load_panel_from_s3, s3_put
 from .cpipeline import dedup

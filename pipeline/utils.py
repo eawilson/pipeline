@@ -11,7 +11,7 @@ import boto3
 
 
 
-__all__ = ["run", "mount_basespace", "mount_instance_storage", "unmount_basespace", "list_basespace_fastqs", "copy_fastqs", "reference_genome", "ungzip_and_combine_illumina_fastqs"]
+__all__ = ["run", "mount_basespace", "unmount_basespace", "mount_instance_storage", "list_basespace_fastqs", "ungzip_and_combine_illumina_fastqs", "load_panel_from_s3", "s3_put"]
 
 
 
@@ -39,7 +39,7 @@ def ungzip_and_combine_illumina_fastqs(*filepaths, destination=""):
                     run(["gzip", "-dc", source], stdout=f, universal_newlines=False)      
                 else:
                     run(["cat", source], stdout=f, universal_newlines=False)
-    return fastqs.keys()
+    return sorted(fastqs.keys())
 
 
 
@@ -111,7 +111,7 @@ def mount_instance_storage():
         raise RuntimeError("No instance storage devices found.")
     elif len(unformatted_block_devices) > 1:
         raise RuntimeError("{} instance storage devices found.".format(len(unformatted_block_devices)))
-    else:
+    else:sample, paths, "."
         devname = unformatted_block_devices[0]
         run(["sudo", "mkfs", "-t", "ext4", devname])
         print("Mounting instance storage.")
@@ -133,7 +133,7 @@ def list_basespace_fastqs(project="", sample=""):
     project_regex = re.compile(project)
     sample_regex = re.compile(sample)
 
-    matches = defaultdict(list)
+    matches = []
     projects_dir = os.path.join(basespace_path(), "Projects")
     projects = [project for project in os.listdir(projects_dir) if not project.startswith(".") and project_regex.search(project)]    
     
@@ -144,47 +144,55 @@ def list_basespace_fastqs(project="", sample=""):
         
         for sample in samples:
             files_dir = os.path.join(samples_dir, sample, "Files")
-            matches[sample] += [os.path.join(files_dir, fn) for fn in os.listdir(files_dir) if not fn.startswith(".") and (fn.endswith(".fastq") or fn.endswith(".fastq.gz"))]
+            matches += [os.path.join(files_dir, fn) for fn in os.listdir(files_dir) if not fn.startswith(".") and (fn.endswith(".fastq") or fn.endswith(".fastq.gz"))]
             
     return matches
-    
-
-
-def reference_genome(build):
-    reference_dir = os.path.join(ngsdata_path(), "bwa_reference", build)
-    fastas = [name for name in os.listdir(reference_dir) if name.endswith(".fna")]
-    if len(fastas) != 1:
-        raise RuntimeError("More than one fasta in {}.".format(reference_dir))
-    return os.path.join(reference_dir, fastas[0])
 
 
 
 def load_panel_from_s3(panelname):
-    if not os.path.exists("reference"):
-        os.mkdir("reference")
-    
     s3 = boto3.client('s3')
 
     if not os.path.exists(panelname):
-        print("Downloading {}".formar(panel))
+        print("Downloading {} from S3.".formar(panel))
+        os.mkdir(panelname)
+        os.chdir(panelname)
         gziped_panel = "{}.tar.gz".format(panelname)
         s3.download_file("omdc-data", "panels/{}".format(gziped_panel), gziped_panel)
+        print(("Unpacking {}.")
         run(["tar", "xzf", gziped_panel])
         os.unlink(gziped_panel)
+        os.chdir("..")
         
     panel = covermi.Panel(panelname)
     assembly = panel.properties.get("assembly", "GRCh37")
-    assembly = assembly[-2:]
     transcript_source = panel.properties.get("transcript_source", "refseq")
 
-    if not os.path.exists("genome"):
-        objects = s3.list_objects(Bucket="omdc-data", Prefix="reference/{}/sequence".format(assembly)).get("Contents", [])
+    if not os.path.exists(assembly):
+        print("Downloading {} from S3.".format(assembly))
+        os.mkdir(assembly)
+        os.chdir(assembly)
+        objects = s3.list_objects(Bucket="omdc-data", Prefix="reference/{}/sequence".format(assembly[-2:])).get("Contents", [])
         if len(objects) != 1:
-            raise RuntimeError("Not able to identify reference genome on S3.")
+            raise RuntimeError("Unable to identify reference genome on S3.")
         s3.download_file("omdc-data", objects[0]["Key"], "genome.tar.gz")
+        print(("Unpacking genome.")
         run(["tar", "xzf", "genome.tar.gz"])
         os.unlink("genome.tar.gz")
-    
+        os.chdir("..")
+
+    if not os.path.exists("vep"):
+        print("Downloading {} from S3.".format(transcript_source))
+        os.mkdir("vep")
+        os.chdir("vep")
+        objects = s3.list_objects(Bucket="omdc-data", Prefix="reference/{}/{}".format(assembly[-2:], transcript_source)).get("Contents", [])
+        if len(objects) != 1:
+            raise RuntimeError("Unable to identify vep data on S3.")
+        s3.download_file("omdc-data", objects[0]["Key"], "vep.tar.gz")
+        print(("Unpacking vep data.")
+        run(["tar", "xzf", "vep.tar.gz"])
+        os.unlink("vep.tar.gz")
+        os.chdir("..")
     
     
     

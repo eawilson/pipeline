@@ -54,6 +54,16 @@ make
 sudo make install
 cd ..
 
+wget https://github.com/samtools/bcftools/releases/download/1.9/bcftools-1.9.tar.bz2
+tar xvfj bcftools-1.9.tar.bz2
+rm bcftools-1.9.tar.bz2
+cd bcftools-1.9
+autoreconf
+./configue
+make
+sudo make install
+cd ..
+
 wget -O VarScan.v2.3.9.jar https://sourceforge.net/projects/varscan/files/VarScan.v2.3.9.jar/download
 sudo mv VarScan.v2.3.9.jar /usr/local/bin
 sudo ln -s /usr/local/bin/VarScan.v2.3.9.jar /usr/local/bin/varscan.jar

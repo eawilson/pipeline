@@ -1,7 +1,7 @@
 import os
 
-from pipeline import mount_instance_storage, mount_basespace, unmount_basespace, list_basespace_fastqs, copy_fastqs, reference_genome, run, dedup
-
+from pipeline import run, mount_basespace, mount_instance_storage, unmount_basespace, list_basespace_fastqs, ungzip_and_combine_illumina_fastqs, load_panel_from_s3, s3_put, dedup
+from covermi import Panel, 
 
 
 
@@ -10,19 +10,27 @@ from pipeline import mount_instance_storage, mount_basespace, unmount_basespace,
 
 
 def main():
+    project = "CAPP"
+    sample = "10010024-H27176-c-0"
+    panelname = "Accept"
+    
+    
     os.chdir(mount_instance_storage())
-
+    
     mount_basespace()
-    matches = list_basespace_fastqs(project="CAPP", sample="10010024-H27176-c-0")
-    sample, paths = list(matches.items())[0]
+    fastqs = list_basespace_fastqs(project=project, sample=sample)
     print("Fetching fastqs.")
-    fastqs = copy_fastqs(sample, paths, ".")
+    r1_fastq, r2_fastq = ungzip_and_combine_illumina_fastqs(*fastqs)
     unmount_basespace()
-
+    
+    load_panel_from_s3(panelname)
+    
+    dedup(r1_fastq, r2_fastq, allowed=3, thruplex=False)
+    
     print("Aligning {} with BWA mem.".format(sample))
     sam_file = "{}.sam".format(sample)
     with open(sam_file, "wb") as f:
-        completed = run(["bwa", "mem", "-t", "4", reference_genome("grch38")] + fastqs, stdout=f)
+        completed = run(["bwa", "mem", "-t", "4", reference_genome("grch38")] + fastqs, stdout=f, universal_newlines=False)
 
     print("Converting sam to bam.")
     unsorted_bam_file = "{}.unsorted.bam".format(sample)
