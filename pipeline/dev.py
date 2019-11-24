@@ -1,12 +1,17 @@
 import pdb, sys, time
 from collections import defaultdict, Counter
 
-from pipeline.cpipeline import dedup
-from pipeline.utils import PairedFastqs, Read, ungzip_and_combine_fastqs
-
+from pipeline import create_report, dedup
             
+            
+from covermi import Panel
 
 def main():
+    
+    create_report("/home/ed/Software/data/temp/z.vep", "/home/ed/Software/data/panels/Accept")
+    
+    sys.exit()
+    
     
     #dedup("/home/ed/Software/data/temp/3reads_R1.fastq", "/home/ed/Software/data/temp/3reads_R2.fastq", 
           #thruplex=False, 

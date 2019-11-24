@@ -134,11 +134,12 @@ def mount_instance_storage():
     
 
 
-def s3_put(filename, folder=""):
+def s3_put(*filenames, prefix=""):
     s3 = boto3.client("s3")
-    s3.upload_file(filename, "omdc-data", "{}/{}".format(folder, filename) if folder else filename)
-    for bucket in s3.buckets.all():
-        print(bucket.name)
+    for filename in filenames:
+        basename = os.path.basename(filename)
+        print("Uploading {} to S3.".format(basename))
+        s3.upload_file(filename, "omdc-data", "{}/{}".format(prefix, basename) if prefix else basename)
 
 
 

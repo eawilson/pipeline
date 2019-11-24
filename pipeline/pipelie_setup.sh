@@ -11,15 +11,18 @@ sudo apt-get -y install libncurses5-dev # samtools
 sudo apt-get -y install openjdk-8-jdk # varscan picard
 sudo apt-get -y install libmysqlclient-dev # vep
 sudo apt-get -y install python3-pip
+sudo apt-get install python3-tk
 
 sudo cpan App::cpanminus # vep
 sudo cpanm Archive::Zip # vep
 sudo cpanm DBD::mysql # vep
 sudo cpanm Archive::Extract # vep
 sudo cpanm Try::Tiny # vep
+sudo cpanm JSON
 
 sudo pip3 install boto3
 sudo pip3 install setuptools
+sudo pip3 install matplotlib
 
 mkdir workspace
 sudo mkfs -t ext4 /dev/nvme0n1

@@ -11,6 +11,7 @@ from covermi import Panel
 
 
 def main():
+    s3_project = "EdTest"
     threads = "4"
     project = "CAPP"
     sample = "10010024-H27176-c-0"
@@ -38,7 +39,7 @@ def main():
         print("BWA mem.".format(sample))
         sam_file = "{}.sam".format(sample)
         with open(sam_file, "wb") as f:
-            completed = run(["bwa", "mem", "-t", threads, "-R", illumina_readgroup(r1_fastq), panel.properties["reference_fasta"], r1_fastq, r2_fastq], stdout=f, universal_newlines=False)
+            run(["bwa", "mem", "-t", threads, "-R", illumina_readgroup(r1_fastq), panel.properties["reference_fasta"], r1_fastq, r2_fastq], stdout=f, universal_newlines=False)
 
         print("Samtools fixmate.")
         unsorted_bam_file = "{}.unsorted.bam".format(sample)
@@ -52,30 +53,43 @@ def main():
 
         print("Samtools index.")
         run(["samtools", "index", bam_file])
+        bambai_file = "{}.bai".format(bam_file)
 
         print("Mpileup.")
-        pileup_file = "{}.pileup".format(sample)
+        mpileup_file = "{}.pileup".format(sample)
         run(["samtools", "mpileup", "-A", "-d", "10000000", "-o", pileup_file, "-f", panel.properties["reference_fasta"], bam_file])
         
         print("Varscan.")
         vcf_file = "{}.vcf".format(sample)
         with open(vcf_file, "wb") as f:
-            run(["java", "-jar", "/usr/local/bin/varscan.jar", "pileup2cns", "--variants", "--output-vcf", "1", "--min-coverage", "1",
-                                                                                                                "--min-var-freq", "0", 
-                                                                                                                "--min-avg-qual", "20",
-                                                                                                                "--min-reads2", "1"], stdout=f, universal_newlines=False)
+            run(["java", "-jar", "/usr/local/bin/varscan.jar", "mpileup2cns", mpileup_file, "--variants", "--output-vcf", "1", "--min-coverage", "1",
+                                                                                                                            "--min-var-freq", "0", 
+                                                                                                                            "--min-avg-qual", "20",
+                                                                                                                            "--min-reads2", "1"], stdout=f, universal_newlines=False)
                                                                                                             #"--min-coverage-normal", "1",  
                                                                                                             #"--min-coverage-tumor", "1",  
                                                                                                             #"--min-freq-for-hom","0.75", 
                                                                                                             #"--somatic-p-value", "0.05",
                                                                                                             #"--strand-filter", "1",
                                                                                                             #"--validation", "1"
-        
+        os.unlink(mpileup_file)
+
+        print("VEP.")
+        vepjson_file = "{}.vep".format(sample)
+        extra = ["--refseq"] if panel.properties["transcript_source"] == "refseq" else []
+        run(["perl", "../ensembl-vep/vep", "--verbose", "-i", vcf_file, "-o", vepjson_file, "--no_stats", "--format", "vcf", "--fork", "4", "--json", "--offline", "--everything", 
+                  "--assembly", panel.properties["assembly"], "--fasta", panel.properties["reference_fasta"] + extra]
+
+
+
+
+        print("Covermi.")
+        covermi_dir = covermimain(panelname, "", bam_path=bam_file)
+        covermi_file - "{}.tar.gz".format(covermi_dir)
+        run(["tar", "cvzf", covermi_file, covermi_dir])
+
+        s3_put(bam_file, bambai_file, vcf_file, covermi_file, vep_file, prefix="{}/{}".format(s3_project, sample))
         print("Complete")
-
-
-
-
 
 
 if __name__ == "__main__":
