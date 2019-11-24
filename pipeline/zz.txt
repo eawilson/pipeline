@@ -1,0 +1,768 @@
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [20185798, 23733655, 20133430, 21499051, 24603695, 28528328, 26082558, 26555048, 24115031, 29143670, 28785583, 21801865, 23042815]
+{'cds_start': 313, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_002167.4:c.313A>G', 'used_ref': 'T', 'protein_id': 'NP_002158.3', 'cdna_start': 681, 'cdna_end': 681, 'biotype': 'protein_coding', 'hgvsp': 'NP_002158.3:p.Thr105Ala', 'polyphen_prediction': 'benign', 'gene_id': '3399', 'bam_edit': 'OK', 'transcript_id': 'NM_002167.4', 'given_ref': 'T', 'exon': '2/3', 'codons': 'Act/Gct', 'protein_end': 105, 'impact': 'MODERATE', 'strand': -1, 'canonical': 1, 'variant_allele': 'C', 'gene_symbol': 'ID3', 'sift_score': 0.99, 'protein_start': 105, 'cds_end': 313, 'polyphen_score': 0, 'amino_acids': 'T/A', 'gene_symbol_source': 'EntrezGene', 'sift_prediction': 'tolerated'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'cds_start': 1042, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_022157.3:c.1042A>C', 'used_ref': 'T', 'variant_allele': 'G', 'cdna_start': 1219, 'cdna_end': 1219, 'biotype': 'protein_coding', 'hgvsp': 'NP_071440.1:p.Arg348=', 'gene_id': '64121', 'bam_edit': 'OK', 'transcript_id': 'NM_022157.3', 'given_ref': 'T', 'codons': 'Aga/Cga', 'exon': '6/7', 'protein_end': 348, 'impact': 'LOW', 'strand': -1, 'canonical': 1, 'protein_id': 'NP_071440.1', 'gene_symbol': 'RRAGC', 'protein_start': 348, 'cds_end': 1042, 'amino_acids': 'R', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'consequence_terms': ['intron_variant'], 'transcript_id': 'NM_024408.3', 'given_ref': 'T', 'gene_symbol_source': 'EntrezGene', 'canonical': 1, 'impact': 'MODIFIER', 'protein_id': 'NP_077719.2', 'hgvsc': 'NM_024408.3:c.73+17725A>G', 'variant_allele': 'C', 'gene_symbol': 'NOTCH2', 'used_ref': 'T', 'biotype': 'protein_coding', 'strand': -1, 'gene_id': '4853', 'intron': '1/33', 'bam_edit': 'OK'}
+Offtarget skipping.
+Offtarget skipping.
+{'cds_start': 61, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_024408.3:c.61G>A', 'used_ref': 'C', 'protein_id': 'NP_077719.2', 'cdna_start': 358, 'cdna_end': 358, 'biotype': 'protein_coding', 'hgvsp': 'NP_077719.2:p.Ala21Thr', 'polyphen_prediction': 'benign', 'gene_id': '4853', 'bam_edit': 'OK', 'transcript_id': 'NM_024408.3', 'given_ref': 'C', 'exon': '1/34', 'codons': 'Gcc/Acc', 'canonical': 1, 'impact': 'MODERATE', 'strand': -1, 'protein_end': 21, 'variant_allele': 'T', 'gene_symbol': 'NOTCH2', 'sift_score': 0.57, 'protein_start': 21, 'cds_end': 61, 'polyphen_score': 0.006, 'amino_acids': 'A/T', 'gene_symbol_source': 'EntrezGene', 'sift_prediction': 'tolerated'}
+{'cds_start': 57, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_024408.3:c.57C>G', 'used_ref': 'G', 'variant_allele': 'C', 'gene_id': '4853', 'cdna_end': 354, 'biotype': 'protein_coding', 'hgvsp': 'NP_077719.2:p.Cys19Trp', 'polyphen_prediction': 'benign', 'cdna_start': 354, 'bam_edit': 'OK', 'transcript_id': 'NM_024408.3', 'given_ref': 'G', 'gene_symbol_source': 'EntrezGene', 'codons': 'tgC/tgG', 'canonical': 1, 'impact': 'MODERATE', 'strand': -1, 'protein_end': 19, 'protein_id': 'NP_077719.2', 'gene_symbol': 'NOTCH2', 'sift_score': 0.18, 'protein_start': 19, 'cds_end': 57, 'polyphen_score': 0, 'amino_acids': 'C/W', 'exon': '1/34', 'sift_prediction': 'tolerated'}
+PUBMED [24033266]
+{'cds_start': 17, 'consequence_terms': ['frameshift_variant'], 'hgvsc': 'NM_024408.3:c.17_18del', 'used_ref': 'GG', 'protein_id': 'NP_077719.2', 'cdna_start': 314, 'cdna_end': 315, 'biotype': 'protein_coding', 'hgvsp': 'NP_077719.2:p.Pro6ArgfsTer27', 'gene_id': '4853', 'bam_edit': 'OK', 'transcript_id': 'NM_024408.3', 'given_ref': 'GG', 'gene_symbol_source': 'EntrezGene', 'exon': '1/34', 'protein_end': 6, 'impact': 'HIGH', 'strand': -1, 'canonical': 1, 'variant_allele': '-', 'gene_symbol': 'NOTCH2', 'protein_start': 6, 'cds_end': 18, 'amino_acids': 'P/X', 'codons': 'cCC/c'}
+{'cds_start': 15, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_024408.3:c.15C>T', 'used_ref': 'G', 'variant_allele': 'A', 'gene_id': '4853', 'cdna_end': 312, 'biotype': 'protein_coding', 'hgvsp': 'NP_077719.2:p.Arg5=', 'cdna_start': 312, 'bam_edit': 'OK', 'transcript_id': 'NM_024408.3', 'given_ref': 'G', 'gene_symbol_source': 'EntrezGene', 'codons': 'cgC/cgT', 'canonical': 1, 'impact': 'LOW', 'strand': -1, 'protein_end': 5, 'protein_id': 'NP_077719.2', 'gene_symbol': 'NOTCH2', 'protein_start': 5, 'cds_end': 15, 'amino_acids': 'R', 'exon': '1/34'}
+{'consequence_terms': ['5_prime_UTR_variant'], 'transcript_id': 'NM_024408.3', 'given_ref': 'T', 'exon': '1/34', 'gene_symbol_source': 'EntrezGene', 'hgvsc': 'NM_024408.3:c.-14A>C', 'used_ref': 'T', 'strand': -1, 'gene_id': '4853', 'variant_allele': 'G', 'gene_symbol': 'NOTCH2', 'cdna_end': 284, 'impact': 'MODIFIER', 'biotype': 'protein_coding', 'canonical': 1, 'cdna_start': 284, 'protein_id': 'NP_077719.2', 'bam_edit': 'OK'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [26900472]
+{'cds_start': 1655, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_002221.3:c.1655C>A', 'used_ref': 'G', 'protein_id': 'NP_002212.3', 'gene_id': '3707', 'cdna_end': 1995, 'biotype': 'protein_coding', 'hgvsp': 'NP_002212.3:p.Pro552Gln', 'polyphen_prediction': 'benign', 'cdna_start': 1995, 'transcript_id': 'NM_002221.3', 'given_ref': 'G', 'codons': 'cCg/cAg', 'exon': '2/8', 'canonical': 1, 'impact': 'MODERATE', 'strand': -1, 'protein_end': 552, 'variant_allele': 'T', 'gene_symbol': 'ITPKB', 'sift_score': 0.56, 'protein_start': 552, 'cds_end': 1655, 'polyphen_score': 0, 'amino_acids': 'P/Q', 'gene_symbol_source': 'EntrezGene', 'sift_prediction': 'tolerated_low_confidence'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 24033266, 27182706, 24978818, 29805848]
+{'cds_start': 1359, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001035.2:c.1359C>T', 'used_ref': 'C', 'protein_id': 'NP_001026.2', 'gene_id': '6262', 'cdna_end': 1479, 'biotype': 'protein_coding', 'hgvsp': 'NP_001026.2:p.Ser453=', 'cdna_start': 1479, 'transcript_id': 'NM_001035.2', 'given_ref': 'C', 'codons': 'agC/agT', 'exon': '15/105', 'protein_end': 453, 'impact': 'LOW', 'strand': 1, 'variant_allele': 'T', 'gene_symbol': 'RYR2', 'protein_start': 453, 'cds_end': 1359, 'amino_acids': 'S', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 24033266, 24978818, 29805848]
+{'cds_start': 2973, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001035.2:c.2973A>G', 'used_ref': 'A', 'protein_id': 'NP_001026.2', 'gene_id': '6262', 'cdna_end': 3093, 'biotype': 'protein_coding', 'hgvsp': 'NP_001026.2:p.Ser991=', 'cdna_start': 3093, 'transcript_id': 'NM_001035.2', 'given_ref': 'A', 'gene_symbol_source': 'EntrezGene', 'codons': 'tcA/tcG', 'protein_end': 991, 'impact': 'LOW', 'strand': 1, 'variant_allele': 'G', 'gene_symbol': 'RYR2', 'protein_start': 991, 'cds_end': 2973, 'amino_acids': 'S', 'exon': '26/105'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 24033266, 23757202, 23861362, 26196381, 20408814, 26904356, 16769042, 18326664, 19709828, 25773045, 16828071, 22021327]
+{'cds_start': 5656, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_001035.2:c.5656G>A', 'used_ref': 'G', 'variant_allele': 'A', 'gene_id': '6262', 'cdna_end': 5776, 'biotype': 'protein_coding', 'hgvsp': 'NP_001026.2:p.Gly1886Ser', 'polyphen_prediction': 'benign', 'cdna_start': 5776, 'transcript_id': 'NM_001035.2', 'given_ref': 'G', 'gene_symbol_source': 'EntrezGene', 'exon': '37/105', 'protein_end': 1886, 'impact': 'MODERATE', 'strand': 1, 'protein_id': 'NP_001026.2', 'gene_symbol': 'RYR2', 'sift_prediction': 'tolerated', 'sift_score': 0.66, 'protein_start': 1886, 'cds_end': 5656, 'polyphen_score': 0.007, 'amino_acids': 'G/S', 'codons': 'Ggc/Agc'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 24033266]
+{'cds_start': 6906, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001035.2:c.6906T>C', 'used_ref': 'T', 'protein_id': 'NP_001026.2', 'gene_id': '6262', 'cdna_end': 7026, 'biotype': 'protein_coding', 'hgvsp': 'NP_001026.2:p.Leu2302=', 'cdna_start': 7026, 'transcript_id': 'NM_001035.2', 'given_ref': 'T', 'gene_symbol_source': 'EntrezGene', 'codons': 'ctT/ctC', 'protein_end': 2302, 'impact': 'LOW', 'strand': 1, 'variant_allele': 'C', 'gene_symbol': 'RYR2', 'protein_start': 2302, 'cds_end': 6906, 'amino_acids': 'L', 'exon': '45/105'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 24033266, 22694772, 29388048]
+{'cds_start': 7806, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001035.2:c.7806C>T', 'used_ref': 'C', 'variant_allele': 'T', 'cdna_start': 7926, 'cdna_end': 7926, 'biotype': 'protein_coding', 'hgvsp': 'NP_001026.2:p.His2602=', 'gene_id': '6262', 'transcript_id': 'NM_001035.2', 'given_ref': 'C', 'exon': '51/105', 'codons': 'caC/caT', 'protein_end': 2602, 'impact': 'LOW', 'strand': 1, 'protein_id': 'NP_001026.2', 'gene_symbol': 'RYR2', 'protein_start': 2602, 'cds_end': 7806, 'amino_acids': 'H', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 24033266]
+{'cds_start': 9318, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001035.2:c.9318T>G', 'used_ref': 'T', 'variant_allele': 'G', 'gene_id': '6262', 'cdna_end': 9438, 'biotype': 'protein_coding', 'hgvsp': 'NP_001026.2:p.Ser3106=', 'cdna_start': 9438, 'transcript_id': 'NM_001035.2', 'given_ref': 'T', 'codons': 'tcT/tcG', 'exon': '65/105', 'protein_end': 3106, 'impact': 'LOW', 'strand': 1, 'protein_id': 'NP_001026.2', 'gene_symbol': 'RYR2', 'protein_start': 3106, 'cds_end': 9318, 'amino_acids': 'S', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'cds_start': 120, 'consequence_terms': ['inframe_deletion'], 'hgvsc': 'NM_001190274.1:c.120_134del', 'used_ref': 'GGCTGCTGCTGGGGC', 'variant_allele': '-', 'gene_id': '80204', 'cdna_end': 207, 'biotype': 'protein_coding', 'hgvsp': 'NP_001177203.1:p.Gln42_Pro46del', 'cdna_start': 193, 'bam_edit': 'OK', 'transcript_id': 'NM_001190274.1', 'given_ref': 'GGCTGCTGCTGGGGC', 'codons': 'ccGCCCCAGCAGCAGCCt/cct', 'exon': '1/23', 'protein_end': 45, 'impact': 'MODERATE', 'strand': -1, 'protein_id': 'NP_001177203.1', 'gene_symbol': 'FBXO11', 'protein_start': 40, 'cds_end': 134, 'amino_acids': 'PPQQQP/P', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'variant_allele': 'A', 'consequence_terms': ['upstream_gene_variant'], 'transcript_id': 'NM_001321786.1', 'given_ref': 'G', 'gene_symbol_source': 'EntrezGene', 'canonical': 1, 'impact': 'MODIFIER', 'strand': -1, 'protein_id': 'NP_001308715.1', 'biotype': 'protein_coding', 'gene_symbol': 'CBLB', 'used_ref': 'G', 'refseq_match': ['rseq_mrna_match'], 'gene_id': '868', 'distance': 445}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'cds_start': 142, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_001243186.1:c.142C>G', 'used_ref': 'C', 'protein_id': 'NP_001230115.1', 'gene_id': '5292', 'cdna_end': 299, 'biotype': 'protein_coding', 'hgvsp': 'NP_001230115.1:p.His48Asp', 'polyphen_prediction': 'benign', 'cdna_start': 299, 'bam_edit': 'OK', 'transcript_id': 'NM_001243186.1', 'given_ref': 'C', 'exon': '1/6', 'codons': 'Cac/Gac', 'protein_end': 48, 'impact': 'MODERATE', 'strand': 1, 'canonical': 1, 'variant_allele': 'G', 'gene_symbol': 'PIM1', 'sift_score': 0.25, 'protein_start': 48, 'cds_end': 142, 'polyphen_score': 0, 'amino_acids': 'H/D', 'gene_symbol_source': 'EntrezGene', 'sift_prediction': 'tolerated_low_confidence'}
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [18174243, 19258477, 18389087, 18507837, 16111488, 20003265]
+{'consequence_terms': ['downstream_gene_variant'], 'transcript_id': 'NM_004053.3', 'given_ref': 'A', 'gene_symbol_source': 'EntrezGene', 'canonical': 1, 'used_ref': 'A', 'strand': 1, 'variant_allele': 'C', 'gene_symbol': 'BYSL', 'impact': 'MODIFIER', 'biotype': 'protein_coding', 'gene_id': '705', 'protein_id': 'NP_004044.3', 'distance': 2998, 'bam_edit': 'OK'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [21085059, 24728327, 24968232, 19735688, 22143801]
+{'cds_start': 609, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_001198.3:c.609C>G', 'used_ref': 'C', 'protein_id': 'NP_001189.2', 'cdna_start': 843, 'cdna_end': 843, 'biotype': 'protein_coding', 'hgvsp': 'NP_001189.2:p.Asp203Glu', 'polyphen_prediction': 'benign', 'gene_id': '639', 'transcript_id': 'NM_001198.3', 'given_ref': 'C', 'exon': '4/7', 'codons': 'gaC/gaG', 'canonical': 1, 'impact': 'MODERATE', 'strand': 1, 'protein_end': 203, 'variant_allele': 'G', 'gene_symbol': 'PRDM1', 'sift_score': 1, 'protein_start': 203, 'cds_end': 609, 'polyphen_score': 0.036, 'amino_acids': 'D/E', 'gene_symbol_source': 'EntrezGene', 'sift_prediction': 'tolerated'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [24033266]
+{'cds_start': 3276, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001324281.1:c.3276A>G', 'used_ref': 'T', 'protein_id': 'NP_001311210.1', 'gene_id': '84433', 'cdna_end': 3741, 'biotype': 'protein_coding', 'hgvsp': 'NP_001311210.1:p.Arg1092=', 'cdna_start': 3741, 'transcript_id': 'NM_001324281.1', 'given_ref': 'T', 'exon': '26/26', 'codons': 'cgA/cgG', 'protein_end': 1092, 'impact': 'LOW', 'strand': -1, 'canonical': 1, 'variant_allele': 'C', 'protein_start': 1092, 'gene_symbol': 'CARD11', 'refseq_match': ['rseq_mrna_match'], 'cds_end': 3276, 'amino_acids': 'R', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'variant_allele': 'A', 'consequence_terms': ['intron_variant'], 'transcript_id': 'NM_001324281.1', 'given_ref': 'G', 'gene_symbol_source': 'EntrezGene', 'hgvsc': 'NM_001324281.1:c.2511-283C>T', 'impact': 'MODIFIER', 'strand': -1, 'canonical': 1, 'protein_id': 'NP_001311210.1', 'biotype': 'protein_coding', 'gene_symbol': 'CARD11', 'used_ref': 'G', 'refseq_match': ['rseq_mrna_match'], 'gene_id': '84433', 'intron': '19/25'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [24033266]
+{'cds_start': 1599, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001324281.1:c.1599C>T', 'used_ref': 'G', 'protein_id': 'NP_001311210.1', 'gene_id': '84433', 'cdna_end': 2064, 'biotype': 'protein_coding', 'hgvsp': 'NP_001311210.1:p.Asp533=', 'cdna_start': 2064, 'transcript_id': 'NM_001324281.1', 'given_ref': 'G', 'gene_symbol_source': 'EntrezGene', 'codons': 'gaC/gaT', 'canonical': 1, 'impact': 'LOW', 'strand': -1, 'protein_end': 533, 'variant_allele': 'A', 'protein_start': 533, 'gene_symbol': 'CARD11', 'refseq_match': ['rseq_mrna_match'], 'cds_end': 1599, 'amino_acids': 'D', 'exon': '13/26'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'consequence_terms': ['3_prime_UTR_variant'], 'transcript_id': 'XM_005250045.1', 'given_ref': 'A', 'gene_symbol_source': 'EntrezGene', 'exon': '19/19', 'canonical': 1, 'used_ref': 'A', 'strand': -1, 'gene_id': '673', 'variant_allele': 'G', 'biotype': 'protein_coding', 'gene_symbol': 'BRAF', 'cdna_end': 2349, 'impact': 'MODIFIER', 'hgvsc': 'XM_005250045.1:c.*37T>C', 'cdna_start': 2349, 'protein_id': 'XP_005250102.1'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'cds_start': 2675, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_004225.2:c.2675T>C', 'used_ref': 'A', 'protein_id': 'NP_004216.2', 'cdna_start': 3238, 'cdna_end': 3238, 'biotype': 'protein_coding', 'hgvsp': 'NP_004216.2:p.Leu892Pro', 'polyphen_prediction': 'benign', 'gene_id': '9258', 'transcript_id': 'NM_004225.2', 'given_ref': 'A', 'exon': '1/3', 'codons': 'cTt/cCt', 'canonical': 1, 'impact': 'MODERATE', 'strand': -1, 'protein_end': 892, 'variant_allele': 'G', 'gene_symbol': 'MFHAS1', 'sift_score': 1, 'protein_start': 892, 'cds_end': 2675, 'polyphen_score': 0, 'amino_acids': 'L/P', 'gene_symbol_source': 'EntrezGene', 'sift_prediction': 'tolerated'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [18761660, 20386740, 27414035, 27055116, 21355081, 25280564]
+{'variant_allele': 'T', 'consequence_terms': ['5_prime_UTR_variant'], 'transcript_id': 'NM_001195132.1', 'given_ref': 'C', 'exon': '1/4', 'gene_symbol_source': 'EntrezGene', 'hgvsc': 'NM_001195132.1:c.-191G>A', 'used_ref': 'C', 'strand': -1, 'gene_id': '1029', 'protein_id': 'NP_001182061.1', 'gene_symbol': 'CDKN2A', 'cdna_end': 116, 'impact': 'MODIFIER', 'biotype': 'protein_coding', 'canonical': 1, 'cdna_start': 116, 'bam_edit': 'OK'}
+PUBMED [24728327, 21813177]
+{'cds_start': 1008, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001280547.1:c.1008C>T', 'used_ref': 'G', 'protein_id': 'NP_001267476.1', 'gene_id': '5079', 'cdna_end': 1456, 'biotype': 'protein_coding', 'hgvsp': 'NP_001267476.1:p.Tyr336=', 'cdna_start': 1456, 'transcript_id': 'NM_001280547.1', 'given_ref': 'G', 'codons': 'taC/taT', 'exon': '9/9', 'protein_end': 336, 'impact': 'LOW', 'strand': -1, 'variant_allele': 'A', 'gene_symbol': 'PAX5', 'protein_start': 336, 'cds_end': 1008, 'amino_acids': 'Y', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [16729972]
+{'cds_start': 2265, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_017617.4:c.2265T>C', 'used_ref': 'A', 'protein_id': 'NP_060087.3', 'gene_id': '4851', 'cdna_end': 2265, 'biotype': 'protein_coding', 'hgvsp': 'NP_060087.3:p.Asn755=', 'cdna_start': 2265, 'transcript_id': 'NM_017617.4', 'given_ref': 'A', 'exon': '14/34', 'codons': 'aaT/aaC', 'protein_end': 755, 'impact': 'LOW', 'strand': -1, 'canonical': 1, 'variant_allele': 'G', 'protein_start': 755, 'gene_symbol': 'NOTCH1', 'refseq_match': ['rseq_mrna_match'], 'cds_end': 2265, 'amino_acids': 'N', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [16729972]
+{'cds_start': 312, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_017617.4:c.312T>C', 'used_ref': 'A', 'variant_allele': 'G', 'cdna_start': 312, 'cdna_end': 312, 'biotype': 'protein_coding', 'hgvsp': 'NP_060087.3:p.Asn104=', 'gene_id': '4851', 'transcript_id': 'NM_017617.4', 'given_ref': 'A', 'codons': 'aaT/aaC', 'exon': '3/34', 'protein_end': 104, 'impact': 'LOW', 'strand': -1, 'canonical': 1, 'protein_id': 'NP_060087.3', 'refseq_match': ['rseq_mrna_match'], 'gene_symbol': 'NOTCH1', 'protein_start': 104, 'cds_end': 312, 'amino_acids': 'N', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 24033266, 23757202, 18414213]
+{'cds_start': 12510, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_003482.3:c.12510A>G', 'used_ref': 'T', 'protein_id': 'NP_003473.3', 'gene_id': '8085', 'cdna_end': 12510, 'biotype': 'protein_coding', 'hgvsp': 'NP_003473.3:p.Pro4170=', 'cdna_start': 12510, 'bam_edit': 'OK', 'transcript_id': 'NM_003482.3', 'given_ref': 'T', 'gene_symbol_source': 'EntrezGene', 'exon': '39/54', 'canonical': 1, 'impact': 'LOW', 'strand': -1, 'protein_end': 4170, 'variant_allele': 'C', 'gene_symbol': 'KMT2D', 'protein_start': 4170, 'cds_end': 12510, 'amino_acids': 'P', 'codons': 'ccA/ccG'}
+PUBMED [25741868, 24033266, 23757202, 18414213]
+{'cds_start': 10836, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_003482.3:c.10836G>A', 'used_ref': 'C', 'protein_id': 'NP_003473.3', 'cdna_start': 10836, 'cdna_end': 10836, 'biotype': 'protein_coding', 'hgvsp': 'NP_003473.3:p.Gln3612=', 'gene_id': '8085', 'bam_edit': 'OK', 'transcript_id': 'NM_003482.3', 'given_ref': 'C', 'gene_symbol_source': 'EntrezGene', 'exon': '39/54', 'protein_end': 3612, 'impact': 'LOW', 'strand': -1, 'canonical': 1, 'variant_allele': 'T', 'gene_symbol': 'KMT2D', 'protein_start': 3612, 'cds_end': 10836, 'amino_acids': 'Q', 'codons': 'caG/caA'}
+PUBMED [25741868, 24033266, 23757202, 18414213]
+{'cds_start': 7479, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_003482.3:c.7479G>T', 'used_ref': 'C', 'protein_id': 'NP_003473.3', 'gene_id': '8085', 'cdna_end': 7479, 'biotype': 'protein_coding', 'hgvsp': 'NP_003473.3:p.Gly2493=', 'cdna_start': 7479, 'bam_edit': 'OK', 'transcript_id': 'NM_003482.3', 'given_ref': 'C', 'codons': 'ggG/ggT', 'exon': '31/54', 'canonical': 1, 'impact': 'LOW', 'strand': -1, 'protein_end': 2493, 'variant_allele': 'A', 'gene_symbol': 'KMT2D', 'protein_start': 2493, 'cds_end': 7479, 'amino_acids': 'G', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 24033266, 23757202, 18414213]
+{'cds_start': 2826, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_003482.3:c.2826C>T', 'used_ref': 'G', 'protein_id': 'NP_003473.3', 'cdna_start': 2826, 'cdna_end': 2826, 'biotype': 'protein_coding', 'hgvsp': 'NP_003473.3:p.Ile942=', 'gene_id': '8085', 'bam_edit': 'OK', 'transcript_id': 'NM_003482.3', 'given_ref': 'G', 'gene_symbol_source': 'EntrezGene', 'codons': 'atC/atT', 'protein_end': 942, 'impact': 'LOW', 'strand': -1, 'canonical': 1, 'variant_allele': 'A', 'gene_symbol': 'KMT2D', 'protein_start': 942, 'cds_end': 2826, 'amino_acids': 'I', 'exon': '11/54'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [28139693]
+{'cds_start': 654, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_003223.2:c.654G>C', 'used_ref': 'C', 'variant_allele': 'G', 'gene_id': '7023', 'cdna_end': 908, 'biotype': 'protein_coding', 'hgvsp': 'NP_003214.1:p.Gln218His', 'polyphen_prediction': 'benign', 'cdna_start': 908, 'bam_edit': 'OK', 'transcript_id': 'NM_003223.2', 'given_ref': 'C', 'exon': '5/7', 'gene_symbol_source': 'EntrezGene', 'canonical': 1, 'impact': 'MODERATE', 'strand': -1, 'protein_end': 218, 'protein_id': 'NP_003214.1', 'gene_symbol': 'TFAP4', 'sift_prediction': 'tolerated', 'sift_score': 0.28, 'protein_start': 218, 'cds_end': 654, 'polyphen_score': 0, 'amino_acids': 'Q/H', 'codons': 'caG/caC'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [24033266, 20211854, 21248776]
+{'cds_start': 523, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001286402.1:c.523A>G', 'used_ref': 'G', 'variant_allele': 'G', 'gene_id': '4261', 'cdna_end': 656, 'biotype': 'protein_coding', 'hgvsp': 'NP_001273331.1:p.Gly175=', 'cdna_start': 656, 'bam_edit': 'OK', 'transcript_id': 'NM_001286402.1', 'given_ref': 'A', 'gene_symbol_source': 'EntrezGene', 'exon': '7/20', 'canonical': 1, 'impact': 'LOW', 'strand': 1, 'protein_end': 175, 'protein_id': 'NP_001273331.1', 'refseq_match': ['rseq_mrna_nonmatch', 'rseq_cds_mismatch'], 'gene_symbol': 'CIITA', 'protein_start': 175, 'cds_end': 523, 'amino_acids': 'G', 'codons': 'Gga/Gga'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [24033266]
+{'cds_start': 2397, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001286402.1:c.2397G>A', 'used_ref': 'G', 'variant_allele': 'A', 'cdna_start': 2530, 'cdna_end': 2530, 'biotype': 'protein_coding', 'hgvsp': 'NP_001273331.1:p.Pro799=', 'gene_id': '4261', 'bam_edit': 'OK', 'transcript_id': 'NM_001286402.1', 'given_ref': 'G', 'codons': 'ccG/ccA', 'exon': '11/20', 'protein_end': 799, 'impact': 'LOW', 'strand': 1, 'canonical': 1, 'protein_id': 'NP_001273331.1', 'refseq_match': ['rseq_mrna_nonmatch', 'rseq_cds_mismatch'], 'gene_symbol': 'CIITA', 'protein_start': 799, 'cds_end': 2397, 'amino_acids': 'P', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+PUBMED [24033266]
+{'cds_start': 2679, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001286402.1:c.2679G>A', 'used_ref': 'G', 'variant_allele': 'A', 'cdna_start': 2812, 'cdna_end': 2812, 'biotype': 'protein_coding', 'hgvsp': 'NP_001273331.1:p.Thr893=', 'gene_id': '4261', 'bam_edit': 'OK', 'transcript_id': 'NM_001286402.1', 'given_ref': 'G', 'exon': '12/20', 'codons': 'acG/acA', 'canonical': 1, 'impact': 'LOW', 'strand': 1, 'protein_end': 893, 'protein_id': 'NP_001273331.1', 'refseq_match': ['rseq_mrna_nonmatch', 'rseq_cds_mismatch'], 'gene_symbol': 'CIITA', 'protein_start': 893, 'cds_end': 2679, 'amino_acids': 'T', 'gene_symbol_source': 'EntrezGene'}
+PUBMED [24033266, 20211854]
+{'cds_start': 2702, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_001286402.1:c.2702A>G', 'used_ref': 'A', 'protein_id': 'NP_001273331.1', 'gene_id': '4261', 'cdna_end': 2835, 'biotype': 'protein_coding', 'hgvsp': 'NP_001273331.1:p.Gln901Arg', 'gene_symbol': 'CIITA', 'cdna_start': 2835, 'bam_edit': 'OK', 'transcript_id': 'NM_001286402.1', 'given_ref': 'A', 'codons': 'cAg/cGg', 'gene_symbol_source': 'EntrezGene', 'protein_end': 901, 'impact': 'MODERATE', 'strand': 1, 'canonical': 1, 'variant_allele': 'G', 'protein_start': 901, 'polyphen_prediction': 'benign', 'sift_score': 0.33, 'refseq_match': ['rseq_mrna_nonmatch', 'rseq_cds_mismatch'], 'cds_end': 2702, 'polyphen_score': 0.007, 'amino_acids': 'Q/R', 'exon': '12/20', 'sift_prediction': 'tolerated'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [24033266]
+{'cds_start': 297, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_002661.4:c.297A>G', 'used_ref': 'A', 'protein_id': 'NP_002652.2', 'gene_id': '5336', 'cdna_end': 511, 'biotype': 'protein_coding', 'hgvsp': 'NP_002652.2:p.Leu99=', 'cdna_start': 511, 'transcript_id': 'NM_002661.4', 'given_ref': 'A', 'exon': '3/33', 'codons': 'ctA/ctG', 'protein_end': 99, 'impact': 'LOW', 'strand': 1, 'canonical': 1, 'variant_allele': 'G', 'refseq_match': ['rseq_mrna_match'], 'gene_symbol': 'PLCG2', 'protein_start': 99, 'cds_end': 297, 'amino_acids': 'L', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'cds_start': 770, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_002661.4:c.770A>T', 'used_ref': 'A', 'variant_allele': 'T', 'cdna_start': 984, 'cdna_end': 984, 'biotype': 'protein_coding', 'hgvsp': 'NP_002652.2:p.His257Leu', 'polyphen_prediction': 'benign', 'gene_id': '5336', 'transcript_id': 'NM_002661.4', 'given_ref': 'A', 'codons': 'cAt/cTt', 'exon': '10/33', 'canonical': 1, 'impact': 'MODERATE', 'strand': 1, 'protein_end': 257, 'protein_id': 'NP_002652.2', 'refseq_match': ['rseq_mrna_match'], 'gene_symbol': 'PLCG2', 'sift_score': 0.31, 'protein_start': 257, 'cds_end': 770, 'polyphen_score': 0, 'amino_acids': 'H/L', 'gene_symbol_source': 'EntrezGene', 'sift_prediction': 'tolerated'}
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [24033266]
+{'cds_start': 1149, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_002661.4:c.1149C>T', 'used_ref': 'C', 'variant_allele': 'T', 'cdna_start': 1363, 'cdna_end': 1363, 'biotype': 'protein_coding', 'hgvsp': 'NP_002652.2:p.Asp383=', 'gene_id': '5336', 'transcript_id': 'NM_002661.4', 'given_ref': 'C', 'codons': 'gaC/gaT', 'exon': '13/33', 'protein_end': 383, 'impact': 'LOW', 'strand': 1, 'canonical': 1, 'protein_id': 'NP_002652.2', 'refseq_match': ['rseq_mrna_match'], 'gene_symbol': 'PLCG2', 'protein_start': 383, 'cds_end': 1149, 'amino_acids': 'D', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [19276285, 25233467, 18678618, 27917368, 27246533, 24218030, 24818791, 23761422, 15450681, 17301252, 17449902, 19276375, 19423538, 21402718, 22962577, 28364582, 28373458, 25925845, 20352120, 21342648]
+{'consequence_terms': ['intron_variant'], 'transcript_id': 'NM_000546.5', 'given_ref': 'C', 'gene_symbol_source': 'EntrezGene', 'hgvsc': 'NM_000546.5:c.376-91G>A', 'used_ref': 'C', 'strand': -1, 'canonical': 1, 'variant_allele': 'T', 'gene_symbol': 'TP53', 'impact': 'MODIFIER', 'biotype': 'protein_coding', 'gene_id': '7157', 'protein_id': 'NP_000537.3', 'intron': '4/10'}
+PUBMED [18805939, 21708280, 28652652, 22879966, 27277665, 25741868, 28827732, 19826048, 20100738, 23072573, 27588484, 24033266, 24944790, 22655231, 28348449, 22742565, 26873362, 23267696, 18547414, 22076708, 23757202, 18191955, 18854777, 19442035, 20847277, 21514219, 22215955, 22300735, 22992668, 23946381, 24084248, 25214541, 25591549, 25719551, 25881102, 27618021, 20436704, 26870349, 23820649, 18715757, 18820009, 19911060, 27716216, 24728327, 26690118, 18678618, 27900359, 21283750, 23168575, 19237173, 20587610, 18830263, 22703879, 16465622, 19302219, 19750108, 23311506, 27415837, 21790896, 28415781, 19224585, 20455025, 24586820, 24944814, 18990748, 19786980, 22188361, 27246533, 19822020, 26902998, 16857995, 23906684, 15564288, 19367277, 20232390, 27574448, 28351583, 26666818, 27698805, 18978339, 26130668, 20599859, 18298806, 21877955, 23697595, 27376129, 28324443, 28881764, 24218030, 20452958, 21533266, 21589938, 17428325, 20003265, 25412941, 24654968, 26683024, 26498142, 24820515, 19286843, 24818791, 26025918, 27506496, 19482343, 18798306, 21437228, 19470478, 21779510, 26305668, 26382048, 21656578, 22773013, 23837945, 2741403]
+{'cds_start': 215, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_000546.5:c.215C>G', 'used_ref': 'G', 'protein_id': 'NP_000537.3', 'cdna_start': 417, 'cdna_end': 417, 'biotype': 'protein_coding', 'hgvsp': 'NP_000537.3:p.Pro72Arg', 'polyphen_prediction': 'benign', 'gene_id': '7157', 'transcript_id': 'NM_000546.5', 'given_ref': 'G', 'exon': '4/11', 'codons': 'cCc/cGc', 'protein_end': 72, 'impact': 'MODERATE', 'strand': -1, 'canonical': 1, 'variant_allele': 'C', 'gene_symbol': 'TP53', 'sift_score': 0.57, 'protein_start': 72, 'cds_end': 215, 'polyphen_score': 0.045, 'amino_acids': 'P/R', 'gene_symbol_source': 'EntrezGene', 'sift_prediction': 'tolerated'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [24033266, 20881960, 29527544]
+{'cds_start': 369, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001039933.2:c.369T>C', 'used_ref': 'A', 'protein_id': 'NP_001035022.1', 'gene_id': '974', 'cdna_end': 462, 'biotype': 'protein_coding', 'hgvsp': 'NP_001035022.1:p.Cys123=', 'cdna_start': 462, 'transcript_id': 'NM_001039933.2', 'given_ref': 'A', 'codons': 'tgT/tgC', 'exon': '3/6', 'canonical': 1, 'impact': 'LOW', 'strand': -1, 'protein_end': 123, 'variant_allele': 'G', 'protein_start': 123, 'gene_symbol': 'CD79B', 'refseq_match': ['rseq_mrna_match'], 'cds_end': 369, 'amino_acids': 'C', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'cds_start': 432, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_006572.5:c.432A>G', 'used_ref': 'T', 'protein_id': 'NP_006563.2', 'gene_id': '10672', 'cdna_end': 641, 'biotype': 'protein_coding', 'hgvsp': 'NP_006563.2:p.Gln144=', 'cdna_start': 641, 'transcript_id': 'NM_006572.5', 'given_ref': 'T', 'codons': 'caA/caG', 'exon': '2/4', 'canonical': 1, 'impact': 'LOW', 'strand': -1, 'protein_end': 144, 'variant_allele': 'C', 'protein_start': 144, 'gene_symbol': 'GNA13', 'refseq_match': ['rseq_mrna_match'], 'cds_end': 432, 'amino_acids': 'Q', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 24033266, 23820649, 24149131, 21760914, 21072201, 24886600, 22023082, 26398624, 20231205, 27651922, 24118270, 20564239, 25019155, 26426211, 26451891, 28244588, 28252575, 28356555, 28974197, 19850125, 27191503, 25063546, 19896533, 15301860, 25884698, 23369128, 24729980]
+{'cds_start': 575, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_003839.3:c.575C>T', 'used_ref': 'C', 'variant_allele': 'T', 'gene_id': '8792', 'cdna_end': 641, 'biotype': 'protein_coding', 'hgvsp': 'NP_003830.1:p.Ala192Val', 'polyphen_prediction': 'benign', 'cdna_start': 641, 'transcript_id': 'NM_003839.3', 'given_ref': 'C', 'gene_symbol_source': 'EntrezGene', 'exon': '6/10', 'canonical': 1, 'impact': 'MODERATE', 'strand': 1, 'protein_end': 192, 'protein_id': 'NP_003830.1', 'gene_symbol': 'TNFRSF11A', 'sift_prediction': 'tolerated', 'sift_score': 1, 'protein_start': 192, 'cds_end': 575, 'polyphen_score': 0.006, 'amino_acids': 'A/V', 'codons': 'gCg/gTg'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'consequence_terms': ['intron_variant'], 'transcript_id': 'NM_000633.2', 'gene_symbol_source': 'EntrezGene', 'hgvsc': 'NM_000633.2:c.585+15780dup', 'impact': 'MODIFIER', 'strand': -1, 'canonical': 1, 'variant_allele': 'A', 'gene_symbol': 'BCL2', 'biotype': 'protein_coding', 'gene_id': '596', 'protein_id': 'NP_000624.2', 'intron': '2/2'}
+PUBMED [23637776]
+{'consequence_terms': ['intron_variant'], 'transcript_id': 'NM_000633.2', 'given_ref': 'C', 'gene_symbol_source': 'EntrezGene', 'canonical': 1, 'used_ref': 'C', 'strand': -1, 'hgvsc': 'NM_000633.2:c.585+15279G>T', 'variant_allele': 'A', 'gene_symbol': 'BCL2', 'impact': 'MODIFIER', 'biotype': 'protein_coding', 'gene_id': '596', 'protein_id': 'NP_000624.2', 'intron': '2/2'}
+PUBMED [23021489]
+{'consequence_terms': ['intron_variant'], 'transcript_id': 'NM_000633.2', 'given_ref': 'C', 'gene_symbol_source': 'EntrezGene', 'canonical': 1, 'impact': 'MODIFIER', 'variant_allele': 'A', 'hgvsc': 'NM_000633.2:c.585+351G>T', 'protein_id': 'NP_000624.2', 'gene_symbol': 'BCL2', 'used_ref': 'C', 'biotype': 'protein_coding', 'strand': -1, 'gene_id': '596', 'intron': '2/2'}
+PUBMED [21085059, 17267408, 22568453, 19384415, 23021489, 28738859, 22586632, 22347493, 20504155, 24321200, 26132559, 26311051, 20610805, 28106544, 19276283, 27822610, 19141860, 19520430, 21949582, 26344465, 28417194, 28445963, 27462919, 28154089, 23181129, 23977251, 24049550, 20592475, 25868389, 24718460]
+{'cds_start': 21, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_000633.2:c.21A>G', 'used_ref': 'T', 'protein_id': 'NP_000624.2', 'gene_id': '596', 'cdna_end': 514, 'biotype': 'protein_coding', 'hgvsp': 'NP_000624.2:p.Thr7=', 'cdna_start': 514, 'transcript_id': 'NM_000633.2', 'given_ref': 'T', 'gene_symbol_source': 'EntrezGene', 'codons': 'acA/acG', 'canonical': 1, 'impact': 'LOW', 'strand': -1, 'protein_end': 7, 'variant_allele': 'C', 'gene_symbol': 'BCL2', 'protein_start': 7, 'cds_end': 21, 'amino_acids': 'T', 'exon': '2/3'}
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 24728327]
+{'cds_start': 1114, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_001128844.1:c.1114T>C', 'used_ref': 'T', 'protein_id': 'NP_001122316.1', 'cdna_start': 1474, 'cdna_end': 1474, 'biotype': 'protein_coding', 'hgvsp': 'NP_001122316.1:p.Tyr372His', 'gene_symbol': 'SMARCA4', 'gene_id': '6597', 'bam_edit': 'OK', 'transcript_id': 'NM_001128844.1', 'given_ref': 'T', 'codons': 'Tac/Cac', 'gene_symbol_source': 'EntrezGene', 'protein_end': 372, 'impact': 'MODERATE', 'strand': 1, 'variant_allele': 'C', 'polyphen_prediction': 'benign', 'sift_score': 0.46, 'protein_start': 372, 'cds_end': 1114, 'polyphen_score': 0.039, 'amino_acids': 'Y/H', 'exon': '7/36', 'sift_prediction': 'tolerated'}
+PUBMED [25741868, 18414213, 23300646]
+{'cds_start': 1524, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001128844.1:c.1524T>C', 'used_ref': 'T', 'protein_id': 'NP_001122316.1', 'cdna_start': 1884, 'cdna_end': 1884, 'biotype': 'protein_coding', 'hgvsp': 'NP_001122316.1:p.His508=', 'gene_id': '6597', 'bam_edit': 'OK', 'transcript_id': 'NM_001128844.1', 'given_ref': 'T', 'gene_symbol_source': 'EntrezGene', 'exon': '10/36', 'protein_end': 508, 'impact': 'LOW', 'strand': 1, 'variant_allele': 'C', 'gene_symbol': 'SMARCA4', 'protein_start': 508, 'cds_end': 1524, 'amino_acids': 'H', 'codons': 'caT/caC'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 18414213]
+{'cds_start': 4053, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001128844.1:c.4053C>T', 'used_ref': 'C', 'variant_allele': 'T', 'gene_id': '6597', 'cdna_end': 4413, 'biotype': 'protein_coding', 'hgvsp': 'NP_001122316.1:p.Asp1351=', 'cdna_start': 4413, 'bam_edit': 'OK', 'transcript_id': 'NM_001128844.1', 'given_ref': 'C', 'codons': 'gaC/gaT', 'exon': '30/36', 'protein_end': 1351, 'impact': 'LOW', 'strand': 1, 'protein_id': 'NP_001122316.1', 'gene_symbol': 'SMARCA4', 'protein_start': 1351, 'cds_end': 4053, 'amino_acids': 'D', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+PUBMED [25741868, 23757202, 18414213, 24728327, 22231458, 26505665, 28725161]
+{'cds_start': 2989, 'consequence_terms': ['missense_variant'], 'hgvsc': 'NM_001429.3:c.2989A>G', 'used_ref': 'A', 'protein_id': 'NP_001420.2', 'gene_id': '2033', 'cdna_end': 3384, 'biotype': 'protein_coding', 'hgvsp': 'NP_001420.2:p.Ile997Val', 'gene_symbol': 'EP300', 'cdna_start': 3384, 'transcript_id': 'NM_001429.3', 'given_ref': 'A', 'codons': 'Att/Gtt', 'gene_symbol_source': 'EntrezGene', 'protein_end': 997, 'impact': 'MODERATE', 'strand': 1, 'canonical': 1, 'variant_allele': 'G', 'polyphen_prediction': 'benign', 'sift_score': 0.31, 'protein_start': 997, 'cds_end': 2989, 'polyphen_score': 0, 'amino_acids': 'I/V', 'exon': '15/31', 'sift_prediction': 'tolerated'}
+Offtarget skipping.
+PUBMED [25741868, 23757202, 18414213, 22693272]
+{'cds_start': 3183, 'consequence_terms': ['synonymous_variant'], 'hgvsc': 'NM_001429.3:c.3183T>A', 'used_ref': 'T', 'protein_id': 'NP_001420.2', 'gene_id': '2033', 'cdna_end': 3578, 'biotype': 'protein_coding', 'hgvsp': 'NP_001420.2:p.Thr1061=', 'cdna_start': 3578, 'transcript_id': 'NM_001429.3', 'given_ref': 'T', 'exon': '17/31', 'codons': 'acT/acA', 'protein_end': 1061, 'impact': 'LOW', 'strand': 1, 'canonical': 1, 'variant_allele': 'A', 'gene_symbol': 'EP300', 'protein_start': 1061, 'cds_end': 3183, 'amino_acids': 'T', 'gene_symbol_source': 'EntrezGene'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.
+{'consequence_terms': ['intron_variant'], 'transcript_id': 'NM_001356.4', 'given_ref': 'C', 'gene_symbol_source': 'EntrezGene', 'hgvsc': 'NM_001356.4:c.45+195C>T', 'used_ref': 'C', 'strand': 1, 'canonical': 1, 'variant_allele': 'T', 'biotype': 'protein_coding', 'gene_symbol': 'DDX3X', 'impact': 'MODIFIER', 'refseq_match': ['rseq_mrna_match'], 'gene_id': '1654', 'protein_id': 'NP_001347.3', 'intron': '1/16'}
+{'consequence_terms': ['intron_variant'], 'transcript_id': 'NM_001356.4', 'given_ref': 'C', 'gene_symbol_source': 'EntrezGene', 'canonical': 1, 'impact': 'MODIFIER', 'variant_allele': 'T', 'hgvsc': 'NM_001356.4:c.45+196C>T', 'protein_id': 'NP_001347.3', 'refseq_match': ['rseq_mrna_match'], 'gene_symbol': 'DDX3X', 'used_ref': 'C', 'biotype': 'protein_coding', 'strand': 1, 'gene_id': '1654', 'intron': '1/16'}
+Offtarget skipping.
+Offtarget skipping.
+Offtarget skipping.

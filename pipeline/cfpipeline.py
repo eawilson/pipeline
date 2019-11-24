@@ -1,7 +1,8 @@
 import os
+import sys
 
 from pipeline import run, mount_basespace, mount_instance_storage, unmount_basespace, list_basespace_fastqs, ungzip_and_combine_illumina_fastqs, load_panel_from_s3, \
-                    s3_put, dedup, illumina_readgroup
+                    s3_put, dedup, illumina_readgroup, pipe, create_report
 from covermi import Panel
 
 
@@ -31,15 +32,15 @@ def main():
     for r1_fastq, r2_fastq in zip(fastqs[::2], fastqs[1::2]):
         print("Shaw.")
         dedup(r1_fastq, r2_fastq, allowed=3, thruplex=False)
-        #os.unlink(r1_fastq)
-        #os.unlink(r2_fastq)
-        r1_fastq = "{}.deduped.fastq".format(r1_fastq[:-6])
-        r2_fastq = "{}.deduped.fastq".format(r2_fastq[:-6])
+        r1_dedupfastq = "{}.deduped.fastq".format(r1_fastq[:-6])
+        r2_dedupfastq = "{}.deduped.fastq".format(r2_fastq[:-6])
     
         print("BWA mem.".format(sample))
         sam_file = "{}.sam".format(sample)
         with open(sam_file, "wb") as f:
-            run(["bwa", "mem", "-t", threads, "-R", illumina_readgroup(r1_fastq), panel.properties["reference_fasta"], r1_fastq, r2_fastq], stdout=f, universal_newlines=False)
+            pipe(["bwa", "mem", "-t", threads, "-R", illumina_readgroup(r1_fastq), panel.properties["reference_fasta"], r1_dedupfastq, r2_dedupfastq], stdout=f)
+        os.unlink(r1_dedupfastq)
+        os.unlink(r2_dedupfastq)
 
         print("Samtools fixmate.")
         unsorted_bam_file = "{}.unsorted.bam".format(sample)
@@ -62,10 +63,10 @@ def main():
         print("Varscan.")
         vcf_file = "{}.vcf".format(sample)
         with open(vcf_file, "wb") as f:
-            run(["java", "-jar", "/usr/local/bin/varscan.jar", "mpileup2cns", mpileup_file, "--variants", "--output-vcf", "1", "--min-coverage", "1",
+            pipe(["java", "-jar", "/usr/local/bin/varscan.jar", "mpileup2cns", mpileup_file, "--variants", "--output-vcf", "1", "--min-coverage", "1",
                                                                                                                             "--min-var-freq", "0", 
                                                                                                                             "--min-avg-qual", "20",
-                                                                                                                            "--min-reads2", "1"], stdout=f, universal_newlines=False)
+                                                                                                                            "--min-reads2", "1"], stdout=f)
                                                                                                             #"--min-coverage-normal", "1",  
                                                                                                             #"--min-coverage-tumor", "1",  
                                                                                                             #"--min-freq-for-hom","0.75", 
@@ -79,16 +80,19 @@ def main():
         extra = ["--refseq"] if panel.properties["transcript_source"] == "refseq" else []
         run(["perl", "../ensembl-vep/vep", "--verbose", "-i", vcf_file, "-o", vepjson_file, "--no_stats", "--format", "vcf", "--fork", "4", "--json", "--offline", "--everything", 
                   "--assembly", panel.properties["assembly"], "--fasta", panel.properties["reference_fasta"] + extra]
-
-
-
+        annotation_file = create_report(vepjson_file, panel)
+        os.unlink(vepjson_file)
 
         print("Covermi.")
         covermi_dir = covermimain(panelname, "", bam_path=bam_file)
         covermi_file - "{}.tar.gz".format(covermi_dir)
         run(["tar", "cvzf", covermi_file, covermi_dir])
+        run(["rm", "-r", covermi_dir])
 
-        s3_put(bam_file, bambai_file, vcf_file, covermi_file, vep_file, prefix="{}/{}".format(s3_project, sample))
+        filelist = [r1_fastq, r2_fastq, bam_file, bambai_file, vcf_file, covermi_file, vep_file, annotation_file]
+        s3_put(*filelist, prefix="{}/{}".format(s3_project, sample))
+        for filename in filelist:
+            os.unlink(filename)
         print("Complete")
 
 

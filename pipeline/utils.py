@@ -1,5 +1,6 @@
 import subprocess
 import os
+import sys
 import pdb
 import re
 import gzip
@@ -12,7 +13,7 @@ import boto3
 
 
 __all__ = ["run", "mount_basespace", "unmount_basespace", "mount_instance_storage", "list_basespace_fastqs", "ungzip_and_combine_illumina_fastqs", "load_panel_from_s3", "s3_put",
-           "illumina_readgroup"]
+           "illumina_readgroup", "pipe"]
 
 
 
@@ -40,9 +41,9 @@ def ungzip_and_combine_illumina_fastqs(*filepaths, destination="", paired_end=Tr
         with open(dest, "wb") as f:
             for source in sorted(sources):
                 if source.endswith(".gz"):
-                    run(["gzip", "-dc", source], stdout=f, universal_newlines=False)      
+                    pipe(["gzip", "-dc", source], stdout=f)      
                 else:
-                    run(["cat", source], stdout=f, universal_newlines=False)
+                    run(["cat", source], stdout=f)
     return sorted(fastqs.keys())
 
 
@@ -57,12 +58,13 @@ def illumina_readgroup(filepath):
 
 
 
-def run(*args, **kwargs):
-    completed =  subprocess.run(*args, **{"stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "universal_newlines": True, **kwargs})
-    if completed.returncode != 0:
-        print(completed.stderr)
-        raise RuntimeError("Subprocess failed.")
-    return completed
+def run(args):
+    return subprocess.run(args, stdout=subprocess.PIPE, stderr=sys.stderr, universal_newlines=True, check=True)
+
+
+
+def pipe(args, stdout=None):
+    return subprocess.run(args, stdout=stdout, stderr=sys.stderr, check=True)
 
 
 
