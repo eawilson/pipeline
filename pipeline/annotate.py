@@ -21,7 +21,7 @@ def create_report(vep_json_file, panel):
 
     transcript_ids, gene_symbols, _ = load_targets(panel.targets if "targets" in panel else None)
     transcript_ids = set(transcript_id.split(".")[0] for transcript_id in transcript_ids)
-    principal = load_principal(panel.principa if "principal" in panel else None)
+    principal = load_principal(panel.principal if "principal" in panel else None)
 
     def refseq_sort(cons):
         return [BIOTYPE[cons["biotype"]], int(cons["gene_id"]), \
