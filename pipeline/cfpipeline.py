@@ -109,12 +109,12 @@ def cfpipeline(basespace_project_regex="", sample_regex="", s3_project=None, pan
         print("Uploading to s3.")
         for filename in os.listdir():
             if os.path.isfile(filename):
-                s3_put(filename, prefix="{}/{}".format(s3_project, sample))
+                s3_put(filename, prefix="projects/{}/{}".format(s3_project, sample))
                 os.unlink(filename)
 
 
 if __name__ == "__main__":
-    cfpipeline(basespace_project_regex="CAPP", sample_regex="10010014-H3731-c-0", s3_project="Accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10010014-H3731-c-0", s3_project="accept", panelname="Accept")
     sys.exit()
 
     for s3_project, panel, sample, basespace_project in [("head_and_neck", "Head_and_Neck", "HNC006-HNC006-c-0", "HNC"),

@@ -34,7 +34,7 @@ def cfpipeline(basespace_project_regex="", sample_regex="", s3_project=None, pan
 
     for r1_fastq, r2_fastq in zip(fastqs[::2], fastqs[1::2]):
         
-        sample = os.path.splitext(os.path.basename(r1_fastq))
+        sample = os.path.splitext(os.path.basename(r1_fastq))[0]
         with open("{}_pipeline.txt".format(sample), "wt") as f_report:
             with contextlib.redirect_stderr(f_report):
                 
