@@ -13,7 +13,7 @@ import boto3
 
 
 __all__ = ["run", "mount_basespace", "unmount_basespace", "mount_instance_storage", "list_basespace_fastqs", "ungzip_and_combine_illumina_fastqs", "load_panel_from_s3", "s3_put",
-           "illumina_readgroup", "pipe"]
+           "illumina_readgroup", "pipe", "progress"]
 
 
 
