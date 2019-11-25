@@ -3,7 +3,7 @@ import sys
 
 from pipeline import run, mount_basespace, mount_instance_storage, unmount_basespace, list_basespace_fastqs, ungzip_and_combine_illumina_fastqs, load_panel_from_s3, \
                     s3_put, dedup, illumina_readgroup, pipe, create_report
-from covermi import Panel
+from covermi import Panel, covermimain
 
 
 
@@ -59,7 +59,7 @@ def cfpipeline(basespace_project="", sample="", s3_project=None, panelname=None)
 
         print("Mpileup.")
         mpileup_file = "{}.pileup".format(sample)
-        run(["samtools", "mpileup", "-A", "-d", "10000000", "-o", pileup_file, "-f", panel.properties["reference_fasta"], bam_file])
+        run(["samtools", "mpileup", "-A", "-d", "10000000", "-o", mpileup_file, "-f", panel.properties["reference_fasta"], bam_file])
         
         print("Varscan.")
         vcf_file = "{}.vcf".format(sample)
@@ -80,17 +80,16 @@ def cfpipeline(basespace_project="", sample="", s3_project=None, panelname=None)
         vepjson_file = "{}.vep".format(sample)
         extra = ["--refseq"] if panel.properties["transcript_source"] == "refseq" else []
         run(["perl", "../ensembl-vep/vep", "--verbose", "-i", vcf_file, "-o", vepjson_file, "--no_stats", "--format", "vcf", "--fork", "4", "--json", "--offline", "--everything", 
-                  "--assembly", panel.properties["assembly"], "--fasta", panel.properties["reference_fasta"]] + extra)
+                  "--assembly", panel.properties["assembly"], "--fasta", panel.properties["reference_fasta"], "--force_overwrite"] + extra)
         annotation_file = create_report(vepjson_file, panel)
-        os.unlink(vepjson_file)
 
         print("Covermi.")
         covermi_dir = covermimain(panelname, "", bam_path=bam_file)
-        covermi_file - "{}.tar.gz".format(covermi_dir)
+        covermi_file = "{}.tar.gz".format(covermi_dir)
         run(["tar", "cvzf", covermi_file, covermi_dir])
         run(["rm", "-r", covermi_dir])
 
-        filelist = [r1_fastq, r2_fastq, bam_file, bambai_file, vcf_file, covermi_file, vep_file, annotation_file]
+        filelist = [bam_file, bambai_file, vcf_file, covermi_file, vepjson_file, annotation_file]
         s3_put(*filelist, prefix="{}/{}".format(s3_project, sample))
         for filename in filelist:
             os.unlink(filename)
