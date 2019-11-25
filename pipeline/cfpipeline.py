@@ -38,9 +38,9 @@ def cfpipeline(basespace_project_regex="", sample_regex="", s3_project=None, pan
         with open("{}_pipeline.txt".format(sample), "wb") as f_report:
                 
             start_time = time.time()
-            progress("cfPipeline {}, {}.".format(os.path.basename(r1_fastq), os.path.basename(r2_fastq)), file=f_report)
-            progress("Starting {}.".format(datetime.datetime.now()), file=f_report)
-            progress("Shaw allowed = 3, thruplex = {}, min_family_size = {}.".format(prop.get("thruplex", False), prop.get("min_family_size", 1)), file=f_report)
+            print("cfPipeline {}, {}.".format(os.path.basename(r1_fastq), os.path.basename(r2_fastq)))
+            print("Starting {}.".format(datetime.datetime.now()))
+            print("Shaw allowed = 3, thruplex = {}, min_family_size = {}.".format(prop.get("thruplex", False), prop.get("min_family_size", 1)))
             dedup(r1_fastq, r2_fastq, allowed=3, thruplex=prop.get("thruplex", False), min_family_size=int(prop.get("min_family_size", 1)))
             r1_dedupfastq = "{}.deduped.fastq".format(r1_fastq[:-6])
             r2_dedupfastq = "{}.deduped.fastq".format(r2_fastq[:-6])
@@ -85,7 +85,7 @@ def cfpipeline(basespace_project_regex="", sample_regex="", s3_project=None, pan
             vepjson_file = "{}.vep".format(sample)
             extra = ["--refseq"] if prop["transcript_source"] == "refseq" else []
             run(["perl", "../ensembl-vep/vep", "--verbose", "-i", vcf_file, "-o", vepjson_file, "--no_stats", "--format", "vcf", "--fork", "4", "--json", "--offline", "--everything", 
-                    "--assembly", prop["assembly"], "--fasta", prop["reference_fasta"], "--force_overwrite"] + extra, stderr=f_report)
+                    "--assembly", prop["assembly"], "--fasta", prop["reference_fasta"], "--force_overwrite", ] + extra, stderr=f_report)
             annotation_file = create_report(vepjson_file, panel)
 
             covermi_dir = covermimain(panelname, "", bam_path=bam_file)
@@ -93,8 +93,8 @@ def cfpipeline(basespace_project_regex="", sample_regex="", s3_project=None, pan
             run(["tar", "cvzf", covermi_file, covermi_dir])
             run(["rm", "-r", covermi_dir])
             
-            progress("Completed {}.".format(datetime.datetime.now()), file=f_report)
-            progress("Time taken = {} seconds.".format(int(time.time() - start_time)), file=f_report)
+            print("Completed {}.".format(datetime.datetime.now()))
+            print("Time taken = {} seconds.".format(int(time.time() - start_time)))
 
 
         print("Uploading to s3.")
@@ -105,7 +105,21 @@ def cfpipeline(basespace_project_regex="", sample_regex="", s3_project=None, pan
 
 
 if __name__ == "__main__":
-    cfpipeline(basespace_project_regex="CAPP", sample_regex="10010014-H3731-c-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10010006-H18839-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10010006-H19424-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10010012-H2237-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10010014-H3732-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10010029-H6103-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10090001-H16528-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10090007-H21804-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10090011-H32166-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10090013-H3139-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10400005-H18924-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10400008-H24161-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10400009-H31477-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10440010-H31479-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10460004-H13539-g-0", s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project_regex="CAPP", sample_regex="10460004-H16528-g-0", s3_project="accept", panelname="Accept")
     sys.exit()
 
     for s3_project, panel, sample, basespace_project in [("head_and_neck", "Head_and_Neck", "HNC006-HNC006-c-0", "HNC"),

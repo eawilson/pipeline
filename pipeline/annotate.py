@@ -44,7 +44,7 @@ def create_report(vep_json_file, panel):
             try:
                 chrom = Chrom(row[0])
             except KeyError:
-                print("Unknown contig {} skipping.".format(row[0]))
+                #print("Unknown contig {} skipping.".format(row[0]))
                 continue
             
             formatdict = dict(zip(row[8].split(":"), row[9].split(":")))
@@ -67,7 +67,7 @@ def create_report(vep_json_file, panel):
                 variant.zygosity = "unknown"
 
             if not Gr(variant).touched_by(panel.amplicons):
-                print("Offtarget skipping.")
+                #print("Offtarget skipping.")
                 continue
 
             demographics = defaultdict(list)
@@ -111,7 +111,7 @@ def create_report(vep_json_file, panel):
             consequences = [cons for cons in consequences if "gene_symbol" in cons and "transcript_id" in cons]
             
             if not consequences:
-                print("No transcript consequences skipping.")
+                #print("No transcript consequences skipping.")
                 continue
             
             gene_cons = [cons for cons in consequences if cons["gene_symbol"] in gene_symbols]
@@ -124,7 +124,7 @@ def create_report(vep_json_file, panel):
             
             consequences = [sorted(values, key=transcript_version_sort)[0] for values in deduplicate.values()]
             consequence = sorted(consequences, key=consequence_sort)[0]
-            print(consequence)
+            #print(consequence)
             annotation = {"chrom": variant.chrom, 
                           "pos": int(vep_output["start"]), 
                           "allele_string": vep_output["allele_string"],
