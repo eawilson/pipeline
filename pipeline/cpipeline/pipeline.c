@@ -106,7 +106,7 @@ static int assign_families(PairedFastq *fq, int allowed);
 static void print_family_sizes(PairedFastq *fq);
 static int collapse_families(PairedFastq *fq);
 static void merge_reads(ReadPair *bin_start, ReadPair * bin_end);
-static int remove_unconfirmed_reads(PairedFastq *fq);
+static int remove_unconfirmed_reads(PairedFastq *fq, int min_family_size);
 static int write_fastqs(PairedFastq fq, char *read1, char *read2);
 static void print_family_sequences(PairedFastq *fq);
 
@@ -324,11 +324,11 @@ static PyObject *dedup(PyObject *self, PyObject *args, PyObject *kwargs) {
     
     clock_t time_start = clock();    
     char *read1 = NULL, *read2 = NULL;
-    int thruplex = 0, allowed = 3,  n = 0;
+    int thruplex = 0, allowed = 3, min_family_size = 1, n = 0;
 
     // Parse the input tuple
-    static char *kwlist[] = {"read1", "read2", "allowed", "thruplex", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ss|ip", kwlist, &read1, &read2, &allowed, &thruplex))
+    static char *kwlist[] = {"read1", "read2", "allowed", "thruplex", "min_family_size", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ss|ipi", kwlist, &read1, &read2, &allowed, &thruplex, &min_family_size))
         return NULL;
 
     // Read the paired fastqs
@@ -360,8 +360,8 @@ static PyObject *dedup(PyObject *self, PyObject *args, PyObject *kwargs) {
     n = collapse_families(&fq);
     fprintf(stderr, "Removed %i inexact duplicates (%i%% of %i)\n", n, n * 100 / (fq.total_reads + n), fq.total_reads + n);
     
-    // Remove reads with no size or family
-    n = remove_unconfirmed_reads(&fq);
+    // Remove reads with no size or not a big enoughfamily
+    n = remove_unconfirmed_reads(&fq, min_family_size);
     fprintf(stderr, "Removed %i reads without size or sibligs (%i%% of %i)\n", n, n * 100 / (fq.total_reads + n), fq.total_reads + n);
 
     // Write remaining reads to file
@@ -1044,13 +1044,13 @@ static void merge_reads(ReadPair *bin_start, ReadPair *bin_end) {
 
 
 
-static int remove_unconfirmed_reads(PairedFastq *fq) {
+static int remove_unconfirmed_reads(PairedFastq *fq, int min_family_size) {
     ReadPair *readpair = NULL, *readpair2 = NULL;
     int n = 0;
     
     readpair2 = fq->readpairs;
     for (readpair = fq->readpairs; readpair < fq->readpairs + fq->total_reads; readpair++) {
-        if (readpair->fragment_size > 0 || readpair->copy_number > 1) {
+        if (readpair->copy_number >= min_family_size && (readpair->fragment_size > 0 || readpair->copy_number > 1)) {
             if (readpair > readpair2)
                 *readpair2 = *readpair;
             readpair2++;
