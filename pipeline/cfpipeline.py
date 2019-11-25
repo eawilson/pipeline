@@ -96,9 +96,9 @@ def cfpipeline(basespace_project="", sample="", s3_project=None, panelname=None)
 
 
 if __name__ == "__main__":
-    for s3_project, panel, sample, basespace_project in [("head_and_neck", "Head_and_Neck", "HNC006", "HNC"),
-                                                         ("head_and_neck", "Head_and_Neck", "HNC011", "HNC"),
-                                                         ("head_and_neck", "Head_and_Neck", "HNC016", "HNC"),
+    for s3_project, panel, sample, basespace_project in [("head_and_neck", "Head_and_Neck", "HNC006-HNC006-c-0", "HNC"),
+                                                         ("head_and_neck", "Head_and_Neck", "HNC011-HNC011-c-0", "HNC"),
+                                                         ("head_and_neck", "Head_and_Neck", "HNC016-HNC016-c-0", "HNC"),
                                                          ]:
         cfpipeline(basespace_project=basespace_project, sample=sample, s3_project=s3_project, panelname=panel)
 
