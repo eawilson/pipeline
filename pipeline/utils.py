@@ -216,9 +216,10 @@ def load_panel_from_s3(panelname):
     
     
     
-def progress(msg):
-    print(msg)
+def progress(msg, file=None):
     print(msg, file=sys.stderr)
+    if file:
+        print(msg, file=file)
 
     
     

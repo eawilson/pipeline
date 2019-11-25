@@ -36,74 +36,73 @@ def cfpipeline(basespace_project_regex="", sample_regex="", s3_project=None, pan
         
         sample = os.path.splitext(os.path.basename(r1_fastq))[0]
         with open("{}_pipeline.txt".format(sample), "wt") as f_report:
-            with contextlib.redirect_stderr(f_report):
                 
-                start_time = time.time()
-                progress("cfPipeline {}, {}.".format(os.path.basename(r1_fastq), os.path.basename(r2_fastq)))
-                progress("Starting {}.".format(datetime.datetime.now()))
-                progress("Shaw allowed = 3, thruplex = {}, min_family_size = {}.".format(prop.get("thruplex", False), prop.get("min_family_size", 1)))
-                dedup(r1_fastq, r2_fastq, allowed=3, thruplex=prop.get("thruplex", False), min_family_size=int(prop.get("min_family_size", 1)))
-                r1_dedupfastq = "{}.deduped.fastq".format(r1_fastq[:-6])
-                r2_dedupfastq = "{}.deduped.fastq".format(r2_fastq[:-6])
-                pipe(["wc", r1_fastq, r2_fastq, r1_dedupfastq, r2_dedupfastq], stdout=sys.stderr)
-                os.unlink(r1_fastq)
-                os.unlink(r2_fastq)
-           
-                progress("BWA mem.".format(sample))
-                sam_file = "{}.sam".format(sample)
-                with open(sam_file, "wb") as f:
-                    pipe(["bwa", "mem", "-t", threads, "-R", illumina_readgroup(r1_dedupfastq), prop["reference_fasta"], r1_dedupfastq, r2_dedupfastq], stdout=f)
-                os.unlink(r1_dedupfastq)
-                os.unlink(r2_dedupfastq)
+            start_time = time.time()
+            progress("cfPipeline {}, {}.".format(os.path.basename(r1_fastq), os.path.basename(r2_fastq)), file=f_report)
+            progress("Starting {}.".format(datetime.datetime.now()), file=f_report)
+            progress("Shaw allowed = 3, thruplex = {}, min_family_size = {}.".format(prop.get("thruplex", False), prop.get("min_family_size", 1)), file=f_report)
+            dedup(r1_fastq, r2_fastq, allowed=3, thruplex=prop.get("thruplex", False), min_family_size=int(prop.get("min_family_size", 1)))
+            r1_dedupfastq = "{}.deduped.fastq".format(r1_fastq[:-6])
+            r2_dedupfastq = "{}.deduped.fastq".format(r2_fastq[:-6])
+            pipe(["wc", r1_fastq, r2_fastq, r1_dedupfastq, r2_dedupfastq], stdout=sys.stderr)
+            os.unlink(r1_fastq)
+            os.unlink(r2_fastq)
+        
+            progress("BWA mem.".format(sample), file=f_report)
+            sam_file = "{}.sam".format(sample)
+            with open(sam_file, "wb") as f:
+                pipe(["bwa", "mem", "-t", threads, "-R", illumina_readgroup(r1_dedupfastq), prop["reference_fasta"], r1_dedupfastq, r2_dedupfastq], stdout=f)
+            os.unlink(r1_dedupfastq)
+            os.unlink(r2_dedupfastq)
 
-                progress("Samtools fixmate.")
-                unsorted_bam_file = "{}.unsorted.bam".format(sample)
-                run(["samtools", "fixmate", "-O", "bam", sam_file, unsorted_bam_file])
-                os.unlink(sam_file)
+            progress("Samtools fixmate.", file=f_report)
+            unsorted_bam_file = "{}.unsorted.bam".format(sample)
+            run(["samtools", "fixmate", "-O", "bam", sam_file, unsorted_bam_file])
+            os.unlink(sam_file)
+        
+            progress("Samtools sort.", file=f_report)
+            bam_file = "{}.bam".format(sample)
+            run(["samtools", "sort", "-O", "bam", "-o", bam_file, "-T", "temp", "-@", threads, unsorted_bam_file])
+            os.unlink(unsorted_bam_file)
+
+            progress("Samtools index.", file=f_report)
+            run(["samtools", "index", bam_file])
+            bambai_file = "{}.bai".format(bam_file)
+
+            progress("Mpileup.", file=f_report)
+            mpileup_file = "{}.pileup".format(sample)
+            run(["samtools", "mpileup", "-A", "-d", "10000000", "-o", mpileup_file, "-f", prop["reference_fasta"], bam_file])
             
-                progress("Samtools sort.")
-                bam_file = "{}.bam".format(sample)
-                run(["samtools", "sort", "-O", "bam", "-o", bam_file, "-T", "temp", "-@", threads, unsorted_bam_file])
-                os.unlink(unsorted_bam_file)
+            progress("Varscan.", file=f_report)
+            vcf_file = "{}.vcf".format(sample)
+            with open(vcf_file, "wb") as f:
+                pipe(["java", "-jar", "/usr/local/bin/varscan.jar", "mpileup2cns", mpileup_file, "--variants", "--output-vcf", "1", "--min-coverage", "1",
+                                                                                                                                "--min-var-freq", "0", 
+                                                                                                                                "--min-avg-qual", "20",
+                                                                                                                                "--min-reads2", "1"], stdout=f)
+                                                                                                                #"--min-coverage-normal", "1",  
+                                                                                                                #"--min-coverage-tumor", "1",  
+                                                                                                                #"--min-freq-for-hom","0.75", 
+                                                                                                                #"--somatic-p-value", "0.05",
+                                                                                                                #"--strand-filter", "1",
+                                                                                                                #"--validation", "1"
+            os.unlink(mpileup_file)
 
-                progress("Samtools index.")
-                run(["samtools", "index", bam_file])
-                bambai_file = "{}.bai".format(bam_file)
+            progress("VEP.", file=f_report)
+            vepjson_file = "{}.vep".format(sample)
+            extra = ["--refseq"] if prop["transcript_source"] == "refseq" else []
+            run(["perl", "../ensembl-vep/vep", "--verbose", "-i", vcf_file, "-o", vepjson_file, "--no_stats", "--format", "vcf", "--fork", "4", "--json", "--offline", "--everything", 
+                    "--assembly", prop["assembly"], "--fasta", prop["reference_fasta"], "--force_overwrite"] + extra)
+            annotation_file = create_report(vepjson_file, panel)
 
-                progress("Mpileup.")
-                mpileup_file = "{}.pileup".format(sample)
-                run(["samtools", "mpileup", "-A", "-d", "10000000", "-o", mpileup_file, "-f", prop["reference_fasta"], bam_file])
-                
-                progress("Varscan.")
-                vcf_file = "{}.vcf".format(sample)
-                with open(vcf_file, "wb") as f:
-                    pipe(["java", "-jar", "/usr/local/bin/varscan.jar", "mpileup2cns", mpileup_file, "--variants", "--output-vcf", "1", "--min-coverage", "1",
-                                                                                                                                    "--min-var-freq", "0", 
-                                                                                                                                    "--min-avg-qual", "20",
-                                                                                                                                    "--min-reads2", "1"], stdout=f)
-                                                                                                                    #"--min-coverage-normal", "1",  
-                                                                                                                    #"--min-coverage-tumor", "1",  
-                                                                                                                    #"--min-freq-for-hom","0.75", 
-                                                                                                                    #"--somatic-p-value", "0.05",
-                                                                                                                    #"--strand-filter", "1",
-                                                                                                                    #"--validation", "1"
-                os.unlink(mpileup_file)
-
-                progress("VEP.")
-                vepjson_file = "{}.vep".format(sample)
-                extra = ["--refseq"] if prop["transcript_source"] == "refseq" else []
-                run(["perl", "../ensembl-vep/vep", "--verbose", "-i", vcf_file, "-o", vepjson_file, "--no_stats", "--format", "vcf", "--fork", "4", "--json", "--offline", "--everything", 
-                        "--assembly", prop["assembly"], "--fasta", prop["reference_fasta"], "--force_overwrite"] + extra)
-                annotation_file = create_report(vepjson_file, panel)
-
-                progress("Covermi.")
-                covermi_dir = covermimain(panelname, "", bam_path=bam_file)
-                covermi_file = "{}.tar.gz".format(covermi_dir)
-                run(["tar", "cvzf", covermi_file, covermi_dir])
-                run(["rm", "-r", covermi_dir])
-                
-                progress("Completed {}.".format(datetime.datetime.now()))
-                progress("Time taken = {} seconds.".format(int(time.time() - start_time)))
+            progress("Covermi.", file=f_report)
+            covermi_dir = covermimain(panelname, "", bam_path=bam_file)
+            covermi_file = "{}.tar.gz".format(covermi_dir)
+            run(["tar", "cvzf", covermi_file, covermi_dir])
+            run(["rm", "-r", covermi_dir])
+            
+            progress("Completed {}.".format(datetime.datetime.now()), file=f_report)
+            progress("Time taken = {} seconds.".format(int(time.time() - start_time)), file=f_report)
 
 
         print("Uploading to s3.")
