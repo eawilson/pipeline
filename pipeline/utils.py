@@ -59,12 +59,25 @@ def illumina_readgroup(filepath):
 
 
 def run(args):
-    return subprocess.run(args, stdout=subprocess.PIPE, stderr=sys.stderr, universal_newlines=True, check=True)
+    """ Run a unix command as a subprocess. Stdout and stderr are captured as a string for review if needed.
+        Not to be used for main pipeline comands which should be called with pipe instead.  
+    """
+    return subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True)
 
 
 
-def pipe(args, stdout=None):
-    return subprocess.run(args, stdout=stdout, stderr=sys.stderr, check=True)
+def pipe(args, **kwargs):
+    """ Runs a main pipeline command. Output is bytes rather than string and is expected to be captured via
+        stdout redirection or ignored if not needed. The command is echoed as a bytestring to stderr (if supplied)
+        and all stderr diagnostic output from the subprocess is captured via redirection.
+    """
+    command = "".join(str(arg) for arg in args)
+    print(command)
+    try:
+        kwargs["stderr"].write("{}\n".format(command).encode("ascii"))
+    except (KeyError, AttributeError):
+        pass
+    return subprocess.run(args, check=True, **kwargs)
 
 
 
@@ -213,13 +226,6 @@ def load_panel_from_s3(panelname):
         raise RuntimeError("Must be exactly one fasta in reference genome.")
     panel.properties["reference_fasta"] = os.path.join(assembly, fastas[0])
     return panel    
-    
-    
-    
-def progress(msg, file=None):
-    print(msg, file=sys.stderr)
-    if file:
-        print(msg, file=file)
 
     
     

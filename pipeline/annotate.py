@@ -151,10 +151,11 @@ def create_report(vep_json_file, panel):
                           **demographics}
             annotations += [annotation]
 
+
     annotation_file = "{}.annotation.tsv".format(os.path.splitext(vep_json_file)[0])
     with open(annotation_file, "wt") as f:
         writer = csv.writer(f, delimiter="\t")
-        writer.writerow(["Gene", "Transcript", "Chrom", "Pos", "Change", "Filters", "Depth", "Alt Depth", "VAF", "Zygosity", "HGVSc", "HGVSp", "Impact", \
+        writer.writerow(["Gene", "Transcript", "Chrom", "Pos", "Change", "Quality", "Filters", "Depth", "Alt Depth", "VAF", "Zygosity", "HGVSc", "HGVSp", "Impact", \
                             "Clinical Significance (Pubmed)", "Consequences", "Sift", "Polyphen", "MAF", "COSMIC", "dbSNP", "Pubmed",  "HGMD", "Other_Genes"])
         for a in sorted(annotations, key=lambda a:(a["chrom"], a["pos"], a["allele_string"])):
            writer.writerow([a["gene_symbol"],
@@ -162,6 +163,7 @@ def create_report(vep_json_file, panel):
                              a["chrom"],
                              a["pos"],
                              a["allele_string"],
+                             a["quality"],
                              a["filters"],
                              a["depth"],
                              a["alt_depth"],
