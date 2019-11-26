@@ -13,11 +13,11 @@ from covermi import Panel, covermimain
 
 
 
-def cfpipeline(basespace_project, sample, s3_project, panelname):
+def cfpipeline(basespace_project, samplename, s3_project, panelname):
 
-    print(basespace_project, sample)
-    if s3_object_exists("projects/{}/{}".format(s3_project, sample_regex)):
-        print("{}/{} already exists, skipping.".format(s3_project, sample_regex))
+    print(basespace_project, samplename)
+    if s3_object_exists("projects/{}/{}".format(s3_project, samplename)):
+        print("{}/{} already exists, skipping.".format(s3_project, samplename))
         return
     
     threads = "4"
@@ -25,7 +25,7 @@ def cfpipeline(basespace_project, sample, s3_project, panelname):
     os.chdir(mount_instance_storage())    
     mount_basespace()
     
-    fastqs = list_basespace_fastqs(project=basespace_project, sample=sample)
+    fastqs = list_basespace_fastqs(project=basespace_project, sample=samplename)
     for fastq in fastqs:
         print(fastq)
         
@@ -104,7 +104,7 @@ def cfpipeline(basespace_project, sample, s3_project, panelname):
             print("Uploading to s3.")
             for filename in os.listdir():
                 if os.path.isfile(filename):
-                    s3_put(filename, prefix="projects/{}/{}".format(s3_project, sample))
+                    s3_put(filename, prefix="projects/{}/{}".format(s3_project, samplename))
 
         except Exception:
             print("ERROR, SKIPPING")
