@@ -118,7 +118,7 @@ def cfpipeline(basespace_project, samplename, s3_project, panelname):
 if __name__ == "__main__":
     project = ""
     sample = ""
-    cfpipeline(basespace_project=projecr, sample=sample, s3_project="accept", panelname="Accept")
+    cfpipeline(basespace_project=project, samplename=sample, s3_project="accept", panelname="Accept")
 
 
 
