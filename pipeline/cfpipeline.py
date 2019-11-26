@@ -14,8 +14,9 @@ from covermi import Panel, covermimain
 
 
 def cfpipeline(basespace_project_regex="", sample_regex="", s3_project=None, panelname=None):
+    print(sample_regex)
     if s3_object_exists("projects/{}/{}".format(s3_project, sample_regex)):
-        print "{} already exists, skipping.".format(s3_project, sample_regex)
+        print("{}/{} already exists, skipping.".format(s3_project, sample_regex))
         return
     
     if not s3_project or not panelname:

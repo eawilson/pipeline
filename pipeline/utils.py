@@ -158,10 +158,10 @@ def s3_put(*filenames, prefix=""):
 
 
 
-def s3_object_exists(prefix)
+def s3_object_exists(prefix):
     s3 = boto3.client("s3")
-    response = s3.list_objects_v2("omdc-data", Prefix=prefix)
-    return response.KeyCount
+    response = s3.list_objects_v2(Bucket="omdc-data", Prefix=prefix)
+    return response["KeyCount"]
 
 
 
