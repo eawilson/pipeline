@@ -13,7 +13,7 @@ import boto3
 
 
 __all__ = ["run", "mount_basespace", "unmount_basespace", "mount_instance_storage", "list_basespace_fastqs", "ungzip_and_combine_illumina_fastqs", "load_panel_from_s3", "s3_put",
-           "illumina_readgroup", "pipe", "progress"]
+           "illumina_readgroup", "pipe", "s3_object_exists"]
 
 
 
@@ -155,6 +155,13 @@ def s3_put(*filenames, prefix=""):
         basename = os.path.basename(filename)
         print("Uploading {} to S3.".format(basename))
         s3.upload_file(filename, "omdc-data", "{}/{}".format(prefix, basename) if prefix else basename)
+
+
+
+def s3_object_exists(prefix)
+    s3 = boto3.client("s3")
+    response = s3.list_objects_v2("omdc-data", Prefix=prefix)
+    return response.KeyCount
 
 
 

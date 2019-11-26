@@ -4,7 +4,7 @@ import time
 import datetime
 import contextlib
 from pipeline import run, mount_basespace, mount_instance_storage, unmount_basespace, list_basespace_fastqs, ungzip_and_combine_illumina_fastqs, load_panel_from_s3, \
-                    s3_put, dedup, illumina_readgroup, pipe, create_report
+                    s3_put, dedup, illumina_readgroup, pipe, create_report, s3_object_exists
 from covermi import Panel, covermimain
 
 
@@ -14,6 +14,10 @@ from covermi import Panel, covermimain
 
 
 def cfpipeline(basespace_project_regex="", sample_regex="", s3_project=None, panelname=None):
+    if s3_object_exists("projects/{}/{}".format(s3_project, sample_regex)):
+        print "{} already exists, skipping.".format(s3_project, sample_regex)
+        return
+    
     if not s3_project or not panelname:
         raise RuntimeError("Project and Panel are required arguments.")
     if not basespace_project_regex and not sample_regex:
