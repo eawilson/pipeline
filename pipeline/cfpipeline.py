@@ -39,7 +39,7 @@ def cfpipeline(basespace_project, sample, s3_project, panelname):
 
         try:
             if not sample in r1_fastq:
-                raise RuntimeError(Wrong fastq.)
+                raise RuntimeError("Wrong fastq.")
             with open("{}.pipeline.txt".format(sample), "wb") as f_report:
                     
                 start_time = time.time()
