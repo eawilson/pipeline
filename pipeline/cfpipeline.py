@@ -13,11 +13,11 @@ from covermi import Panel, covermimain
 
 
 
-def cfpipeline(basespace_project, samplename, s3_project, panelname):
+def cfpipeline(basespace_project, sample, s3_project, panelname):
 
-    print(basespace_project, samplename)
-    if s3_object_exists("projects/{}/{}".format(s3_project, samplename)):
-        print("{}/{} already exists, skipping.".format(s3_project, samplename))
+    print(basespace_project, sample)
+    if s3_object_exists("projects/{}/{}".format(s3_project, sample)):
+        print("{}/{} already exists, skipping.".format(s3_project, sample))
         return
     
     threads = "4"
@@ -25,7 +25,7 @@ def cfpipeline(basespace_project, samplename, s3_project, panelname):
     os.chdir(mount_instance_storage())    
     mount_basespace()
     
-    fastqs = list_basespace_fastqs(project=basespace_project, sample=samplename)
+    fastqs = list_basespace_fastqs(project=basespace_project, sample=sample)
     for fastq in fastqs:
         print(fastq)
         
@@ -38,13 +38,14 @@ def cfpipeline(basespace_project, samplename, s3_project, panelname):
     for r1_fastq, r2_fastq in zip(fastqs[::2], fastqs[1::2]):
 
         try:
-            sample = os.path.splitext(os.path.basename(r1_fastq))[0]
-            with open("{}_pipeline.txt".format(sample), "wb") as f_report:
+            if not sample in r1_fastq:
+                raise RuntimeError(Wrong fastq.)
+            with open("{}.pipeline.txt".format(sample), "wb") as f_report:
                     
                 start_time = time.time()
                 print("cfPipeline {}, {}.".format(os.path.basename(r1_fastq), os.path.basename(r2_fastq)))
                 print("Starting {}.".format(datetime.datetime.now()))
-                print("TheDuDe allowed = 3, thruplex = {}, min_family_size = {}.".format(prop.get("thruplex", False), prop.get("min_family_size", 1)))
+                print("theDuDe allowed = 3, thruplex = {}, min_family_size = {}.".format(prop.get("thruplex", False), prop.get("min_family_size", 1)))
                 dedup(r1_fastq, r2_fastq, allowed=3, thruplex=prop.get("thruplex", False), min_family_size=int(prop.get("min_family_size", 1)))
                 r1_dedupfastq = "{}.deduped.fastq".format(r1_fastq[:-6])
                 r2_dedupfastq = "{}.deduped.fastq".format(r2_fastq[:-6])
@@ -93,7 +94,7 @@ def cfpipeline(basespace_project, samplename, s3_project, panelname):
                 annotation_file = create_report(vepjson_file, panel)
 
                 covermi_dir = covermimain(panelname, "", bam_path=bam_file)
-                covermi_file = "{}.tar.gz".format(covermi_dir)
+                covermi_file = "{}.covermi.tar.gz".format(sample)
                 run(["tar", "cvzf", covermi_file, covermi_dir])
                 run(["rm", "-r", covermi_dir])
                 
@@ -104,7 +105,7 @@ def cfpipeline(basespace_project, samplename, s3_project, panelname):
             print("Uploading to s3.")
             for filename in os.listdir():
                 if os.path.isfile(filename):
-                    s3_put(filename, prefix="projects/{}/{}".format(s3_project, samplename))
+                    s3_put(filename, prefix="projects/{}/{}".format(s3_project, sample))
 
         except Exception:
             print("ERROR, SKIPPING")
@@ -116,9 +117,8 @@ def cfpipeline(basespace_project, samplename, s3_project, panelname):
             
             
 if __name__ == "__main__":
-    project = ""
-    sample = ""
-    cfpipeline(basespace_project=projecr, sample=sample, s3_project="accept", panelname="Accept")
+    project, sample = "", ""
+    cfpipeline(basespace_project=project, sample=sample, s3_project="accept", panelname="Accept")
 
 
 
