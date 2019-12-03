@@ -22,7 +22,7 @@ def cfpipeline(basespace_project, sample, s3_project, panelname):
     
     threads = "4"
     
-    os.chdir(mount_instance_storage())    
+    os.chdir(mount_instance_storage())
     mount_basespace()
     
     fastqs = list_basespace_fastqs(project=basespace_project, sample=sample)
@@ -78,7 +78,8 @@ def cfpipeline(basespace_project, sample, s3_project, panelname):
                     pipe(["java", "-jar", "/usr/local/bin/varscan.jar", "mpileup2cns", mpileup_file, "--variants", "--output-vcf", "1", "--min-coverage", "1",
                                                                                                                                     "--min-var-freq", "0", 
                                                                                                                                     "--min-avg-qual", "20",
-                                                                                                                                    "--min-reads2", "1"], stdout=f)
+                                                                                                                                    "--min-reads2", "1",
+                                                                                                                                    "--p-value", "0.14"], stdout=f)
                                                                                                                     #"--min-coverage-normal", "1",  
                                                                                                                     #"--min-coverage-tumor", "1",  
                                                                                                                     #"--min-freq-for-hom","0.75", 

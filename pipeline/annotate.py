@@ -177,12 +177,11 @@ def create_report(vep_json_file, panel):
                              a["sift_prediction"],
                              a["polyphen_prediction"],
                              a.get("maf", ""),
-                             ", ".join(a.get("cosmic", ())),
+                             ", ".join(a.get("other_genes", ())),
                              ", ".join(a.get("dbsnp", ())),
                              ", ".join(a.get("pubmed", ())),
                              ", ".join(a.get("hgmd", ())),
-                             ", ".join(a.get("other_genes", ())),
-                             ])
+                             ] + a.get("cosmic", []))
     return annotation_file
     
 

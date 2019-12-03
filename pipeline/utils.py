@@ -3,17 +3,93 @@ import os
 import sys
 import pdb
 import re
-import gzip
-import shutil
+import csv
+import io
+import pdb
 from collections import defaultdict, namedtuple
 
 import covermi
-import boto3
+from boto3 import client
 
 
 
-__all__ = ["run", "mount_basespace", "unmount_basespace", "mount_instance_storage", "list_basespace_fastqs", "ungzip_and_combine_illumina_fastqs", "load_panel_from_s3", "s3_put",
-           "illumina_readgroup", "pipe", "s3_object_exists"]
+__all__ = ["s3_put", "s3_object_exists", "s3_get_tsv", "s3_list_keys", "s3_list_samples", "s3_open", "run", \
+            "mount_basespace", "unmount_basespace", "mount_instance_storage", "list_basespace_fastqs", "ungzip_and_combine_illumina_fastqs", \
+            "load_panel_from_s3", "illumina_readgroup", "pipe"]
+
+BUCKET = "omdc-data"
+
+
+def s3_put(*filenames, prefix=""):
+    s3 = client("s3")
+    for filename in filenames:
+        basename = os.path.basename(filename)
+        print("Uploading {} to S3.".format(basename))
+        s3.upload_file(filename, BUCKET, "{}/{}".format(prefix, basename) if prefix else basename)
+
+
+
+def s3_object_exists(prefix):
+    s3 = client("s3")
+    response = s3.list_objects_v2(Bucket=BUCKET, Prefix=prefix)
+    return response["KeyCount"]
+
+
+
+def s3_list_keys(bucket, prefix, extension=""):
+    """ Returns a dict of all objects in bucket that have the specified prefix and extension.
+    """
+    if extension:
+        extension = ".{}".format(extension)
+    s3 = client("s3")
+    response = {}
+    kwargs = {}
+    keys = {}
+    while response.get("IsTruncated", True):
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, **kwargs)
+        for content in response.get("Contents", ()):
+            if content["Key"].endswith(extension):
+                keys[content["Key"]] = content
+        kwargs = {"ContinuationToken": response.get("NextContinuationToken", None)}
+    return keys
+
+
+
+def s3_list_samples(bucket, project):
+    samples = set()
+    for key in s3_list_keys(bucket, "projects/{}".format(project)):
+        split_key = key.split("/")
+        if len(split_key) > 3:
+            samples.add(split_key[2])
+    return samples
+
+
+
+class s3_open(object):
+    def __init__(self, bucket, key, mode="rt"):
+        if mode not in ("rt", "rb", "wt", "wb"):
+            raise ValueError("Invalid mode {}".format(repr(mode)))
+        self.s3 = client("s3")
+        self.bucket = bucket
+        self.key = key
+        self.mode = mode
+        self.f_bytes = io.BytesIO()
+        if mode.startswith("r"):
+            self.s3.download_fileobj(bucket, key, self.f_bytes)
+            self.f_bytes.seek(0)
+        self.f = io.TextIOWrapper(self.f_bytes) if mode.endswith("t") else self.f_bytes
+    
+    def close(self):
+        if self.mode.startswith("w"):
+            self.f_bytes.seek(0)
+            self.s3.upload_fileobj(self.f_bytes, self.bucket, self.key)
+        self.f.close()
+            
+    def __enter__(self):
+        return self.f
+    
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.close()
 
 
 
@@ -90,10 +166,11 @@ def mount_basespace():
     for line in completed.stdout.split("\n"):
         if line.startswith("basemount on {}".format(basespace_dir)):
             print("Basespace already mounted.")
-            return
+            return basespace_dir
         
     print("Mounting basespace.")
     run(["basemount", basespace_dir])
+    return basespace_dir
 
 
 
@@ -147,24 +224,9 @@ def mount_instance_storage():
         run(["sudo", "chmod", "go+rwx", ephemoral_path])
         return ephemoral_path
     
-
-
-def s3_put(*filenames, prefix=""):
-    s3 = boto3.client("s3")
-    for filename in filenames:
-        basename = os.path.basename(filename)
-        print("Uploading {} to S3.".format(basename))
-        s3.upload_file(filename, "omdc-data", "{}/{}".format(prefix, basename) if prefix else basename)
-
-
-
-def s3_object_exists(prefix):
-    s3 = boto3.client("s3")
-    response = s3.list_objects_v2(Bucket="omdc-data", Prefix=prefix)
-    return response["KeyCount"]
-
-
-
+    
+    
+    
 def list_basespace_fastqs(project="", sample=""):
     basespace_path = os.path.join(os.path.expanduser("~"), "basespace")
     project_regex = re.compile(project)
@@ -188,7 +250,7 @@ def list_basespace_fastqs(project="", sample=""):
 
 
 def load_panel_from_s3(panelname):
-    s3 = boto3.client('s3')
+    s3 = client('s3')
 
     if not os.path.exists(panelname):
         print("Downloading {} from S3.".format(panelname))
@@ -234,10 +296,4 @@ def load_panel_from_s3(panelname):
     panel.properties["reference_fasta"] = os.path.join(assembly, fastas[0])
     return panel    
 
-    
-    
-    
-    
-    
-    
     
