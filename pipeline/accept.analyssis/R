@@ -1,0 +1,5 @@
+xyplot(VAF~Timepoint|Gene, x, groups=Variant, type="l", lwd=3, ylim=c(0, 0.5), scales=list(x=list(at=seq(0, 3, 1))))
+xyplot(VAF~Timepoint|Patient, x, groups=Variant, type="l", lwd=3, ylim=c(0, 0.5), layout=c(7, 2), scales=list(x=list(at=seq(0, 3, 1))))
+xyplot(VAF~Timepoint, x, ylim=c(0, 0.5), scales=list(x=list(at=seq(0, 3, 1))), jitter.x=TRUE, amount=0.05, pch=19)
+
+barchart(Gene~n, y, groups=Consequence, stack=TRUE, horizontal=TRUE, col=brewer.pal(4, "Set2"))
