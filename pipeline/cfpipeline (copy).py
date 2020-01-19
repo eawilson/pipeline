@@ -3,8 +3,10 @@ import sys
 import time
 import datetime
 import contextlib
-from pipeline import run, mount_basespace, mount_instance_storage, unmount_basespace, list_basespace_fastqs, ungzip_and_combine_illumina_fastqs, load_panel_from_s3, \
-                    s3_put, dedup, illumina_readgroup, pipe, create_report, s3_object_exists
+from pipeline import run, mount_basespace, mount_instance_storage, \
+    unmount_basespace, list_basespace_fastqs, load_panel_from_s3, \
+    ungzip_and_combine_illumina_fastqs, s3_put, dedup, illumina_readgroup, \
+    pipe, create_report, s3_object_exists
 from covermi import Panel, covermimain
 
 
@@ -20,7 +22,7 @@ def cfpipeline(basespace_project, sample, s3_project, panelname):
         print("{}/{} already exists, skipping.".format(s3_project, sample))
         return
     
-    threads = "4"
+    threads = int(run(["getconf", "_NPROCESSORS_ONLN"]).stdout)
     
     os.chdir(mount_instance_storage())
     mount_basespace()
@@ -45,14 +47,15 @@ def cfpipeline(basespace_project, sample, s3_project, panelname):
                 start_time = time.time()
                 print("cfPipeline {}, {}.".format(os.path.basename(r1_fastq), os.path.basename(r2_fastq)))
                 print("Starting {}.".format(datetime.datetime.now()))
-                print("theDuDe allowed = 3, thruplex = {}, min_family_size = {}.".format(prop.get("thruplex", False), prop.get("min_family_size", 1)))
-                dedup(r1_fastq, r2_fastq, allowed=3, thruplex=prop.get("thruplex", False), min_family_size=int(prop.get("min_family_size", 1)))
+                
+                thruplex = ["--thruplex"] if prop.get("thruplex", False) else []
+                pipe(["dude", r1_fastq, r2_fastq, "--allowed", "3", "--min_family_size", int(prop.get("min_family_size", 1))] + thruplex, stderr=f_report)
                 r1_dedupfastq = "{}.deduped.fastq".format(r1_fastq[:-6])
                 r2_dedupfastq = "{}.deduped.fastq".format(r2_fastq[:-6])
                 pipe(["wc", r1_fastq, r2_fastq, r1_dedupfastq, r2_dedupfastq], stdout=f_report)
                 os.unlink(r1_fastq)
                 os.unlink(r2_fastq)
-            
+                
                 sam_file = "{}.sam".format(sample)
                 with open(sam_file, "wb") as f:
                     pipe(["bwa", "mem", "-t", threads, "-R", illumina_readgroup(r1_dedupfastq), prop["reference_fasta"], r1_dedupfastq, r2_dedupfastq], stdout=f, stderr=f_report)
@@ -71,26 +74,30 @@ def cfpipeline(basespace_project, sample, s3_project, panelname):
                 bambai_file = "{}.bai".format(bam_file)
 
                 mpileup_file = "{}.pileup".format(sample)
-                pipe(["samtools", "mpileup", "-A", "-d", "10000000", "-o", mpileup_file, "-f", prop["reference_fasta"], bam_file], stderr=f_report)
+                mpileup_options = ["-A",
+                                   "--no-BAQ",
+                                   "-q", "10",
+                                   "-d", "10000000"]
+                pipe(["samtools", "mpileup", "-o", mpileup_file, "-f", prop["reference_fasta"]] + mpileup_options + [bam_file], stderr=f_report)
                 
                 vcf_file = "{}.vcf".format(sample)
                 with open(vcf_file, "wb") as f:
-                    pipe(["java", "-jar", "/usr/local/bin/varscan.jar", "mpileup2cns", mpileup_file, "--variants", "--output-vcf", "1", "--min-coverage", "1",
-                                                                                                                                    "--min-var-freq", "0", 
-                                                                                                                                    "--min-avg-qual", "20",
-                                                                                                                                    "--min-reads2", "1",
-                                                                                                                                    "--p-value", "0.14"], stdout=f)
-                                                                                                                    #"--min-coverage-normal", "1",  
-                                                                                                                    #"--min-coverage-tumor", "1",  
-                                                                                                                    #"--min-freq-for-hom","0.75", 
-                                                                                                                    #"--somatic-p-value", "0.05",
-                                                                                                                    #"--strand-filter", "1",
-                                                                                                                    #"--validation", "1"
+                    pipe(["varscan", "mpileup2cns", mpileup_file, "--variants", "--output-vcf", "1", "--min-coverage", "1",
+                                                                                                     "--min-var-freq", "0", 
+                                                                                                     "--min-avg-qual", "20",
+                                                                                                     "--min-reads2", "1",
+                                                                                                     "--p-value", "0.14"], stdout=f)
+                                                                                                    #"--min-coverage-normal", "1",  
+                                                                                                    #"--min-coverage-tumor", "1",  
+                                                                                                    #"--min-freq-for-hom","0.75", 
+                                                                                                    #"--somatic-p-value", "0.05",
+                                                                                                    #"--strand-filter", "1",
+                                                                                                    #"--validation", "1"
                 os.unlink(mpileup_file)
 
                 vepjson_file = "{}.vep".format(sample)
                 extra = ["--refseq"] if prop["transcript_source"] == "refseq" else []
-                pipe(["perl", "../ensembl-vep/vep", "--verbose", "-i", vcf_file, "-o", vepjson_file, "--no_stats", "--format", "vcf", "--fork", "4", "--json", "--offline", "--everything", 
+                pipe(["perl", "~/ensembl-vep/vep", "--verbose", "-i", vcf_file, "-o", vepjson_file, "--no_stats", "--format", "vcf", "--fork", "4", "--json", "--offline", "--everything", 
                         "--assembly", prop["assembly"], "--fasta", prop["reference_fasta"], "--force_overwrite", ] + extra, stderr=f_report)
                 annotation_file = create_report(vepjson_file, panel)
 

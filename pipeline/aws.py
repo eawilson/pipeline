@@ -3,48 +3,191 @@ import os
 import sys
 import pdb
 import re
-import gzip
-import shutil
+import csv
+import io
+import argparse
+import pdb
 from collections import defaultdict, namedtuple
 
 import covermi
-import boto3
+from boto3 import client
 
 
 
-__all__ = ["run", "mount_basespace", "unmount_basespace", "mount_instance_storage", "list_basespace_fastqs", "ungzip_and_combine_illumina_fastqs", "load_panel_from_s3",
-           "illumina_readgroup", "pipe"]
+__all__ = ["s3_put", "s3_object_exists", "s3_get_tsv", "s3_list_keys", "s3_list_samples", "s3_open", "run", \
+            "mount_basespace", "unmount_basespace", "mount_instance_storage", "list_basespace_fastqs", "ungzip_and_combine_illumina_fastqs", \
+            "load_panel_from_s3", "illumina_readgroup", "pipe", "command_line_arguments", "sample_name"]
+
+BUCKET = "omdc-data"
+ILLUMINA_FASTQ = re.compile(r"(.+)_S([0-9]{1,2})_L([0-9]{3})_R([12])_001\.fastq(\.gz)?$") # name, s_number, lane, read, gzip
+
+
+def command_line_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("fastq_r1", help="Uncompressed fastq read 1.")
+    parser.add_argument("fastq_r2", help="Uncompressed fastq read 2.")
+    parser.add_argument("-b", "--bam", help="Matched normal bam to perform tumour/normal subtraction.")
+    parser.add_argument("-p", "--panel", help="Directory containing panel data.")
+    parser.add_argument("-o", "--output", help="Output directory.", dest="dest_dir", default=argparse.SUPPRESS)
+    parser.add_argument("-g", "--genome", help="Directory containing reference genome.", dest="genome_dir", default=argparse.SUPPRESS)
+    args = parser.parse_args()
+    return vars(args)
 
 
 
-def ungzip_and_combine_illumina_fastqs(*filepaths, destination="", paired_end=True):
+def sample_name(*fastqs):
+    matches = [ILLUMINA_FASTQ.match(fastq) for fastq in fastqs]
+    if not None in matches:
+        names = set(match.group(1) for match in matches)
+        if len(names) == 1:
+            return list(names)[0]
+    raise RuntimeError("Inconsistent fastq names.")
+    
+    
+
+def s3_put(*filenames, prefix=""):
+    s3 = client("s3")
+    for filename in filenames:
+        basename = os.path.basename(filename)
+        print("Uploading {} to S3.".format(basename))
+        s3.upload_file(filename, BUCKET, "{}/{}".format(prefix, basename) if prefix else basename)
+
+
+
+def s3_object_exists(prefix):
+    s3 = client("s3")
+    response = s3.list_objects_v2(Bucket=BUCKET, Prefix=prefix)
+    return response["KeyCount"]
+
+
+
+def s3_list_keys(bucket, prefix, extension=""):
+    """ Returns a dict of all objects in bucket that have the specified prefix and extension.
+    """
+    if extension:
+        extension = ".{}".format(extension)
+    s3 = client("s3")
+    response = {}
+    kwargs = {}
+    keys = {}
+    while response.get("IsTruncated", True):
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, **kwargs)
+        for content in response.get("Contents", ()):
+            if content["Key"].endswith(extension):
+                keys[content["Key"]] = content
+        kwargs = {"ContinuationToken": response.get("NextContinuationToken", None)}
+    return keys
+
+
+
+def s3_list_samples(bucket, project):
+    samples = set()
+    for key in s3_list_keys(bucket, "projects/{}".format(project)):
+        split_key = key.split("/")
+        if len(split_key) > 3:
+            samples.add(split_key[2])
+    return samples
+
+
+
+class s3_open(object):
+    def __init__(self, bucket, key, mode="rt"):
+        if mode not in ("rt", "rb", "wt", "wb"):
+            raise ValueError("Invalid mode {}".format(repr(mode)))
+        self.s3 = client("s3")
+        self.bucket = bucket
+        self.key = key
+        self.mode = mode
+        self.f_bytes = io.BytesIO()
+        if mode.startswith("r"):
+            self.s3.download_fileobj(bucket, key, self.f_bytes)
+            self.f_bytes.seek(0)
+        self.f = io.TextIOWrapper(self.f_bytes) if mode.endswith("t") else self.f_bytes
+    
+    def close(self):
+        if self.mode.startswith("w"):
+            self.f_bytes.seek(0)
+            self.s3.upload_fileobj(self.f_bytes, self.bucket, self.key)
+        self.f.close()
+            
+    def __enter__(self):
+        return self.f
+    
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.close()
+
+
+
+#def ungzip_and_combine_illumina_fastqs(*filepaths, destination="", paired_end=True):
+    #""" Accepts list of fastqs to be ungzipped and combined. Fastqs will be merged if they only differ by lane number.
+        #Output will be written to current working directory.
+    #"""
+    #fastqs = defaultdict(list)
+    #for filepath in filepaths:
+        #dirname, basename = os.path.split(filepath)
+        #parts = basename.split("_")
+        #if parts[-1].endswith(".gz"):
+            #parts[-1] = parts[-1][:-3]
+        #if not parts[-1] == "001.fastq":
+            #raise RuntimeError("Not a fastq {}.".format(filepath))
+        #if parts[-2] not in ("R1", "R2") or not parts[-3].startswith("L") or not len(parts[-3]) == 4:
+            #raise RuntimeError("Malformed fastq name {}.".format(filepath))
+        #parts[-3] = "L000"
+        #fastqs[os.path.join(destination, "_".join(parts))] += [filepath]
+
+    #if paired_end and len(fastqs) % 2:
+        #raise RuntimeError("Odd number of paired fastqs.")
+
+    #for dest, sources in fastqs.items():
+        #with open(dest, "wb") as f:
+            #for source in sorted(sources):
+                #if source.endswith(".gz"):
+                    #pipe(["gzip", "-dc", source], stdout=f)      
+                #else:
+                    #run(["cat", source], stdout=f)
+    #return sorted(fastqs.keys())
+
+
+
+def ungzip_and_combine_illumina_fastqs(name=None, source_dir=".", dest_dir="."):
     """ Accepts list of fastqs to be ungzipped and combined. Fastqs will be merged if they only differ by lane number.
         Output will be written to current working directory.
     """
+    if name is None:
+        name = ".+"
+    else:
+        name = re.escape(name)
+    regex = re.compile(ILLUMINA_FASTQ)
+    previous_samples = None
+    previous_s_numbers = None
+    
     fastqs = defaultdict(list)
-    for filepath in filepaths:
-        dirname, basename = os.path.split(filepath)
-        parts = basename.split("_")
-        if parts[-1].endswith(".gz"):
-            parts[-1] = parts[-1][:-3]
-        if not parts[-1] == "001.fastq":
-            raise RuntimeError("Not a fastq {}.".format(filepath))
-        if parts[-2] not in ("R1", "R2") or not parts[-3].startswith("L") or not len(parts[-3]) == 4:
-            raise RuntimeError("Malformed fastq name {}.".format(filepath))
-        parts[-3] = "L000"
-        fastqs[os.path.join(destination, "_".join(parts))] += [filepath]
+    for fn in os.listdir(source_dir):
+        match = regex.match(fn)
+        if match:
+            sample, s_number, lane, read = match.group(1, 2, 3, 4)
+            if (previous_samples is not None and sample != previous_samples) or \
+                (previous_s_numbers is not None and s_number != previous_s_numbers):
+                raise RuntimeError("Mismatched fastqs.")
+            previous_samples = sample
+            fastqs[read] += [os.path.join(source_dir, fn)]
 
-    if paired_end and len(fastqs) % 2:
-        raise RuntimeError("Odd number of paired fastqs.")
+    if not fastqs:
+        raise RuntimeError("No matching fastqs found.")
+    if len(fastqs["1"]) != len(fastqs["2"]):
+        raise RuntimeError("Unmatched fastqs.")
 
-    for dest, sources in fastqs.items():
-        with open(dest, "wb") as f:
-            for source in sorted(sources):
-                if source.endswith(".gz"):
-                    pipe(["gzip", "-dc", source], stdout=f)      
+    ret = []
+    for read, fns in sorted(fastqs.items()):
+        #if not (len(fns) == 1 and fns[0].endswith(".fastq") and source_dir == dest_dir):
+        ret += [os.path.join(dest_dir, "{}_S{}_L000_R{}_001.fastq".format(sample, s_number, read))]
+        with open(ret[-1], "wb") as f:
+            for fn in sorted(fns):
+                if fn.endswith(".gz"):
+                    subprocess.run(["gzip", "-dc", fn], stdout=f)      
                 else:
-                    run(["cat", source], stdout=f)
-    return sorted(fastqs.keys())
+                    subprocess.run(["cat", fn], stdout=f)
+    return ret
 
 
 
@@ -71,12 +214,7 @@ def pipe(args, **kwargs):
         stdout redirection or ignored if not needed. The command is echoed as a bytestring to stderr (if supplied)
         and all stderr diagnostic output from the subprocess is captured via redirection.
     """
-    command = " ".join(str(arg) for arg in args)
-    print(command)
-    try:
-        kwargs["stderr"].write("{}\n".format(command).encode("ascii"))
-    except (KeyError, AttributeError):
-        pass
+    print(" ".join(str(arg) for arg in args), file=sys.stderr)
     return subprocess.run(args, check=True, **kwargs)
 
 
@@ -147,29 +285,6 @@ def mount_instance_storage():
         run(["sudo", "mount", devname, ephemoral_path])
         run(["sudo", "chmod", "go+rwx", ephemoral_path])
         return ephemoral_path
-
-
-
-def copy_fastq_from_basespace_to_s3(basespace_project, basespace_sample, s3_project, s3_sample=None:
-    basespace_dir = mount_basespace()
-    files_dir = os.path.join(basespace_dir, "Projects", basespace_project, "Samples", basespace_sample, "Files")
-    for fastq in os.listdir(files_dir):
-        if basespace_sample in fastq and (fastq.endswith(".fastq") or fastq.endswith(".fastq.gz")):
-            print("Transferring {}".format(fastq))
-            s3_put(os.path.join(files_dir, fastq), prefix="projects/{0}/samples/{1}".format(s3_project, fastq.replace(basespace_sample, s3_sample) if s3_sample else fastq))
-            
-        samples_dir = os.path.join(projects_dir, project, "Samples")
-        samples = [sample for sample in os.listdir(samples_dir) if not sample.startswith(".") and sample_regex.search(sample)]
-        
-        for sample in samples:
-            files_dir = os.path.join(samples_dir, sample, "Files")
-            matches += [os.path.join(files_dir, fn) for fn in os.listdir(files_dir) if not fn.startswith(".") and ()]
-            
-    return matches
-    
-    s3_fastqs = s3_list_keys(BUCKET, "projects/{0}/samples/", ".fastq")
-    reader = s3_get_tsv(BUCKET, "projects/{0}/{0}.samples.tsv".format(project))
-    for row in reader:
     
     
     
@@ -197,7 +312,7 @@ def list_basespace_fastqs(project="", sample=""):
 
 
 def load_panel_from_s3(panelname):
-    s3 = boto3.client('s3')
+    s3 = client('s3')
 
     if not os.path.exists(panelname):
         print("Downloading {} from S3.".format(panelname))

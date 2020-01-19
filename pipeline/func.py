@@ -162,8 +162,6 @@ def zz():
 
 
 
-
-
 def copy_fastqs_from_basespace_to_s3(s3_project):
     s3 = client("s3")
     objects = s3_list_keys(BUCKET, "projects/{0}/samples/".format(s3_project), extension="fastq.gz")

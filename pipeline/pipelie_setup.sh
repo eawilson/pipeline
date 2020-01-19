@@ -69,7 +69,10 @@ cd ..
 
 wget -O VarScan.v2.3.9.jar https://sourceforge.net/projects/varscan/files/VarScan.v2.3.9.jar/download
 sudo mv VarScan.v2.3.9.jar /usr/local/bin
-sudo ln -s /usr/local/bin/VarScan.v2.3.9.jar /usr/local/bin/varscan.jar
+echo '#!/bin/bash' >varscan
+echo 'java -jar /usr/local/bin/VarScan.v2.3.9.jar $@' >>varscan
+chmod +x varscan
+sudo mv varscan /usr/local/bin
 
 sudo bash -c "$(curl -L https://basemount.basespace.illumina.com/install)"
 
@@ -82,11 +85,20 @@ cd ..
 
 wget -O picard-2.21.2.jar https://github.com/broadinstitute/picard/releases/download/2.21.2/picard.jar
 sudo mv picard-2.21.2.jar /usr/local/bin
-sudo ln -s /usr/local/bin/picard-2.21.2.jar /usr/local/bin/picard.jar
+echo '#!/bin/bash' >picard
+echo 'java -jar /usr/local/bin/picard-2.21.2.jar $@' >>picard
+chmod +x picard
+sudo mv picard /usr/local/bin
 
 git clone git@github.com:eawilson/pipeline.git
 cd pipeline
 sudo python3 setup.py develop
+cd ..
+
+git clone git@github.com:eawilson/dude.git
+cd dude
+make
+sudo make install
 cd ..
 
 git clone https://github.com/eawilson/covermi.git

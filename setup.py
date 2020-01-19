@@ -8,11 +8,10 @@ package =  {"name": "pipeline",
             "author_email": "edwardadrianwilson@yahoo.co.uk",
             "license": "MIT",
             "packages": ["pipeline"],
-            "ext_modules": [Extension("pipeline.cpipeline", ["pipeline/cpipeline/pipeline.c"])],
-            "install_requires": [],
+            "install_requires": ["covermi"],
             "include_package_data": True,
             "zip_safe": True,
-            "entry_points": { "console_scripts": ["cfpipeline=pipeline.cfpipeline:main"] },
+            "entry_points": { "console_scripts": [] },
             }
 
 setup(**package)

@@ -126,7 +126,7 @@ def create_report(vep_json_file, panel):
             consequence = sorted(consequences, key=consequence_sort)[0]
             #print(consequence)
             annotation = {"chrom": variant.chrom, 
-                          "pos": int(vep_output["start"]), 
+                          "pos": int(vep_output["start"]),
                           "allele_string": vep_output["allele_string"],
                           "quality": variant.qual,
                           "filters": variant.filters,
