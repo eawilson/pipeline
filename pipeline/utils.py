@@ -6,6 +6,7 @@ import re
 import csv
 import io
 import argparse
+from itertools import zip_longest
 import pdb
 from collections import defaultdict, namedtuple
 
@@ -24,18 +25,28 @@ ILLUMINA_FASTQ = re.compile(r"(.+)_S([0-9]{1,2})_L([0-9]{3})_R([12])_001\.fastq(
 
 def command_line_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("fastq_r1", help="Uncompressed fastq read 1.")
-    parser.add_argument("fastq_r2", help="Uncompressed fastq read 2.")
-    parser.add_argument("-b", "--bam", help="Matched normal bam to perform tumour/normal subtraction.")
+    parser.add_argument('fastqs', nargs="+", help="Fastq files.")
     parser.add_argument("-p", "--panel", help="Directory containing panel data.")
+    parser.add_argument("-g", "--genome", help="Reference genome.")
+    parser.add_argument("-b", "--bam", help="Matched normal bam to perform tumour/normal subtraction.", default=argparse.SUPPRESS)
     parser.add_argument("-o", "--output", help="Output directory.", dest="dest_dir", default=argparse.SUPPRESS)
-    parser.add_argument("-g", "--genome", help="Directory containing reference genome.", dest="genome_dir", default=argparse.SUPPRESS)
     args = parser.parse_args()
     return vars(args)
 
 
 
-def sample_name(*fastqs):
+def sample_name(fastqs):
+    """ Check all fastqs have an illumina format file name and all belong to
+        the same sample. Return the sample name.
+        Args:
+            fastqs (list of str): List of fastq paths
+            
+        Returns:
+            str: Sample name.
+            
+        Raises:
+            RuntimeError: If sample name is not consistent between samples.
+    """
     matches = [ILLUMINA_FASTQ.match(fastq) for fastq in fastqs]
     if not None in matches:
         names = set(match.group(1) for match in matches)
@@ -45,48 +56,29 @@ def sample_name(*fastqs):
     
     
 
-def s3_put(*filenames, prefix=""):
-    s3 = client("s3")
-    for filename in filenames:
-        basename = os.path.basename(filename)
-        print("Uploading {} to S3.".format(basename))
-        s3.upload_file(filename, BUCKET, "{}/{}".format(prefix, basename) if prefix else basename)
-
-
-
-def s3_object_exists(prefix):
-    s3 = client("s3")
-    response = s3.list_objects_v2(Bucket=BUCKET, Prefix=prefix)
-    return response["KeyCount"]
-
-
-
-def s3_list_keys(bucket, prefix, extension=""):
-    """ Returns a dict of all objects in bucket that have the specified prefix and extension.
+def fasta_path(path):
+    """ Return path to reference genome fasta which may be located at an
+        arbitrary depth depth within path.
+        
+        Args:
+            path (str): Path to fasta file or a containing directory.
+            
+        Returns:
+            str: Path to reference fasta file.
+            
+        Raises:
+            RuntimeError if no fasta is found or if multiple fastas are found.
     """
-    if extension:
-        extension = ".{}".format(extension)
-    s3 = client("s3")
-    response = {}
-    kwargs = {}
-    keys = {}
-    while response.get("IsTruncated", True):
-        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, **kwargs)
-        for content in response.get("Contents", ()):
-            if content["Key"].endswith(extension):
-                keys[content["Key"]] = content
-        kwargs = {"ContinuationToken": response.get("NextContinuationToken", None)}
-    return keys
-
-
-
-def s3_list_samples(bucket, project):
-    samples = set()
-    for key in s3_list_keys(bucket, "projects/{}".format(project)):
-        split_key = key.split("/")
-        if len(split_key) > 3:
-            samples.add(split_key[2])
-    return samples
+    if os.path.isfile(path):
+        return path
+    fastas = []
+    for root, dns, fns in os.walk(path):
+        for fn in fns:
+            if fn.endswith(".fna"):
+                fastas += [os.path.join(root, fn)]
+    if len(fastas) != 1:
+        raise RuntimeError(f"{path} must contain a single fasta file.")
+    return fastas[0]
 
 
 
@@ -118,75 +110,49 @@ class s3_open(object):
 
 
 
-#def ungzip_and_combine_illumina_fastqs(*filepaths, destination="", paired_end=True):
-    #""" Accepts list of fastqs to be ungzipped and combined. Fastqs will be merged if they only differ by lane number.
-        #Output will be written to current working directory.
-    #"""
-    #fastqs = defaultdict(list)
-    #for filepath in filepaths:
-        #dirname, basename = os.path.split(filepath)
-        #parts = basename.split("_")
-        #if parts[-1].endswith(".gz"):
-            #parts[-1] = parts[-1][:-3]
-        #if not parts[-1] == "001.fastq":
-            #raise RuntimeError("Not a fastq {}.".format(filepath))
-        #if parts[-2] not in ("R1", "R2") or not parts[-3].startswith("L") or not len(parts[-3]) == 4:
-            #raise RuntimeError("Malformed fastq name {}.".format(filepath))
-        #parts[-3] = "L000"
-        #fastqs[os.path.join(destination, "_".join(parts))] += [filepath]
-
-    #if paired_end and len(fastqs) % 2:
-        #raise RuntimeError("Odd number of paired fastqs.")
-
-    #for dest, sources in fastqs.items():
-        #with open(dest, "wb") as f:
-            #for source in sorted(sources):
-                #if source.endswith(".gz"):
-                    #pipe(["gzip", "-dc", source], stdout=f)      
-                #else:
-                    #run(["cat", source], stdout=f)
-    #return sorted(fastqs.keys())
-
-
-
-def ungzip_and_combine_illumina_fastqs(name=None, source_dir=".", dest_dir="."):
-    """ Accepts list of fastqs to be ungzipped and combined. Fastqs will be merged if they only differ by lane number.
+def ungzip_and_combine_illumina_fastqs(input_fastqs, sample, overwrite=False):
+    """ Accepts list of fastqs to be ungzipped (if needed) and combined.
         Output will be written to current working directory.
+        
+        Args:
+            inoput_fastqs (list of str): List of fastq paths.
+            sample (str): Sample name.
+            overwrite (bool): If False then don't overwrite fastqs if exist.
+            
+        Returns:
+            list of str: List of ungzipped merged fastq paths or None if the
+                input_fastqs already consist of two ungzipped fastqs.
+            
+        Raises:
+            RuntimeError if input_fastqs are not paired.
     """
-    if name is None:
-        name = ".+"
-    else:
-        name = re.escape(name)
-    regex = re.compile(ILLUMINA_FASTQ)
-    previous_samples = None
-    previous_s_numbers = None
+    input_fastqs = sorted(input_fastqs, key=lambda p:os.path.basename(p))
+    r1_fastqs = input_fastqs[0::2]
+    r2_fastqs = input_fastqs[1::2]
     
-    fastqs = defaultdict(list)
-    for fn in os.listdir(source_dir):
-        match = regex.match(fn)
-        if match:
-            sample, s_number, lane, read = match.group(1, 2, 3, 4)
-            if (previous_samples is not None and sample != previous_samples) or \
-                (previous_s_numbers is not None and s_number != previous_s_numbers):
-                raise RuntimeError("Mismatched fastqs.")
-            previous_samples = sample
-            fastqs[read] += [os.path.join(source_dir, fn)]
-
-    if not fastqs:
-        raise RuntimeError("No matching fastqs found.")
-    if len(fastqs["1"]) != len(fastqs["2"]):
-        raise RuntimeError("Unmatched fastqs.")
-
+    # Check that fastqs are paired before we merge them.
+    for r1_fastq, r2_fastq in zip_longest(r1_fastqs, r2_fastqs, fillvalue=""):
+        for r1_char, r2_char in zip_longest(os.path.basename(r1_fastq),
+                                            os.path.basename(r1_fastq),
+                                            fillvalue=""):
+            if r1_char != r2_char and (r1_char != "1" or r2_char != "2"):
+                raise RuntimeError(f"{r1_fastq} and {r2_fastq} are not paired.")
+            
+    # If we only have a single pair of ungzipped fastqs then we are done.
+    if len(r1_fastqs) == 1 and r1_fastqs[0].endswith(".fastq"):
+        return None
+    
     ret = []
-    for read, fns in sorted(fastqs.items()):
-        #if not (len(fns) == 1 and fns[0].endswith(".fastq") and source_dir == dest_dir):
-        ret += [os.path.join(dest_dir, "{}_S{}_L000_R{}_001.fastq".format(sample, s_number, read))]
-        with open(ret[-1], "wb") as f:
-            for fn in sorted(fns):
-                if fn.endswith(".gz"):
-                    subprocess.run(["gzip", "-dc", fn], stdout=f)      
-                else:
-                    subprocess.run(["cat", fn], stdout=f)
+    for read, fastqs in (("1", r1_fastqs), ("2", r2_fastqs)):
+        output_fastq = f"{sample}_R{read}.fastq"
+        ret += [output_fastq]
+        if overwrite or not os.path.exists(output_fastq):
+            with open(output_fastq, "wb") as f_out:
+                for fastq in fastqs:
+                    if fastq.endswith(".gz"):
+                        subprocess.run(["gzip", "-dc", fastq], stdout=f_out)      
+                    else:
+                        subprocess.run(["cat", fastq], stdout=f_out)
     return ret
 
 
@@ -249,46 +215,6 @@ def unmount_basespace():
 
 
 
-def mount_instance_storage():
-    ephemoral_path = os.path.join(os.path.expanduser("~"), "ephemoral")
-    if not os.path.exists(ephemoral_path):
-        os.mkdir(ephemoral_path)
-    
-    # Dont try and mount again if already mounted
-    completed = run(["mount"])
-    for line in completed.stdout.split("\n"):
-        if " on {} type ".format(ephemoral_path) in line:
-            print("Instance storage already mounted.")
-            return ephemoral_path
-
-    completed = run(["lsblk"])
-    devices = completed.stdout.strip("\n").split("\n")[1:]
-    unformatted_block_devices = []
-    for device_pair in zip(devices, devices[1:] + [""]):
-        if not any(device.startswith("└─") or device.startswith("├─") for device in device_pair):
-            
-            name, majmin, rm, size, ro, devtype, mountpoint = (device_pair[0].split()  + [""])[:7]
-            devname = "/dev/{}".format(name)
-            if devtype == "disk" and mountpoint == "":
-                completed = run(["sudo", "file", "-s", devname])
-                if completed.stdout.strip("\n") == "{}: data".format(devname):
-                    unformatted_block_devices += [devname]
-                    
-    if len(unformatted_block_devices) == 0:
-        raise RuntimeError("No instance storage devices found.")
-    elif len(unformatted_block_devices) > 1:
-        raise RuntimeError("{} instance storage devices found.".format(len(unformatted_block_devices)))
-    else:
-        devname = unformatted_block_devices[0]
-        run(["sudo", "mkfs", "-t", "ext4", devname])
-        print("Mounting instance storage.")
-        run(["sudo", "mount", devname, ephemoral_path])
-        run(["sudo", "chmod", "go+rwx", ephemoral_path])
-        return ephemoral_path
-    
-    
-    
-    
 def list_basespace_fastqs(project="", sample=""):
     basespace_path = os.path.join(os.path.expanduser("~"), "basespace")
     project_regex = re.compile(project)
@@ -311,51 +237,3 @@ def list_basespace_fastqs(project="", sample=""):
 
 
 
-def load_panel_from_s3(panelname):
-    s3 = client('s3')
-
-    if not os.path.exists(panelname):
-        print("Downloading {} from S3.".format(panelname))
-        gziped_panel = "{}.tar.gz".format(panelname)
-        s3.download_file("omdc-data", "panels/{}".format(gziped_panel), gziped_panel)
-        print("Unpacking {}.".format(panelname))
-        run(["tar", "xzf", gziped_panel])
-        os.unlink(gziped_panel)
-        
-    panel = covermi.Panel(panelname)
-    assembly = panel.properties.get("assembly", "GRCh37")
-    transcript_source = panel.properties.get("transcript_source", "refseq")
-
-    if not os.path.exists(assembly):
-        print("Downloading {} from S3.".format(assembly))
-        os.mkdir(assembly)
-        os.chdir(assembly)
-        objects = s3.list_objects(Bucket="omdc-data", Prefix="reference/{}/sequence".format(assembly[-2:])).get("Contents", [])
-        if len(objects) != 1:
-            raise RuntimeError("Unable to identify reference genome on S3.")
-        s3.download_file("omdc-data", objects[0]["Key"], "genome.tar.gz")
-        print("Unpacking genome.")
-        run(["tar", "xzf", "genome.tar.gz"])
-        os.unlink("genome.tar.gz")
-        os.chdir("..")
-
-    if not os.path.exists("vep"):
-        print("Downloading {} from S3.".format(transcript_source))
-        os.mkdir("vep")
-        os.chdir("vep")
-        objects = s3.list_objects(Bucket="omdc-data", Prefix="reference/{}/{}".format(assembly[-2:], transcript_source)).get("Contents", [])
-        if len(objects) != 1:
-            raise RuntimeError("Unable to identify vep data on S3.")
-        s3.download_file("omdc-data", objects[0]["Key"], "vep.tar.gz")
-        print("Unpacking vep data.")
-        run(["tar", "xzf", "vep.tar.gz"])
-        os.unlink("vep.tar.gz")
-        os.chdir("..")
-    
-    fastas = [fn for fn in os.listdir(assembly) if fn.endswith(".fna")]
-    if len(fastas) != 1:
-        raise RuntimeError("Must be exactly one fasta in reference genome.")
-    panel.properties["reference_fasta"] = os.path.join(assembly, fastas[0])
-    return panel    
-
-    

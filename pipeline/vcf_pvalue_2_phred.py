@@ -21,7 +21,7 @@ def vcf_pvalue_2_phred(fn_in, fn_out):
 
     with open(fn_in, "rt") as f_in:
         reader = csv.reader(f_in, delimiter="\t")
-        with open(fn_out, "rt") as f_out:
+        with open(fn_out, "wt") as f_out:
             writer = csv.writer(f_out, delimiter="\t")
 
             for row in reader:
@@ -29,11 +29,16 @@ def vcf_pvalue_2_phred(fn_in, fn_out):
                     if row[5] == "." and len(row) > 9:
                         format_keyvals = dict(zip(row[8].split(":"),
                                                   row[9].split(":")))
-                        p_value = format_keyvals.get("PVAL", None)
-                        if p_value is not None:
-                            try:
-                                phred = -10 * math.log(float(p_value), 10)
-                                row[5] = phred
-                            except ValueError:
-                                pass
+                        try:
+                            p_value = float(format_keyvals.get("PVAL", ""))
+                        except ValueError:
+                            pass
+                        else:
+                            if p_value == 0:
+                                phred = 255
+                            else:
+                                phred = int(-10 * math.log(float(p_value), 10))
+                                if phred > 255:
+                                    phred = 255
+                        row[5] = phred
                 writer.writerow(row)

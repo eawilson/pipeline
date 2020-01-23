@@ -14,43 +14,6 @@ __all__ = ["s3_put", "s3_object_exists", "s3_get_tsv", "s3_list_keys", "s3_list_
 
 
 
-def s3_put(*filenames, prefix=""):
-    s3 = client("s3")
-    for filename in filenames:
-        basename = os.path.basename(filename)
-        print("Uploading {} to S3.".format(basename))
-        s3.upload_file(filename, BUCKET, "{}/{}".format(prefix, basename) if prefix else basename)
-
-
-
-def s3_object_exists(prefix):
-    s3 = client("s3")
-    response = s3.list_objects_v2(Bucket=BUCKET, Prefix=prefix)
-    return response["KeyCount"]
-
-
-
-def s3_list_keys(bucket, prefix, extension=""):
-    s3 = client("s3")
-    response = {}
-    kwargs = {}
-    keys = []
-    while response.get("IsTruncated", True):
-        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, **kwargs)
-        keys += [content["Key"] for content in response["Contents"] if content["Key"].endswith(extension)]
-        kwargs = {"ContinuationToken": response.get("NextContinuationToken", None)}
-    return keys
-
-
-
-def s3_list_samples(bucket, project):
-    samples = set()
-    for key in s3_list_keys(bucket, "projects/{}".format(project)):
-        split_key = key.split("/")
-        if len(split_key) > 3:
-            samples.add(split_key[2])
-    return samples
-
 
 
 class TsvRows(list):

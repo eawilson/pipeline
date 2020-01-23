@@ -17,7 +17,7 @@ def transcript_version_sort(cons):
 
 
 
-def create_report(vep_json_file, panel):
+def create_report(vep_json_file, panel, everything=False):
 
     transcript_ids, gene_symbols, _ = load_targets(panel.targets if "targets" in panel else None)
     transcript_ids = set(transcript_id.split(".")[0] for transcript_id in transcript_ids)
@@ -33,7 +33,7 @@ def create_report(vep_json_file, panel):
     if not isinstance(panel, Panel):
         panel = Panel(panel)
     consequence_sort = refseq_sort if panel.properties.get("transcript_source", "refseq") == "refseq" else ensembl_sort
-        
+    
     annotations = []
     with open(vep_json_file) as f:
         for line in f:
@@ -66,7 +66,7 @@ def create_report(vep_json_file, panel):
             else:
                 variant.zygosity = "unknown"
 
-            if not Gr(variant).touched_by(panel.amplicons):
+            if not Gr(variant).touched_by(panel.amplicons) and not everything:
                 #print("Offtarget skipping.")
                 continue
 
@@ -110,20 +110,22 @@ def create_report(vep_json_file, panel):
             consequences = vep_output.get("transcript_consequences", ())
             consequences = [cons for cons in consequences if "gene_symbol" in cons and "transcript_id" in cons]
             
-            if not consequences:
-                #print("No transcript consequences skipping.")
+            if consequences:
+                gene_cons = [cons for cons in consequences if cons["gene_symbol"] in gene_symbols]
+                transcript_cons = [cons for cons in consequences if cons["transcript_id"].split(".")[0] in transcript_ids]
+                consequences = set(gene_cons) & set(transcript_cons) if (gene_cons and transcript_cons) else gene_cons or transcript_cons or consequences
+                
+                deduplicate = defaultdict(list)
+                for cons in consequences:
+                    deduplicate[cons["transcript_id"].split(".")[0]] += [cons]
+                
+                consequences = [sorted(values, key=transcript_version_sort)[0] for values in deduplicate.values()]
+                consequence = sorted(consequences, key=consequence_sort)[0]
+            elif everything:
+                consequence = {}
+            else:
                 continue
-            
-            gene_cons = [cons for cons in consequences if cons["gene_symbol"] in gene_symbols]
-            transcript_cons = [cons for cons in consequences if cons["transcript_id"].split(".")[0] in transcript_ids]
-            consequences = set(gene_cons) & set(transcript_cons) if (gene_cons and transcript_cons) else gene_cons or transcript_cons or consequences
-            
-            deduplicate = defaultdict(list)
-            for cons in consequences:
-                deduplicate[cons["transcript_id"].split(".")[0]] += [cons]
-            
-            consequences = [sorted(values, key=transcript_version_sort)[0] for values in deduplicate.values()]
-            consequence = sorted(consequences, key=consequence_sort)[0]
+                
             #print(consequence)
             annotation = {"chrom": variant.chrom, 
                           "pos": int(vep_output["start"]),
@@ -140,14 +142,14 @@ def create_report(vep_json_file, panel):
                           "transcript_id": consequence.get("transcript_id", ""),
                           "hgvsc": consequence.get("hgvsc", ""),
                           "hgvsp": consequence.get("hgvsp", ""),
-                          "biotype": consequence["biotype"],
-                          "impact": consequence["impact"],
-                          "consequence_terms": consequence["consequence_terms"],
+                          "biotype": consequence.get("biotype", ""),
+                          "impact": consequence.get("impact", ""),
+                          "consequence_terms": consequence.get("consequence_terms", ""),
                           "sift_score": consequence.get("sift_score", ""),
                           "sift_prediction": consequence.get("sift_prediction", ""),
                           "polyphen_score": consequence.get("polyphen_score", ""),
                           "polyphen_prediction": consequence.get("polyphen_prediction", ""),
-                          "other_genes": sorted(set(cons.get("gene_symbol", "") for cons in vep_output["transcript_consequences"]) - set([consequence["gene_symbol"], ""])),
+                          "other_genes": sorted(set(cons.get("gene_symbol", "") for cons in vep_output.get("transcript_consequences", ())) - set([consequence.get("gene_symbol", ""), ""])),
                           **demographics}
             annotations += [annotation]
 
@@ -156,7 +158,7 @@ def create_report(vep_json_file, panel):
     with open(annotation_file, "wt") as f:
         writer = csv.writer(f, delimiter="\t")
         writer.writerow(["Gene", "Transcript", "Chrom", "Pos", "Change", "Quality", "Filters", "Depth", "Alt Depth", "VAF", "Zygosity", "HGVSc", "HGVSp", "Impact", \
-                            "Clinical Significance (Pubmed)", "Consequences", "Sift", "Polyphen", "MAF", "COSMIC", "dbSNP", "Pubmed",  "HGMD", "Other_Genes"])
+                            "Clinical Significance (Pubmed)", "Consequences", "Sift", "Polyphen", "MAF", "Other_Genes", "dbSNP", "Pubmed",  "HGMD", "COSMIC"])
         for a in sorted(annotations, key=lambda a:(a["chrom"], a["pos"], a["allele_string"])):
            writer.writerow([a["gene_symbol"],
                              a["transcript_id"],

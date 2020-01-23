@@ -1,9 +1,11 @@
 import csv
 import sys
 import pdb
-from collections import defaultdict
 
 from pipeline.basespace import BasespaceSession
+from pipeline.aws_lambda import multipart_upload, invoke
+from pipeline import s3_object_exists
+
 
 
 def main():
@@ -19,14 +21,17 @@ def main():
             results = bs.search("samples", experimentname=row["Run"], name=row["Basespace_Sample"])
             if results:
                 results.sort(key=lambda r: r["DateCreated"])
-                print(results[-1]["Name"], f"{index} of {len(rows)}")
+                sample = results[-1]
+                print(sample["Name"], f"{index} of {len(rows)}")
                 fastqs = bs.sample_fastqs(results[-1]["Id"])
                 for fastq in fastqs:
                     print(fastq["Name"])
-                    key = f"projects/head_and_neck/{row["Patient"]}/samples/{fastq["Name"]}"
-                    bs.copy_to_s3(fastq["Id"], "omdc-data", key)
+                    key = f'fastqs/{row["Run"]}/{fastq["Name"]}'
+                    if not s3_object_exists("omdc-data", key):
+                        url = bs.file_url(fastq["Id"])
+                        multipart_upload({"bucket": "omdc-data", "key": key, "url": url})
                 break
-                
+        
         else:
             print("MISSING", row["Run"], row["Basespace_Sample"])
             #raise RuntimeError("Missing sample {}.".format(row["Basespace_Sample"]))

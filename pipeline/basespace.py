@@ -2,7 +2,6 @@ import requests
 import datetime
 import tempfile
 import pdb
-import boto3 
 
 BS_TIMEFORMAT = "%Y-%m-%dT%H:%M:%S.0000000Z"
 
@@ -52,18 +51,6 @@ class BasespaceSession(object):
             yield chunk
 
 
-    def projects(self):
-        return list(self.get_multiple("users/current/projects",
-                                      params={"SortBy": "DateCreated",
-                                              "SortDir": "Desc"}))
-
-
-    def projects(self):
-        return list(self.get_multiple("users/current/projects",
-                                      params={"SortBy": "DateCreated",
-                                              "SortDir": "Desc"}))
-
-
     def search(self, scope, **query):
         for k, v in query.items():
             if isinstance(v, str):
@@ -85,10 +72,6 @@ class BasespaceSession(object):
                     results += [v]
                     break
         return results
-
-
-    def project_samples(self, project_bsid):
-        return list(self.get_multiple(f"projects/{project_bsid}/samples"))
     
     
     def sample_fastqs(self, sample_bsid):
@@ -105,10 +88,7 @@ class BasespaceSession(object):
         return bytes
 
 
-    def copy_to_s3(self, file_bsid, bucket, key):
-        with tempfile.TemporaryFile() as f:
-            self.download_fileobj(file_bsid, f)
-            f.seek(0)
-            boto3.client("s3").upload_fileobj(f, bucket, key)
-
-
+    def file_url(self, file_bsid):
+        response = self.get_file(file_bsid)
+        response.close()
+        return response.url
