@@ -11,7 +11,7 @@ package =  {"name": "pipeline",
             "install_requires": ["covermi"],
             "include_package_data": True,
             "zip_safe": True,
-            "entry_points": { "console_scripts": [] },
+            "entry_points": { "console_scripts": ["cfpipeline=pipeline.scripts.cfpipeline:main"] },
             }
 
 setup(**package)

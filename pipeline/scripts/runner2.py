@@ -1,12 +1,9 @@
 import os
 import sys
-import time
-import datetime
 import argparse
 import pdb
-from collections import defaultdict
 import csv
-
+import subprocess
 
 
 from pipeline import run, mount_instance_storage, load_panel_from_s3, \
@@ -51,15 +48,14 @@ def runner(project, panel, input_csv, genome=None):
             fastqs += [fastq]
             s3_get("omdc-data", s3_fastq, fastq)
 
+        print("Running pipeline.")
         with open("cfpipeline.txt", "wt") as f:
-            stderr = sys.stderr
-            sys.stderr = f
-            try:
-                print("Running pipeline.")
-                cfpipeline(fastqs, panel_name, genome, min_family_size=1)
-            finally:
-                sys.stderr = stderr
+            subprocess.run(["cfpipeline"] + fastqs +
+                            ["--panel", panel_name,
+                            "--genome", genome,
+                            "--min-family-size", min_family_size="1"], stderr=f)
 
+        pdb.set_trace()
         for fastq in fastqs:
             os.unlink(fastq)
 

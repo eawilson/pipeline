@@ -10,7 +10,7 @@ from covermi import Panel, covermimain
 
 
 
-def cfpipeline(fastqs, panel, genome, min_family_size="1"):
+def cfpipeline(fastqs, panel, genome, min_family_size):
     panel_name = panel
 
     threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
@@ -124,15 +124,14 @@ def cfpipeline(fastqs, panel, genome, min_family_size="1"):
 
 
 def main():
-    #parser = argparse.ArgumentParser()
-    #parser.add_argument('fastqs', nargs="+", help="Fastq files.")
-    #parser.add_argument("-p", "--panel", help="Directory containing panel data.")
-    #parser.add_argument("-g", "--genome", help="Reference genome.")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('fastqs', nargs="+", help="Fastq files.")
+    parser.add_argument("-p", "--panel", help="Directory containing panel data.")
+    parser.add_argument("-g", "--genome", help="Reference genome.")
     #parser.add_argument("-b", "--bam", help="Matched normal bam to perform tumour/normal subtraction.", default=argparse.SUPPRESS)
-    #parser.add_argument("-o", "--output", help="Output directory.", dest="dest_dir", default=argparse.SUPPRESS)
-    #args = parser.parse_args()
-    #return vars(args)
-    cfpipeline(**command_line_arguments())
+    parser.add_argument("-m", "--min-family-size", help="Minimum family size.", dest="min_family_size", default="1")
+    args = parser.parse_args()
+    cfpipeline(**vars(args))
 
 
 
