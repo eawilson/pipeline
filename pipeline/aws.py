@@ -7,11 +7,13 @@ import io
 import argparse
 import pdb
 from collections import defaultdict, namedtuple
+import covermi
+
 
 from boto3 import client
-
-
 from botocore.credentials import InstanceMetadataFetcher
+
+from .utils import run
 
 
 
@@ -33,22 +35,22 @@ def am_i_an_ec2_instance():
 
 def s3_get(bucket, key, filename):
     s3 = client("s3")
-    s3.upload_file(bucket, key, filename)
+    s3.download_file(bucket, key, filename)
 
 
 
-def s3_put(*filenames, prefix=""):
+def s3_put(bucket, filenames, prefix=""):
     s3 = client("s3")
     for filename in filenames:
         basename = os.path.basename(filename)
         print("Uploading {} to S3.".format(basename))
-        s3.upload_file(filename, BUCKET, "{}/{}".format(prefix, basename) if prefix else basename)
+        s3.upload_file(filename, bucket, "{}/{}".format(prefix, basename) if prefix else basename)
 
 
 
-def s3_object_exists(prefix):
+def s3_object_exists(bucket, prefix):
     s3 = client("s3")
-    response = s3.list_objects_v2(Bucket=BUCKET, Prefix=prefix)
+    response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
     return response["KeyCount"]
 
 

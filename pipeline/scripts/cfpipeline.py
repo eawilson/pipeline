@@ -10,8 +10,7 @@ from covermi import Panel, covermimain
 
 
 
-def cfpipeline(fastqs, panel, genome, min_family_size=1):
-    pdb.set_trace()
+def cfpipeline(fastqs, panel, genome, min_family_size="1"):
     panel_name = panel
 
     threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
