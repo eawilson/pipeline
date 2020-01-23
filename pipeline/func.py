@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from boto3 import client
 
-from .utils import s3_open, s3_list_keys, s3_list_samples, mount_basespace, unmount_basespace
+from .aws import s3_open, s3_list_keys, s3_list_samples
             
 BUCKET = "omdc-data"
 

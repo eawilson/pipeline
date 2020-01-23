@@ -77,7 +77,7 @@ if __name__ == "__main__":
     parser.add_argument("input_csv", help="Sample list.")
     parser.add_argument("--project", help="Project name.")
     parser.add_argument("--panel", help="Panel name.")
-    parser.add_argument("--genome", help="Reference genome.", , default=None)
+    parser.add_argument("--genome", help="Reference genome.", default=None)
     args = parser.parse_args()
     runner(**vars(args))
 
