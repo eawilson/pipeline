@@ -39,12 +39,11 @@ def s3_get(bucket, key, filename):
 
 
 
-def s3_put(bucket, filenames, prefix=""):
+def s3_put(bucket, filename, prefix=""):
     s3 = client("s3")
-    for filename in filenames:
-        basename = os.path.basename(filename)
-        print("Uploading {} to S3.".format(basename))
-        s3.upload_file(filename, bucket, "{}/{}".format(prefix, basename) if prefix else basename)
+    basename = os.path.basename(filename)
+    print("Uploading {} to S3.".format(basename))
+    s3.upload_file(filename, bucket, "{}/{}".format(prefix, basename) if prefix else basename)
 
 
 

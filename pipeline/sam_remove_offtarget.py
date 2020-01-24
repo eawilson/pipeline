@@ -4,7 +4,7 @@ import sys
 import pdb
 
 
-def sam_remove_offtarget(fn_in, fn_out, ontarget):
+def sam_remove_offtarget(f_in, f_out, ontarget):
     """ Read sam file fn_in and copy all reads that touch ontarget to fn_out.
     
     Args:
@@ -22,13 +22,13 @@ def sam_remove_offtarget(fn_in, fn_out, ontarget):
             if f_in == "-":
                 f_in = sys.stdin
             else:
-                f_in = open(fn_in, "rt")
+                f_in = open(f_in, "rt")
                 to_close += [f_in]
         if not hasattr(f_out, "write"):
             if f_out == "-":
                 f_out = sys.stdout
             else:
-                f_out = open(fn_out, "wt")
+                f_out = open(f_out, "wt")
                 to_close += [f_out]
         
         reader = csv.reader(f_in, delimiter="\t")
