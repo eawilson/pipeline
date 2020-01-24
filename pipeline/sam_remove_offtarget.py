@@ -4,7 +4,7 @@ import sys
 import pdb
 
 
-def sam_remove_offtarget(f_in, f_out, ontarget):
+def sam_remove_offtarget(fn_in, fn_out, ontarget):
     """ Read sam file fn_in and copy all reads that touch ontarget to fn_out.
     
     Args:

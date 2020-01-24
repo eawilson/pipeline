@@ -53,7 +53,8 @@ def runner(project, panel, input_csv, genome=None):
             subprocess.run(["cfpipeline"] + fastqs +
                             ["--panel", panel_name,
                             "--genome", genome,
-                            "--min-family-size", min_family_size="1"], stderr=f)
+                            "--min-family-size", "1"],
+                            stderr=f, check=True)
 
         pdb.set_trace()
         for fastq in fastqs:
