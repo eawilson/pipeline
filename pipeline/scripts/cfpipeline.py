@@ -53,7 +53,7 @@ def cfpipeline(fastqs, panel, genome, min_family_size):
 
     unsorted_bam_file = "{}.unsorted.bam".format(sample)
     pipe(["samtools", "fixmate", "-O", "bam", sam_file, unsorted_bam_file])
-    #os.unlink(sam_file)
+    os.unlink(sam_file)
 
     bam_file = "{}.bam".format(sample)
     pipe(["samtools", "sort", "-O", "bam",

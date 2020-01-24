@@ -49,14 +49,13 @@ def runner(project, panel, input_csv, genome=None):
             s3_get("omdc-data", s3_fastq, fastq)
 
         print("Running pipeline.")
-        with open("cfpipeline.txt", "wt") as f:
+        with open("{}.cfpipeline.txt".format(sample["Sample"]), "wt") as f:
             subprocess.run(["cfpipeline"] + fastqs +
                             ["--panel", panel_name,
                             "--genome", genome,
                             "--min-family-size", "1"],
                             stderr=f, check=True)
 
-        pdb.set_trace()
         for fastq in fastqs:
             os.unlink(fastq)
 
