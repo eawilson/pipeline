@@ -29,6 +29,11 @@ samples = [
 "SCAN403-SCAN403-c-0",
 ]
 
+token = os.getenv("TOKEN")
+if not token:
+    sys.exit(1)
+bs = Session(token)
+
 #os.chdir("/home/ubuntu/ephemoral")
 
 for name in samples:
