@@ -47,7 +47,7 @@ def sample_name(fastqs):
         Raises:
             RuntimeError: If sample name is not consistent between samples.
     """
-    matches = [ILLUMINA_FASTQ.match(fastq) for fastq in fastqs]
+    matches = [ILLUMINA_FASTQ.match(os.path.basename(fastq)) for fastq in fastqs]
     if not None in matches:
         names = set(match.group(1) for match in matches)
         if len(names) == 1:
@@ -126,6 +126,7 @@ def ungzip_and_combine_illumina_fastqs(input_fastqs, sample, overwrite=False):
         Raises:
             RuntimeError if input_fastqs are not paired.
     """
+    input_fastqs = [os.path.abspath(fastq) for fastq in input_fastqs]
     input_fastqs = sorted(input_fastqs, key=lambda p:os.path.basename(p))
     r1_fastqs = input_fastqs[0::2]
     r2_fastqs = input_fastqs[1::2]

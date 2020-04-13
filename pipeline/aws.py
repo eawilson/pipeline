@@ -18,7 +18,7 @@ from .utils import run
 
 
 __all__ = ["am_i_an_ec2_instance", 
-           "s3_put", "s3_object_exists", 
+           "s3_put", "s3_object_exists",
            "s3_get_tsv", 
            "s3_list_keys", 
            "s3_list_samples", 

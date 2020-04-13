@@ -163,6 +163,7 @@ def zz():
 
 
 def copy_fastqs_from_basespace_to_s3(s3_project):
+    pdb.set_trace()
     s3 = client("s3")
     objects = s3_list_keys(BUCKET, "projects/{0}/samples/".format(s3_project), extension="fastq.gz")
     s3_fastqs = {key.split("/")[-1]: val for key, val in objects.items()}
@@ -186,7 +187,7 @@ def copy_fastqs_from_basespace_to_s3(s3_project):
 
 
 if __name__ == "__main__":
-    project = "accept"
+    project = "head_and_neck"
     #generate_artifact_list(project)
     #clean_annotations(project)
     #combine_annotations(project, time_points=4)

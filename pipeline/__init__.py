@@ -4,5 +4,5 @@ from.func import clean_annotations, combine_annotations, download_annotations, g
 
 from .aws import am_i_an_ec2_instance, s3_put, s3_object_exists, s3_list_keys, s3_list_samples, s3_open, mount_instance_storage, load_panel_from_s3, s3_get
 
-from .vcf_pvalue_2_phred import vcf_pvalue_2_phred
+from .varscan_post_processing import vcf_pvalue_2_phred
 from .sam_remove_offtarget import sam_remove_offtarget

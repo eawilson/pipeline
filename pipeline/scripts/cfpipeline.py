@@ -12,6 +12,7 @@ from covermi import Panel, covermimain
 
 def cfpipeline(fastqs, panel, genome, min_family_size):
     panel_name = panel
+    fastqs = [os.path.abspath(fastq) for fastq in fastqs]
 
     threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
     sample = sample_name(fastqs)
@@ -79,12 +80,12 @@ def cfpipeline(fastqs, panel, genome, min_family_size):
                        "--min-var-freq", "0", 
                        "--min-avg-qual", "20",
                        "--min-reads2", "3",
-                       "--p-value", "0.05"]
+                       "--p-value", "0.05",
                     #"--min-coverage-normal", "1",
                     #"--min-coverage-tumor", "1",
                     #"--min-freq-for-hom","0.75",
                     #"--somatic-p-value", "0.05",
-                    #"--strand-filter", "1",
+                       "--strand-filter", "1",]
                     #"--validation", "1"
 
     with open(pvalue_vcf_file, "wb") as f_out:
@@ -97,8 +98,7 @@ def cfpipeline(fastqs, panel, genome, min_family_size):
     os.unlink(pvalue_vcf_file)
     
     vepjson_file = "{}.vep".format(sample)
-    vep_options = ["--verbose",
-                   "--no_stats",
+    vep_options = ["--no_stats",
                    "--format", "vcf",
                    "--fork", threads,
                    "--json",
@@ -129,7 +129,7 @@ def main():
     parser.add_argument("-p", "--panel", help="Directory containing panel data.")
     parser.add_argument("-g", "--genome", help="Reference genome.")
     #parser.add_argument("-b", "--bam", help="Matched normal bam to perform tumour/normal subtraction.", default=argparse.SUPPRESS)
-    parser.add_argument("-m", "--min-family-size", help="Minimum family size.", dest="min_family_size", default="1")
+    parser.add_argument("-m", "--min-family-size", help="Minimum family size.", dest="min_family_size")
     args = parser.parse_args()
     cfpipeline(**vars(args))
 
