@@ -34,7 +34,7 @@ if not token:
     sys.exit(1)
 bs = Session(token)
 
-#os.chdir("/home/ubuntu/ephemoral")
+os.chdir("/home/ubuntu/ephemoral")
 
 for name in samples:
     for sample in bs.search("samples", query='(name="{}")'.format(name)):
@@ -48,98 +48,19 @@ for name in samples:
             os.rename("temp.fastq", fastq["Name"])
             fastqs += [fastq["Name"]]
     
-        with open("{}.cfpipeline.txt".format(sample), "wt") as f:
-            subprocess.run(["cfpipeline"] + fastqs +
+        with open(f"{name}.cfpipeline.txt", "wt") as f:
+            subprocess.run(" ".join(["python3 /home/ubuntu/pipeline/pipeline/scripts/cfpipeline.py"] + fastqs +
                             ["--panel", "Head_and_Neck",
                             "--genome", "GRCh37",
-                            "--min-family-size", "3"],
-                            stderr=f, check=True)
+                            "--min-family-size", "3"]),
+                            stderr=f, check=True, shell=True)
         
-        break
-
-
-
-
-
-
-
-
-
-
-
-
-for sample in samples:
-    keys = s3_list_keys("omdc-data", "projects/head_and_neck/samples2")
-    print(keys)
-
-
-
-
-
-
-
-sys.exit()
-
-
-panel_name = panel
-input_csv = os.path.abspath(input_csv)
-
-if am_i_an_ec2_instance():
-    os.chdir(mount_instance_storage())
-    panel = load_panel_from_s3(panel)
-    genome = panel.properties["reference_fasta"]
-    
-if genome is None:
-    raise RuntimeError("No reference genome supplied.")
-
-samples = []
-with open(input_csv, "rt") as f:
-    reader = csv.DictReader(f, delimiter="\t")
-    for row in reader:
-        samples += [row]
-        
-for sample in samples:
-    if "-c'" in sample["Sample"]:
-        continue
-            
-    print("Sample {}.".format(sample["Sample"]))
-    if s3_object_exists("omdc-data", "projects/{}/{}".format(project, sample["Sample"])):
-        print("Exists. skipping.".format(project, sample))
-        continue
-    
-    print("Fetching fastqs...")
-    fastqs = []
-    s3_fastqs = s3_list_keys("omdc-data", "projects/{}/samples/{}/{}". \
-                    format(project, sample["Patient"], sample["Sample"]))
-    for s3_fastq in s3_fastqs:
-        fastq = s3_fastq.split("/")[-1]
-        fastqs += [fastq]
-        s3_get("omdc-data", s3_fastq, fastq)
-
-    print("Running pipeline.")
-    with open("{}.cfpipeline.txt".format(sample["Sample"]), "wt") as f:
-        subprocess.run(["cfpipeline"] + fastqs +
-                        ["--panel", panel_name,
-                        "--genome", genome,
-                        "--min-family-size", "1"],
-                        stderr=f, check=True)
-
-    for fastq in fastqs:
-        os.unlink(fastq)
-
-    print("Uploading to s3.")
-    for filename in os.listdir():
-        if os.path.isfile(filename):
-            s3_put("omdc-data", filename, prefix="projects/{}/{}".format(project, sample["Sample"]))
-            os.unlink(filename)
-
-
-
-
-
-
-
-
+        aws_prefix = f"projects/head_and_neck/{name}"
+        for fn in os.listdir("."):
+            if not os.path.isdir(fn):
+                if not (fn.endswith(".fastq") or fn.endswith(".fastq.gz")):
+                    s3_put("omdc-data", fn, aws_prefix)
+                os.unlink(fn)
 
 
 
