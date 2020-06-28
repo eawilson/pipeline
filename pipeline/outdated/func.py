@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from boto3 import client
 
-from .aws import s3_open, s3_list_keys, s3_list_samples
+from .aws import s3_open, s3_list, s3_list_samples
             
 BUCKET = "omdc-data"
 
@@ -76,7 +76,7 @@ def combine_annotations(project, time_points=None):
                 variant = "{}:{} {}".format(row["Chrom"], row["Pos"], row["Change"])
                 annotations += [{"Variant": variant, "Patient": sample["Patient"], "Timepoint": sample["Timepoint"], **row}]
     
-    with s3_UploadFileObj(BUCKET, "projects/{0}/{0}.annotation.combined.tsv".format(project)) as f:
+    with s3_open(BUCKET, "projects/{0}/{0}.annotation.combined.tsv".format(project), "wt") as f:
         writer = csv.DictWriter(f, ["Variant", "Patient", "Timepoint"] + reader.fieldnames, delimiter="\t")
         writer.writeheader()
         for row in sorted(annotations, key=lambda a: (a["Variant"], a["Patient"], a["Timepoint"])):
@@ -128,7 +128,7 @@ def generate_artifact_list(project):
             variant = "{}:{} {}".format(row["Chrom"], row["Pos"], row["Change"])
             artifacts[group][variant] += [float("{:.3f}".format(float(row["VAF"])))]
             
-    with s3_UploadFileObj(BUCKET, "projects/{0}/{0}.artifacts.tsv".format(project)) as f:
+    with s3_open(BUCKET, "projects/{0}/{0}.artifacts.tsv".format(project), "wt") as f:
         writer = csv.writer(f, delimiter="\t")
         writer.writerow(["Variant", "Run", "Count", "Total", "Median_VAF"])
         for group, variants in sorted(artifacts.items()):
@@ -154,7 +154,7 @@ def zz():
         if pathogenic.get(row["Variant"], "Y").strip() == "Y":
             annotations += [{"Relevant": pathogenic.get(row["Variant"], "").strip(), "Comment": comment.get(row["Variant"], ""), **row}]
             
-    with s3_UploadFileObj(BUCKET, "projects/{0}/{0}.annotation.combined2.tsv".format(project)) as f:
+    with s3_open(BUCKET, "projects/{0}/{0}.annotation.combined2.tsv".format(project), "wt") as f:
         writer = csv.DictWriter(f, ["Relevant", "Comment"] + reader.fieldnames, delimiter="\t")
         writer.writeheader()
         for row in annotations:
@@ -165,7 +165,7 @@ def zz():
 def copy_fastqs_from_basespace_to_s3(s3_project):
     pdb.set_trace()
     s3 = client("s3")
-    objects = s3_list_keys(BUCKET, "projects/{0}/samples/".format(s3_project), extension="fastq.gz")
+    objects = s3_list(BUCKET, "projects/{0}/samples/".format(s3_project), extension="fastq.gz")
     s3_fastqs = {key.split("/")[-1]: val for key, val in objects.items()}
     basespace_dir = mount_basespace()
     

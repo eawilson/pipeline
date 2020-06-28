@@ -12,7 +12,7 @@ package =  {"name": "pipeline",
             "include_package_data": True,
             "zip_safe": True,
             "entry_points": { "console_scripts": ["cfpipeline=pipeline.scripts.cfpipeline:main",
-                                                  "cfsomaticpipeline=pipeline.scripts.cfsomaticpipeline:main"] },
+                                                  "sam_reads_by_contig=pipeline.sam_reads_by_contig:main"] },
             }
 
 setup(**package)

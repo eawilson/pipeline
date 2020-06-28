@@ -4,7 +4,6 @@ from itertools import chain
 import csv
 from statistics import median 
 
-from pipeline import s3_object_exists
 import boto3
 
 stem = "/home/ed/Software/data/temp/accept"

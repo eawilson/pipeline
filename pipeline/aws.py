@@ -17,10 +17,11 @@ from .utils import run
 
 
 
-__all__ = ["am_i_an_ec2_instance", 
-           "s3_put", "s3_object_exists",
-           "s3_get_tsv", 
-           "s3_list_keys", 
+__all__ = ["am_i_an_ec2_instance",
+           "s3_get",
+           "s3_put",
+           "s3_exists",
+           "s3_list", 
            "s3_list_samples", 
            "s3_open", 
            "mount_instance_storage", 
@@ -47,18 +48,16 @@ def s3_put(bucket, filename, prefix=""):
 
 
 
-def s3_object_exists(bucket, prefix):
+def s3_exists(bucket, prefix):
     s3 = client("s3")
     response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
     return response["KeyCount"]
 
 
 
-def s3_list_keys(bucket, prefix, extension=""):
+def s3_list(bucket, prefix, extension=""):
     """ Returns a dict of all objects in bucket that have the specified prefix and extension.
     """
-    if extension:
-        extension = ".{}".format(extension)
     s3 = client("s3")
     response = {}
     kwargs = {}
@@ -75,7 +74,7 @@ def s3_list_keys(bucket, prefix, extension=""):
 
 def s3_list_samples(bucket, project):
     samples = set()
-    for key in s3_list_keys(bucket, "projects/{}".format(project)):
+    for key in s3_list(bucket, "projects/{}".format(project)):
         split_key = key.split("/")
         if len(split_key) > 3:
             samples.add(split_key[2])

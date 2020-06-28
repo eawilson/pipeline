@@ -15,8 +15,7 @@ from boto3 import client
 
 
 
-__all__ = ["s3_put", "s3_object_exists", "s3_get_tsv", "s3_list_keys", "s3_list_samples", "s3_open", "run", \
-            "mount_basespace", "unmount_basespace", "mount_instance_storage", "list_basespace_fastqs", "ungzip_and_combine_illumina_fastqs", \
+__all__ = ["run", "mount_basespace", "unmount_basespace", "mount_instance_storage", "list_basespace_fastqs", "ungzip_and_combine_illumina_fastqs", \
             "load_panel_from_s3", "illumina_readgroup", "pipe", "command_line_arguments", "sample_name"]
 
 BUCKET = "omdc-data"
@@ -79,34 +78,6 @@ def fasta_path(path):
     if len(fastas) != 1:
         raise RuntimeError(f"{path} must contain a single fasta file.")
     return fastas[0]
-
-
-
-class s3_open(object):
-    def __init__(self, bucket, key, mode="rt"):
-        if mode not in ("rt", "rb", "wt", "wb"):
-            raise ValueError("Invalid mode {}".format(repr(mode)))
-        self.s3 = client("s3")
-        self.bucket = bucket
-        self.key = key
-        self.mode = mode
-        self.f_bytes = io.BytesIO()
-        if mode.startswith("r"):
-            self.s3.download_fileobj(bucket, key, self.f_bytes)
-            self.f_bytes.seek(0)
-        self.f = io.TextIOWrapper(self.f_bytes) if mode.endswith("t") else self.f_bytes
-    
-    def close(self):
-        if self.mode.startswith("w"):
-            self.f_bytes.seek(0)
-            self.s3.upload_fileobj(self.f_bytes, self.bucket, self.key)
-        self.f.close()
-            
-    def __enter__(self):
-        return self.f
-    
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.close()
 
 
 

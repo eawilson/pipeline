@@ -9,7 +9,7 @@ from pipeline.basespace import Session
 
 from pipeline import run, mount_instance_storage, load_panel_from_s3, \
     ungzip_and_combine_illumina_fastqs, s3_put, illumina_readgroup, \
-    pipe, create_report, s3_object_exists, s3_open, s3_list_keys, am_i_an_ec2_instance, s3_get
+    pipe, create_report, s3_open, s3_list_keys, am_i_an_ec2_instance, s3_get
 from pipeline.scripts.cfpipeline import cfpipeline
 
 
