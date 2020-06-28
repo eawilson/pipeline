@@ -5,7 +5,7 @@ from pipeline import s3_list, s3_get, s3_put, ungzip_and_combine_illumina_fastqs
 
 
 BUCKET = "omdc-data"
-REFERENCE = "GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.fna"
+REFERENCE = "reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.fna"
 
 
 def main():
@@ -31,8 +31,6 @@ def main():
             gzipped_fastqs += [fastq]
             print(f"Downloading {fastq}")
             s3_get(BUCKET, key, fastq)
-            if n == 1:
-                break
 
         fastqs = ungzip_and_combine_illumina_fastqs(gzipped_fastqs, sample)
         for fastq in gzipped_fastqs:
@@ -56,7 +54,6 @@ def main():
         pipe(["sam_reads_by_contig", sam_file, tsv_file])
         os.unlink(sam_file)
         s3_put(BUCKET, tsv_file, f"{prefix}/{tsv_file}")
-
         
 
 if __name__ == "__main__":

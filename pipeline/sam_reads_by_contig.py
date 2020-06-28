@@ -55,7 +55,7 @@ def main():
     parser.add_argument("input", help="Input SAM file.")
     parser.add_argument("output", help="Output tsv file.")
     args = parser.parse_args()
-    cfpipeline(args.input, args.output)
+    sam_reads_by_contig(args.input, args.output)
 
 
 
