@@ -19,11 +19,13 @@ def main():
         prefix = f"projects/head_and_neck/{sample}"
         tsv_file = f"{sample}.reads_by_contig.tsv"
         if s3_exists(BUCKET, f"{prefix}/{tsv_file}"):
+            print(f"{tsv_file} exists. Skipping.")
             continue
         
         for fastq in os.listdir("."):
             if fastq.endswith(".fastq"):
-                raise RuntimeError(f"Unexpected fastq {fastq} in working directory.")
+                os.unlink(fastq)
+                #raise RuntimeError(f"Unexpected fastq {fastq} in working directory.")
         
         gzipped_fastqs = []
         for n, key in enumerate(sorted(keys)):
@@ -39,7 +41,10 @@ def main():
         dude_options = ["-a", "3",
                         "-f", "1",
                         "-t"]
-        pipe(["dude"] + fastqs + dude_options)
+        try:
+            pipe(["dude"] + fastqs + dude_options)
+        except Exception:
+            continue
         deduped_fastqs = []
         for fastq in fastqs:
             deduped_fastqs += ["{}.deduped.fastq".format(fastq[:-6])]
