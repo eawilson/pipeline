@@ -92,7 +92,7 @@ def main():
             if value[:5].lower() == ("s3://"):
                 fn = s3.download(value)
                 body["Kwargs"][parameter] = fn
-        pdb.set_trace()
+        
         command_line = [script] + body.get("Args", []) + list(itertools.chain(*body.get("Kwargs", {}).items()))
         command_line = " ".join([(f"'{token}'" if " " in token else token) for token in command_line])
         with open("{}.log.txt".format(body["Kwargs"]["--sample"]), "wb") as log:
