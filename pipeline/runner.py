@@ -46,8 +46,6 @@ class S3(object):
             if fn.endswith(".tar.gz"):
                 archive = fn
                 fn = fn[:-7]
-                if "_vep_" in fn:
-                    fn = "vep"
                 os.makedirs(fn, exist_ok=True)
                 subprocess.run(["tar", "-xzf", archive, "-C", fn])
                 os.unlink(archive)

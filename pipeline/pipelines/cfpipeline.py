@@ -111,6 +111,7 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None):
     
     vepjson = f"{sample}.vep"
     vep_options = ["--no_stats",
+                   "--dir", vep,
                    "--format", "vcf",
                    "--fork", threads,
                    "--json",
