@@ -34,20 +34,23 @@ def parse_url(url):
 class S3(object):
     def __init__(self):
         self.client = boto3.client("s3")
-        self.downloaded = set()
         
     def download(self, url, path=""):
         bucket, key, fn = parse_url(url)
         if path:
             fn = f"{path}/{fn}"
-        if fn not in self.downloaded:
-            self.downloaded.add(fn)
-            self.client.download_file(bucket, key, fn)
-            if fn.endswith(".tar.gz"):
-                archive = fn
-                fn = fn[:-7]
-                os.makedirs(fn, exist_ok=True)
-                subprocess.run(["tar", "-xzf", archive, "-C", fn])
+        archive = fn
+        if fn.endswith(".tar.gz"):
+            fn = fn[:-7]
+        if not os.path.exists(fn):
+            print(f"Downloading {fn}")
+            self.client.download_file(bucket, key, archive)
+            if archive.endswith(".tar.gz"):
+                if fn != "Accept":
+                    os.makedirs(fn, exist_ok=True)
+                    subprocess.run(["tar", "-xzf", archive, "-C", fn])
+                else:
+                    subprocess.run(["tar", "-xzf", archive])
                 os.unlink(archive)
         return fn
     
@@ -69,14 +72,13 @@ def main():
             raise RuntimeError("Working directory is not empty.")
         
         response = sqs.receive_message(QueueUrl=queue_url,
-                                       VisibilityTimeout=30,
+                                       VisibilityTimeout=30*60,
                                        WaitTimeSeconds=20)
         
         try:
             message = response["Messages"][0]
         except KeyError: # No messages to process
             break
-        
         body = json.loads(message["Body"])
         
         script = body["Script"]
@@ -91,7 +93,7 @@ def main():
                 fn = s3.download(value)
                 body["Kwargs"][parameter] = fn
         pdb.set_trace()
-        command_line = [script] + body.get("Args", []) + list(inertools.chain(*body.get("Kwargs", {}).items()))
+        command_line = [script] + body.get("Args", []) + list(itertools.chain(*body.get("Kwargs", {}).items()))
         command_line = " ".join([(f"'{token}'" if " " in token else token) for token in command_line])
         with open("{}.log.txt".format(body["Kwargs"]["--sample"]), "wb") as log:
             completed_process = subprocess.run(command_line, shell=True, stderr=log)
