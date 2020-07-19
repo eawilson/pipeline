@@ -7,6 +7,7 @@ import io
 import argparse
 import pdb
 from collections import defaultdict, namedtuple
+import requests
 import covermi
 
 
@@ -26,7 +27,7 @@ __all__ = ["am_i_an_ec2_instance",
            "s3_open", 
            "mount_instance_storage", 
            "load_panel_from_s3"]
-
+    
 
 
 def am_i_an_ec2_instance():
