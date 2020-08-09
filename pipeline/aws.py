@@ -35,7 +35,9 @@ def am_i_an_ec2_instance():
 
 
 
-def s3_get(bucket, key, filename):
+def s3_get(bucket, key, filename=None):
+    if filename is None:
+        filename = key.split("/")[-1]
     s3 = client("s3")
     s3.download_file(bucket, key, filename)
 
@@ -128,7 +130,6 @@ def mount_instance_storage():
     unformatted_block_devices = []
     for device_pair in zip(devices, devices[1:] + [""]):
         if not any(device.startswith("└─") or device.startswith("├─") for device in device_pair):
-            
             name, majmin, rm, size, ro, devtype, mountpoint = (device_pair[0].split()  + [""])[:7]
             devname = "/dev/{}".format(name)
             if devtype == "disk" and mountpoint == "":
@@ -136,20 +137,50 @@ def mount_instance_storage():
                 if completed.stdout.strip("\n") == "{}: data".format(devname):
                     unformatted_block_devices += [devname]
                     
-    if len(unformatted_block_devices) == 0:
+    num_devices = len(unformatted_block_devices)
+    if num_devices == 0:
         raise RuntimeError("No instance storage devices found.")
-    elif len(unformatted_block_devices) > 1:
-        raise RuntimeError("{} instance storage devices found.".format(len(unformatted_block_devices)))
+
+    print("Mounting instance storage.")
+    if num_devices > 1:
+        device = "/dev/md0"
+        run(["sudo", "mdadm", "--create", device, "--level=0", f"--raid-devices={num_devices}"] + unformatted_block_devices)
+        
+        # Alternative approach using lvm to create a jbod volume
+        #for device in unformatted_block_devices:
+            #run(["sudo", "pvcreate", device])
+        #run(["sudo", "vgcreate", "ephemoral_volume_group"] + unformatted_block_devices)
+        #device = "ephemoral_logical_volume"
+        #run(["sudo", "lvcreate", "-n", device, "-l", "100%FREE", "ephemoral_volume_group"])
     else:
-        devname = unformatted_block_devices[0]
-        run(["sudo", "mkfs", "-t", "ext4", devname])
-        print("Mounting instance storage.")
-        run(["sudo", "mount", devname, ephemoral_path])
-        run(["sudo", "chmod", "go+rwx", ephemoral_path])
-        return ephemoral_path
+        device = unformatted_block_devices[0]
+        
+    run(["sudo", "mkfs", "-t", "ext4", device])
+    run(["sudo", "mount", device, ephemoral_path])
+    run(["sudo", "chmod", "go+rwx", ephemoral_path])
+    return ephemoral_path
 
 
 
+def s3_resources(*s3_urls):
+    for url in s3_urls:
+        if url[:5].upper() == "S3://":
+            split_url = url.split("/")
+            if len(split_url) < 4:
+                raise ValueError(f"Invalid S3 url {url}")
+            bucket = split_url[2]
+            key = "/".join(split_url[3:])
+            filename = split_url[-1]
+            
+        else:
+            raise ValueError(f"Invalid S3 url {url}")
+        
+        s3_get(bucket, key, filename)
+        run(["tar", "-xzf", filename])
+        run(["rm", filename])
+            
+    
+    
 def load_panel_from_s3(panelname):
     s3 = client('s3')
 
