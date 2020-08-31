@@ -47,7 +47,7 @@ def filter_sam(input_sam, output_sam="output.filtered.sam", min_family_size=None
                         qname, flag, rname, pos, mapq, cigar = row.split("\t")[:6]
                         if rname != prev_rname:
                             for read in reads.values():
-                                captures[reads.bait] += 1
+                                captures[read.bait] += 1
                             reads = {}
                         prev_rname = rname
                         
@@ -63,7 +63,7 @@ def filter_sam(input_sam, output_sam="output.filtered.sam", min_family_size=None
                                 if target_start > read_stop:
                                     break
                                 if target_stop >= read_start:
-                                    size = min(read_stop, target_stop) - max(read_start - target_start) + 1
+                                    size = min(read_stop, target_stop) - max(read_start, target_start) + 1
                                     if size > best.size:
                                         best = Overlap(target_name, size)
                                 
@@ -117,7 +117,7 @@ def filter_sam(input_sam, output_sam="output.filtered.sam", min_family_size=None
             statistics = {}
 
         for read in reads.values():
-            captures[reads.bait] += 1
+            captures[read.bait] += 1
     
         unmapped = captures.pop("Unmapped", 0)
         offtarget = captures.pop("OffTarget", 0)
@@ -153,9 +153,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_sam', help="Input sam file.")
     parser.add_argument("-o", "--output", help="Output sam file.", dest="output_sam", default=argparse.SUPPRESS)
-    parser.add_argument("-f", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
-    parser.add_argument("-z", "--min-fragment-size", help="Minimum fragment size.", type=int, default=argparse.SUPPRESS)
-    parser.add_argument("-Z", "--max-fragment-size", help="Maximum fragment size.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-m", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-f", "--min-fragment-size", help="Minimum fragment size.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-F", "--max-fragment-size", help="Maximum fragment size.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-s", "--stats", help="Statistics file.", default=argparse.SUPPRESS)
     parser.add_argument("-t", "--targets", help="Bed file of on-target regions.", default=argparse.SUPPRESS)
     args = parser.parse_args()

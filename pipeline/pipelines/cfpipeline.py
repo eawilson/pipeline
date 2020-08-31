@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import pdb
 import sys
@@ -8,7 +10,7 @@ from covermi import Panel, covermimain
 
 
 
-def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None):
+def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_family_size=1):
     """Cell free pipeline.
 
     Args:
@@ -24,7 +26,8 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None):
     """
     threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
     
-    reference = (glob.glob(f"{reference}/*.fna") + [reference])[0]
+    if os.path.isdir(reference):
+        reference = (glob.glob(f"{reference}/*.fna") + [reference])[0]
     targets_bedfile = (glob.glob(f"{panel}/*.bed") + [panel])[0]
     
     deduped_interleaved_fastq = f"{sample}.interleaved.fastq"
@@ -67,7 +70,7 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None):
     sam = f"{sample}.sam"    
     filter_options = ["--output", sam,
                       "--stats", stats,
-                      "--min-family-size", "2"]
+                      "--min-family-size", min_family_size]
     if targets_bedfile is not None:
         filter_options += ["--targets", targets_bedfile]
     pipe(["filter_sam", unfiltered_sam] + filter_options)
@@ -146,6 +149,7 @@ def main():
     parser.add_argument("-p", "--panel", help="Directory containing panel data.", required=True)
     parser.add_argument("-v", "--vep", help="Directory containing vep data.", required=True)
     parser.add_argument("-u", "--umi", help="Umi.", default=argparse.SUPPRESS)
+    parser.add_argument("-m", "--min-family-size", help="Minimum family size.", default=argparse.SUPPRESS)
     args = parser.parse_args()
     cfpipeline(**vars(args))
 
