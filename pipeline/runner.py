@@ -46,11 +46,7 @@ class S3(object):
             print(f"Downloading {fn}")
             self.client.download_file(bucket, key, archive)
             if archive.endswith(".tar.gz"):
-                if fn != "Accept":
-                    os.makedirs(fn, exist_ok=True)
-                    subprocess.run(["tar", "-xzf", archive, "-C", fn])
-                else:
-                    subprocess.run(["tar", "-xzf", archive])
+                subprocess.run(["tar", "-xzf", archive])
                 os.unlink(archive)
         return fn
     
