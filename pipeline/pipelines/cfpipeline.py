@@ -26,8 +26,7 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     """
     threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
     
-    if os.path.isdir(reference):
-        reference = (glob.glob(f"{reference}/*.fna") + [reference])[0]
+    reference = (glob.glob(f"{reference}/*.fna") + [reference])[0]
     targets_bedfile = (glob.glob(f"{panel}/*.bed") + [panel])[0]
     
     deduped_interleaved_fastq = f"{sample}.interleaved.fastq"
