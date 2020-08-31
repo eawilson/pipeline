@@ -16,10 +16,20 @@ def enqueue(project, panel):
     sqs = boto3.client("sqs")
     queue_url = sqs.get_queue_url(QueueName="samples")["QueueUrl"]
 
+    complete = set()
+    for key in s3_list(BUCKET, f"projects/{project}/analyses", extension=".bam"):
+        splitkey = key.split("/")
+        if len(splitkey) >= 2:
+            complete.add(splitkey[-2])
+
     fastqs = defaultdict(list)
     for key in s3_list(BUCKET, f"projects/{project}/samples", extension=".fastq.gz"):
         sample = key.split("/")[-2]
-        fastqs[sample] += [f"s3://{BUCKET}/{key}"]
+        if sample == "":
+            sample = key.split("/")[-3]
+            
+        if sample not in complete:
+            fastqs[sample] += [f"s3://{BUCKET}/{key}"]
     
     n = 0
     for sample, urls in sorted(fastqs.items()):
