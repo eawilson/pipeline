@@ -24,10 +24,11 @@ def enqueue(project, panel):
 
     fastqs = defaultdict(list)
     for key in s3_list(BUCKET, f"projects/{project}/samples", extension=".fastq.gz"):
-        sample = key.split("/")[-2]
-        if sample == "":
-            sample = key.split("/")[-3]
-            
+        sample = key.split("/")[3]
+        
+        if "G" not in sample:
+            continue
+        
         if sample not in complete:
             fastqs[sample] += [f"s3://{BUCKET}/{key}"]
     
@@ -37,7 +38,7 @@ def enqueue(project, panel):
                 "Output": f"s3://{BUCKET}/projects/{project}/analyses/{sample}",
                 "Args": urls,
                 "Kwargs": {"--sample": sample,
-                           "--reference": f"s3://{BUCKET}/reference/37/sequence/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set.tar.gz",
+                           "--reference": f"s3://{BUCKET}/reference/37/sequence/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set.tar.gz/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set.fna",
                            "--panel": f"s3://{BUCKET}/panels/{panel}.tar.gz",
                            "--vep": f"s3://{BUCKET}/reference/37/refseq/homo_sapiens_refseq_vep_98_GRCh37.tar.gz"},
                 }

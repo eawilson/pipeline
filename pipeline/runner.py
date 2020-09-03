@@ -1,58 +1,61 @@
 import os
 import subprocess
 import json
-import boto3
-import requests
 import pdb
 import itertools
+import sys
+
+import boto3
 
 from pipeline import mount_instance_storage, am_i_an_ec2_instance
-
-
-    
-def terminate():
-    response = requests.get("http://169.254.169.254/latest/meta-data/instance-id")
-    instance_id = response.text
-    ec2 = boto3.resource("ec2")
-    ec2.instances.filter(InstanceIds=[instance_id]).terminate()
 
 
 
 def parse_url(url):
     if url[:5].lower() != ("s3://"):
-        raise RuntimeError(f"{url} is ot a valid s3 url.")
+        raise RuntimeError(f"{url} is not a valid s3 url.")
     parts = url.split("/")
     if len(parts) < 4:
-        raise RuntimeError(f"{url} is ot a valid s3 url.")
+        raise RuntimeError(f"{url} is not a valid s3 url.")
     bucket = parts[2]
     key = "/".join(parts[3:])
-    fn = parts[-1]
-    return (bucket, key, fn)
+    return (bucket, key)
 
 
 
-class S3(object):
-    def __init__(self):
-        self.client = boto3.client("s3")
+def download(client, path, destination="downloads"):
+    if path[:5].lower() == ("s3://"):    
+        bucket, key = parse_url(path)
+        parts = key.split("/")
+        downloadname = parts[-1]
+        path = downloadname
+        for i in range(len(parts)):
+            if parts[i].endswith(".tar.gz"):
+                key = "/".join(parts[:i+1])
+                downloadname = parts[i]
+                path = path[i][:-7] + path[i+1:]
+                
+        if destination:
+            os.makedirs(destination, exist_ok=True)
+            downloadname = os.path.join(destination, downloadname)
+            path = os.path.join(destination, path)
         
-    def download(self, url, path=""):
-        bucket, key, fn = parse_url(url)
-        if path:
-            fn = f"{path}/{fn}"
-        archive = fn
-        if fn.endswith(".tar.gz"):
-            fn = fn[:-7]
-        if not os.path.exists(fn):
-            print(f"Downloading {fn}")
-            self.client.download_file(bucket, key, archive)
-            if archive.endswith(".tar.gz"):
-                subprocess.run(["tar", "-xzf", archive])
-                os.unlink(archive)
-        return fn
-    
-    def upload(self, fn, url):
-        bucket, key, fn = parse_url(f"{url}/{fn}")
-        self.client.upload_file(fn, bucket, key)
+        if not os.path.exists(path):
+            print(f"Downloading {key}")
+            client.download_file(bucket, key, downloadname)
+            if downloadname.endswith(".tar.gz"):
+                subprocess.run(["tar", "-xzf", downloadname])
+                os.unlink(downloadname)
+                if not os.path.exists(path):
+                    raise RuntimeError(f"Member not present in archive {key}.")
+        path = os.path.join(".", path)
+    return path
+
+
+
+def upload(client, fn, url):
+    bucket, key, fn = parse_url(f"{url}/{fn}")
+    client.upload_file(fn, bucket, key)
         
         
 
@@ -60,7 +63,7 @@ def main():
     if am_i_an_ec2_instance():
         os.chdir(mount_instance_storage())
     
-    s3 = S3()
+    s3 = boto3.client("s3")
     sqs = boto3.client("sqs")
     queue_url = sqs.get_queue_url(QueueName="samples")["QueueUrl"]
     while True:
@@ -77,22 +80,15 @@ def main():
             break
         body = json.loads(message["Body"])
         
-        script = body["Script"]
-        if script[:5].lower() == ("s3://"):
-            os.makedirs("scripts", exist_ok=True)
-            script = os.path.join(".", s3.download(script, path="scripts"))
+        if body["script"][:5].lower() == ("s3://"):    
+            body["script"] = os.path.join(".", download(s3, body["Script"]))        
+        body["Args"] = [download(s3, url) for url in body.get("Args", ())]
+        body["Kwargs"] = {k: download(s3, v) for k, v in body.get("Kwargs", {}).items()}
         
-        body["Args"] = [s3.download(url) for url in body.get("Args", ())]
-        
-        for parameter, value in body.get("Kwargs", {}).items():
-            if value[:5].lower() == ("s3://"):
-                fn = s3.download(value)
-                body["Kwargs"][parameter] = fn
-        
-        command_line = [script] + body.get("Args", []) + list(itertools.chain(*body.get("Kwargs", {}).items()))
+        command_line = [body["Script"] + body.get("Args", []) + list(itertools.chain(*sorted(body.get("Kwargs", {}).items())))
         command_line = " ".join([(f"'{token}'" if " " in token else token) for token in command_line])
         with open("{}.log.txt".format(body["Kwargs"]["--sample"]), "wb") as log:
-            completed_process = subprocess.run(command_line, shell=True, stderr=log)
+            completed_process = subprocess.run(command_line, shell=True, stderr=log, stdout=log)
         
         for fn in os.listdir():
             if os.path.isfile(fn):

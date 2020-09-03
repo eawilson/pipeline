@@ -152,8 +152,10 @@ def pipe(args, **kwargs):
         stdout redirection or ignored if not needed. The command is echoed as a bytestring to stderr (if supplied)
         and all stderr diagnostic output from the subprocess is captured via redirection.
     """
-    print(" ".join(str(arg) for arg in args), file=sys.stderr)
-    return subprocess.run(args, check=True, **kwargs)
+    print(" ".join(str(arg) for arg in args), file=sys.stderr, flush=True)
+    completedprocess = subprocess.run(args, stderr=sys.stderr.buffer, **kwargs)
+    sys.stderr.flush()
+    completedprocess.check_returncode()
 
 
 
