@@ -23,7 +23,7 @@ def parse_url(url):
 
 
 
-def download(client, path, destination="downloads"):
+def download(client, path, destination=""):
     if path[:5].lower() == ("s3://"):    
         bucket, key = parse_url(path)
         parts = key.split("/")
@@ -33,7 +33,7 @@ def download(client, path, destination="downloads"):
             if parts[i].endswith(".tar.gz"):
                 key = "/".join(parts[:i+1])
                 downloadname = parts[i]
-                path = path[i][:-7] + path[i+1:]
+                path = os.path.join([parts[i][:-7]] + parts[i+1:])
                 
         if destination:
             os.makedirs(destination, exist_ok=True)
@@ -48,7 +48,6 @@ def download(client, path, destination="downloads"):
                 os.unlink(downloadname)
                 if not os.path.exists(path):
                     raise RuntimeError(f"Member not present in archive {key}.")
-        path = os.path.join(".", path)
     return path
 
 
@@ -80,12 +79,12 @@ def main():
             break
         body = json.loads(message["Body"])
         
-        if body["script"][:5].lower() == ("s3://"):    
-            body["script"] = os.path.join(".", download(s3, body["Script"]))        
+        if body["Script"][:5].lower() == ("s3://"):    
+            body["Script"] = os.path.join(".", download(s3, body["Script"], destination="downloads"))        
         body["Args"] = [download(s3, url) for url in body.get("Args", ())]
-        body["Kwargs"] = {k: download(s3, v) for k, v in body.get("Kwargs", {}).items()}
+        body["Kwargs"] = {k: download(s3, v, destination="downloads") for k, v in body.get("Kwargs", {}).items()}
         
-        command_line = [body["Script"] + body.get("Args", []) + list(itertools.chain(*sorted(body.get("Kwargs", {}).items())))
+        command_line = [body["Script"]] + body.get("Args", []) + list(itertools.chain(*sorted(body.get("Kwargs", {}).items())))
         command_line = " ".join([(f"'{token}'" if " " in token else token) for token in command_line])
         with open("{}.log.txt".format(body["Kwargs"]["--sample"]), "wb") as log:
             completed_process = subprocess.run(command_line, shell=True, stderr=log, stdout=log)
