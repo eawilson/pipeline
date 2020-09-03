@@ -33,18 +33,18 @@ def download(client, path, destination=""):
             if parts[i].endswith(".tar.gz"):
                 key = "/".join(parts[:i+1])
                 downloadname = parts[i]
-                path = os.path.join([parts[i][:-7]] + parts[i+1:])
+                path = os.path.join(parts[i][:-7], *parts[i+1:])
                 
         if destination:
             os.makedirs(destination, exist_ok=True)
             downloadname = os.path.join(destination, downloadname)
             path = os.path.join(destination, path)
-        
+
         if not os.path.exists(path):
             print(f"Downloading {key}")
             client.download_file(bucket, key, downloadname)
             if downloadname.endswith(".tar.gz"):
-                subprocess.run(["tar", "-xzf", downloadname])
+                subprocess.run(["tar", "-xzf", os.path.basename(downloadname)], cwd=destination)
                 os.unlink(downloadname)
                 if not os.path.exists(path):
                     raise RuntimeError(f"Member not present in archive {key}.")
