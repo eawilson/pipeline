@@ -14,6 +14,7 @@ package =  {"name": "pipeline",
             "entry_points": { "console_scripts": ["cfpipeline=pipeline.pipelines.cfpipeline:main",
                                                   "filter_sam=pipeline.filter_sam:main",
                                                   "terminate=pipeline.runner:terminate",
+                                                  "udini=pipeline.udini:main",
                                                   "runner=pipeline.runner:main"] },
             }
 

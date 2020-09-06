@@ -28,15 +28,25 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     
     reference = (glob.glob(f"{reference}/*.fna") + [reference])[0]
     targets_bedfile = (glob.glob(f"{panel}/*.bed") + [panel])[0]
-    
-    deduped_interleaved_fastq = f"{sample}.interleaved.fastq"
     stats = f"{sample}.stats.json"
-    dude_options = ["--output", deduped_interleaved_fastq,
+    
+    
+    interleaved_fastq = f"{sample}.interleaved.fastq"
+    udini_options = ["--output", interleaved_fastq
+                     "--interleaved", "--replace"]
+    if umi is not None:
+        udini_options += ["--umi", umi]
+    pipe(["udini"] + input_fastqs + udini_options)
+    
+    
+    deduped_interleaved_fastq = f"{sample}.deduped.interleaved.fastq"
+    dude_options = ["--interleaved",
+                    "--output", deduped_interleaved_fastq,
                     "--stats", stats]
     if umi is not None:
         dude_options += ["--umi", umi]
-    pipe(["dude"] + input_fastqs + dude_options)
-
+    pipe(["dude", interleaved_fastq] + dude_options)
+    os.unlink(interleaved_fastq)
 
     unsorted_unfixed_sam = f"{sample}.unsorted.unfixed.sam"
     with open(unsorted_unfixed_sam, "wb") as f_out:
@@ -47,6 +57,7 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
                             deduped_interleaved_fastq], stdout=f_out)
     os.unlink(deduped_interleaved_fastq)
 
+
     namesorted_unfixed_sam = f"{sample}.namesorted.unfixed.sam"
     pipe(["samtools", "sort", "-n",
                               "-o", namesorted_unfixed_sam,
@@ -55,10 +66,12 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
                               unsorted_unfixed_sam])
     os.unlink(unsorted_unfixed_sam)
     
+
     namesorted_sam = f"{sample}.namesorted.sam"
     pipe(["samtools", "fixmate", namesorted_unfixed_sam, namesorted_sam])
     os.unlink(namesorted_unfixed_sam)
     
+
     unfiltered_sam = f"{sample}.unfiltered.sam"
     pipe(["samtools", "sort", "-o", unfiltered_sam,
                               "-T", "temp",
@@ -66,6 +79,7 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
                               namesorted_sam])
     os.unlink(namesorted_sam)
     
+
     sam = f"{sample}.sam"    
     filter_options = ["--output", sam,
                       "--stats", stats,
@@ -75,11 +89,13 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     pipe(["filter_sam", unfiltered_sam] + filter_options)
     os.unlink(unfiltered_sam)
 
+
     bam = f"{sample}.bam"
     pipe(["samtools", "view", "-b", sam, "-o", bam])
     os.unlink(sam)
     pipe(["samtools", "index", bam])
     
+
     mpileup = f"{sample}.mpileup"
     mpileup_options = ["-A",
                        "-B",
@@ -100,6 +116,7 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
                     #"--somatic-p-value", "0.05",
                        "--strand-filter", "1",]
                     #"--validation", "1"
+
 
     with open(pvalue_vcf, "wb") as f_out:
         pipe(["varscan", "mpileup2cns", mpileup, "--variants", 

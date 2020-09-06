@@ -41,9 +41,10 @@ def download(client, path, destination=""):
             path = os.path.join(destination, path)
 
         if not os.path.exists(path):
-            print(f"Downloading {key}")
+            print(f"Downloading {key}.")
             client.download_file(bucket, key, downloadname)
             if downloadname.endswith(".tar.gz"):
+                print(f"Unpacking {key}.")
                 subprocess.run(["tar", "-xzf", os.path.basename(downloadname)], cwd=destination)
                 os.unlink(downloadname)
                 if not os.path.exists(path):
@@ -59,6 +60,7 @@ def upload(client, fn, url):
         
 
 def main():
+    print("Starting runner...")
     if am_i_an_ec2_instance():
         os.chdir(mount_instance_storage())
     
@@ -86,17 +88,20 @@ def main():
         
         command_line = [body["Script"]] + body.get("Args", []) + list(itertools.chain(*sorted(body.get("Kwargs", {}).items())))
         command_line = " ".join([(f"'{token}'" if " " in token else token) for token in command_line])
+        print(command_line)
         with open("{}.log.txt".format(body["Kwargs"]["--sample"]), "wb") as log:
-            completed_process = subprocess.run(command_line, shell=True, stderr=log, stdout=log)
+            completed_process = subprocess.run(command_line, shell=True, stderr=log)
         
+        print("Cleaning up.")
         for fn in os.listdir():
             if os.path.isfile(fn):
                 if fn not in body["Args"]:
-                    s3.upload(fn, body["Output"])
+                    upload(s3, fn, body["Output"])
                 os.unlink(fn)
         
         response = sqs.delete_message(QueueUrl=queue_url,
                                       ReceiptHandle=message["ReceiptHandle"])
+    print("Complete.")
 
 
 

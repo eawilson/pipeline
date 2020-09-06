@@ -153,7 +153,7 @@ def pipe(args, **kwargs):
         and all stderr diagnostic output from the subprocess is captured via redirection.
     """
     print(" ".join(str(arg) for arg in args), file=sys.stderr, flush=True)
-    completedprocess = subprocess.run(args, stderr=sys.stderr.buffer, **kwargs)
+    completedprocess = subprocess.run(args, **kwargs)
     sys.stderr.flush()
     completedprocess.check_returncode()
 
