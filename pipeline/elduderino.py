@@ -85,6 +85,12 @@ def reference_len(cigar):
 
 
 def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.json", umi=None, min_fragment_size=None, max_fragment_size=None, min_family_size=1, targets=None):
+    if max_fragment_size is not None:
+        max_fragment_size = int(max_fragment_size)
+    if min_fragment_size is not None:
+        min_fragment_size = int(min_fragment_size)
+    min_family_size = int(min_family_size)
+    
     if umi == "thruplex":
         dedupe_func = dedupe#_umi_inexact
     elif umi in ("thruplex_hv", "prism"):
@@ -257,7 +263,7 @@ def dedupe(family, stats, targets, min_family_size, min_fragment_size, max_fragm
         cigar_families[(pair[0][CIGAR], pair[1][CIGAR])].append(pair)
     family = sorted(cigar_families.values(), key=lambda x:len(x))[-1]
     family_size = len(family)
-    if family_size < min_size:
+    if family_size < min_size or family_size < min_family_size:
         passed = False
     
     
@@ -266,11 +272,6 @@ def dedupe(family, stats, targets, min_family_size, min_fragment_size, max_fragm
     #if left[RNAME] == right[RNAME] and left[FLAG] & RC and not(right[FLAG] & RC):
         #for pair in family:
             #pair[1], pair[0] = pair[0], pair[1]
-    
-        
-        
-        
-        
         
     
     first_pair = family[0]
