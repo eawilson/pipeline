@@ -84,7 +84,7 @@ def reference_len(cigar):
 
 
 
-def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.json", umi=None, min_fragment_size=None, max_fragment_size=None, min_family_size=1, targets=None):
+def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.json", umi=None, min_fragment_size=None, max_fragment_size=None, min_family_size=2, targets=None):
     if max_fragment_size is not None:
         max_fragment_size = int(max_fragment_size)
     if min_fragment_size is not None:
@@ -210,7 +210,7 @@ def dedupe_umi_exact(size_family, **kwargs):
 
 
 
-def dedupe_umi_inexact(size_family):
+def dedupe_umi_inexact(size_famil, **kwargs):
     umi_pairs = []
     #for pair in size_family:
         #for tag in pair[0][11:]:
