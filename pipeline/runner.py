@@ -54,7 +54,7 @@ def download(client, path, destination=""):
 
 
 def upload(client, fn, url):
-    bucket, key, fn = parse_url(f"{url}/{fn}")
+    bucket, key = parse_url(f"{url}/{fn}")
     client.upload_file(fn, bucket, key)
         
         

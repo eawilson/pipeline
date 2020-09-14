@@ -81,18 +81,6 @@ def reference_len(cigar):
         if op in "MD=XN":
             length += num
     return length
-    #num = ""
-    #length = 0
-    #for character in cigar:
-        #if character.isnumeric():
-            #num += character
-        #else:
-            #if character in "MD=XN":
-                #length += int(num)
-            #elif character not in "ISHP":
-                #sys.exit("Malformed cigar string")
-            #num = ""
-    #return length
 
 
 
@@ -411,7 +399,7 @@ def dedupe(family, stats, targets, min_family_size, min_fragment_size, max_fragm
 
             first_pair[read][SEQ] = "".join(consensus_seq)
             first_pair[read][QUAL] = "".join(consensus_qual)
-            first_pair[read][MAPQ] = str(max(float(pair[read][MAPQ]) for pair in family))
+            first_pair[read][MAPQ] = str(max(int(pair[read][MAPQ]) for pair in family))
             #print(first_pair[read][SEQ], "\n")
     
     for read in range(2):
