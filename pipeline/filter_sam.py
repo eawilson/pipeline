@@ -1,8 +1,11 @@
+#!/usr/bin/env python3
+
 import pdb
 import argparse
-import os
 import csv
 import json
+import sys
+
 from collections import defaultdict, Counter, namedtuple
 
 
@@ -10,35 +13,34 @@ def filter_sam(input_sam, output_sam="output.filtered.sam", min_family_size=None
     Overlap = namedtuple("Overlap", ["bait", "size"])
     
     baits = defaultdict(list)
-    if targets:
+    if targets is not None:
         with open(targets, "rt") as f:
             reader = csv.reader(f, delimiter="\t")
             for row in reader:
-                if len(row) < 3:
-                    raise RuntimeError(f"{targets} has too few columns.")
-                chrom, start, stop = row[:3]
-                if stop < start:
-                    raise RuntimeError(f"{targets} has start position greater than stop.")
-                if len(row) == 4:
-                    name = row[3]
-                else:
-                    name = f"{chrom}:{start}-{stop}"
                 try:
-                    # Add one to convert 0-based bed start to 1-based sam start.
-                    baits[chrom] += [(int(start)+1, int(stop), name)]
-                except ValueError:
-                    raise RuntimeError(f"{targets} has invalid start/stop positions.")
-    
+                    chrom = row[0]
+                    # Add one to convert 0-based bed start to 1-based sam start
+                    start = int(row[1]) + 1
+                    stop = int(row[2])
+                except (ValueError, IndexError):
+                    sys.exit(f"{targets} is not a valid bedfile")
+                if stop < start:
+                    sys.exit(f"{targets} has invalid start/stop positions")
+                try:
+                    name = row[3]
+                except IndexError:
+                    name = f"{chrom}:{start}-{stop}"
+                baits[chrom] += [(start, stop, name)]
         for contig in baits.values():
             contig.sort() 
  
     if not input_sam.endswith(".sam"):
-        raise RuntimeError(f"{input_sam} is not sam file.")
+        sys.exit(f"{input_sam} is not sam file")
     
     captures = Counter()
     reads = {}
     prev_rname = ""
-    with open(input_sam, "rt") as f_in:        
+    with open(input_sam, "rt") as f_in:
         with open(output_sam, "wt") as f_out:
             for row in f_in:
                 if not row.startswith("@"):
@@ -110,10 +112,10 @@ def filter_sam(input_sam, output_sam="output.filtered.sam", min_family_size=None
                 
     
     if targets is not None:
-        if os.path.exists(stats):
+        try:
             with open(stats, "rt") as f:
                 statistics = json.load(f)
-        else:
+        except FileNotFoundError:
             statistics = {}
 
         for read in reads.values():
@@ -143,7 +145,7 @@ def cigar_len(cigar):
             if character in "MD=XN":
                 length += int(num)
             elif character not in "ISHP":
-                raise RuntimeError("Malformed cigar string.")
+                sys.exit("Malformed cigar string")
             num = ""
     return length
         
@@ -159,7 +161,13 @@ def main():
     parser.add_argument("-s", "--stats", help="Statistics file.", default=argparse.SUPPRESS)
     parser.add_argument("-t", "--targets", help="Bed file of on-target regions.", default=argparse.SUPPRESS)
     args = parser.parse_args()
-    filter_sam(**vars(args))
+    try:
+        filter_sam(**vars(args))
+    except OSError as e:
+        # File input/output error. As this is not an unexpected error just
+        # print and exit rather than displaying a full stack trace.
+        sys.exit(str(e))
+
 
 
 

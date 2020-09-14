@@ -15,6 +15,7 @@ package =  {"name": "pipeline",
                                                   "filter_sam=pipeline.filter_sam:main",
                                                   "terminate=pipeline.runner:terminate",
                                                   "udini=pipeline.udini:main",
+                                                  "elduderino=pipeline.elduderino:main",
                                                   "runner=pipeline.runner:main"] },
             }
 

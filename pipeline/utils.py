@@ -139,23 +139,34 @@ def illumina_readgroup(filepath):
 
 
 
-def run(args):
-    """ Run a unix command as a subprocess. Stdout and stderr are captured as a string for review if needed.
-        Not to be used for main pipeline comands which should be called with pipe instead.  
+def run(args, exit_on_failure=True):
+    """ Run a unix command as a subprocess. Stdout and stderr are captured as
+        a string for review if needed. Not to be used for main pipeline
+        comands which should be called with pipe instead.  
     """
-    return subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True)
+    args = [str(arg) for arg in args]
+    completedprocess = subprocess.run(args,
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE,
+                                      universal_newlines=True)
+    if exit_on_failure and completedprocess.returncode:
+        for line in completedprocess.stderr.splitlines():
+            print(line, file=sys.stderr, flush=True)
+        sys.exit(completedprocess.returncode)
 
 
 
-def pipe(args, **kwargs):
-    """ Runs a main pipeline command. Output is bytes rather than string and is expected to be captured via
-        stdout redirection or ignored if not needed. The command is echoed as a bytestring to stderr (if supplied)
-        and all stderr diagnostic output from the subprocess is captured via redirection.
+def pipe(args, exit_on_failure=True, **kwargs):
+    """ Runs a main pipeline command. Output is bytes rather than string and
+        is expected to be captured via stdout redirection or ignored if not
+        needed. The command is echoed to stderr before the command is run.
     """
-    print(" ".join(str(arg) for arg in args), file=sys.stderr, flush=True)
+    args = [str(arg) for arg in args]
+    print(" ".join(args), file=sys.stderr, flush=True)
     completedprocess = subprocess.run(args, **kwargs)
     sys.stderr.flush()
-    completedprocess.check_returncode()
+    if exit_on_failure and completedprocess.returncode:
+        sys.exit(completedprocess.returncode)
 
 
 
