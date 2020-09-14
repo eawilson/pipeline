@@ -12,7 +12,9 @@ BUCKET = "omdc-data"
 
 
 
-def enqueue(project, panel):
+def enqueue():
+    project = "head_and_neck"
+    
     sqs = boto3.client("sqs")
     queue_url = sqs.get_queue_url(QueueName="samples")["QueueUrl"]
 
@@ -26,7 +28,7 @@ def enqueue(project, panel):
     for key in s3_list(BUCKET, f"projects/{project}/samples", extension=".fastq.gz"):
         sample = key.split("/")[-1].split("_")[0]
         
-        if "-c-" not in sample:
+        if "-c-" in sample:
             continue
         
         if sample not in complete:
@@ -38,10 +40,11 @@ def enqueue(project, panel):
                 "Output": f"s3://{BUCKET}/projects/{project}/analyses/{sample}",
                 "Args": urls,
                 "Kwargs": {"--sample": sample,
-                           "--reference": f"s3://{BUCKET}/reference/37/sequence/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set.tar.gz/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set.fna",
-                           "--panel": f"s3://{BUCKET}/panels/{panel}.tar.gz",
+                           "--reference": f"s3://{BUCKET}/reference/37/sequence/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.tar.gz",
+                           "--panel": f"s3://{BUCKET}/panels/Head_and_Neck.tar.gz",
                            "--vep": f"s3://{BUCKET}/reference/homo_sapiens_refseq_vep_98_GRCh37.tar.gz",
-                           "--umi": "thruplex_hv" if "T" in sample else "prism"},
+                           "--umi": "thruplex",
+                           "--min-family-size": "2"},
                 }
         
         message = json.dumps(data)
@@ -49,12 +52,17 @@ def enqueue(project, panel):
         sqs.send_message(QueueUrl=queue_url,
                          MessageBody= message)
         n += 1
+        break
     print(f"{n} messages queued.")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('project', help="AWS project name.")
-    parser.add_argument("-p", "--panel", help="Panel name.", required=True)
-    args = parser.parse_args()
-    enqueue(**vars(args))
+    #parser = argparse.ArgumentParser()
+    #parser.add_argument('project', help="AWS project name.")
+    #parser.add_argument("-p", "--panel", help="Panel name.", required=True)
+    #args = parser.parse_args()
+    #enqueue(**vars(args))
+    enqueue()
+            
+            
+            

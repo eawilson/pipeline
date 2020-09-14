@@ -54,7 +54,7 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     #os.unlink(interleaved_fastq)
 
     unsorted_unfixed_undeduped_sam = f"{sample}.unsorted.unfixed.undeduped.sam"
-    with open(unsorted_unfixed_sam, "wb") as f_out:
+    with open(unsorted_unfixed_undeduped_sam, "wb") as f_out:
         pipe(["bwa", "mem", "-t", threads, 
                             "-p", 
                             "-C", 
@@ -85,7 +85,7 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     os.unlink(namesorted_undeduped_sam)
     
 
-    unsorted_sam = f"{sample}.sam"
+    unsorted_sam = f"{sample}.unsorted.sam"
     elduderino_options = ["--output", unsorted_sam,
                           "--stats", stats,
                           "--min-family-size", min_family_size]

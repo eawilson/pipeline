@@ -153,6 +153,7 @@ def run(args, exit_on_failure=True):
         for line in completedprocess.stderr.splitlines():
             print(line, file=sys.stderr, flush=True)
         sys.exit(completedprocess.returncode)
+    return completedprocess
 
 
 

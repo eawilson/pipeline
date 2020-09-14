@@ -98,7 +98,7 @@ def reference_len(cigar):
 
 def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.json", umi=None, min_fragment_size=None, max_fragment_size=None, min_family_size=1, targets=None):
     if umi == "thruplex":
-        dedupe_func = dedupe_umi_inexact
+        dedupe_func = dedupe#_umi_inexact
     elif umi in ("thruplex_hv", "prism"):
         dedupe_func = dedupe_umi_exact
     elif umi is None:
@@ -113,7 +113,7 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
     
     stats = {"fragment_sizes": Counter(),
              "family_sizes": Counter(),
-             "fragments_per_target": Counter()}
+             "fragments_per_target": defaultdict(int, [(t[2]) for t in chain(*details["targets"].values())])}
     
     unpaired = {}
     
@@ -227,6 +227,7 @@ def dedupe_umi_inexact(size_family):
         #else:
             #sys.exit("Missing RX tags")
     
+    
     #while umi_pairs:
         #remaining = []
         #left, right, pair = umi_pairs.pop()
@@ -271,14 +272,23 @@ def dedupe(family, stats, targets, min_family_size, min_fragment_size, max_fragm
     if family_size < min_size:
         passed = False
     
+    
+    # The segments are the wrong way around, likely due to readthrough.
+    # Swap them and trim the readthrough.
+    #if left[RNAME] == right[RNAME] and left[FLAG] & RC and not(right[FLAG] & RC):
+        
+    
+    
+    
+    
     first_pair = family[0]
     left, right = first_pair
+    left_rname = left[RNAME]
+    right_rname = right[RNAME]
     left_rc = left[FLAG] & RC
     right_rc = right[FLAG] & RC
     left_start = left[POS]
     right_start = right[POS]
-    left_rname = left[RNAME]
-    right_rname = right[RNAME]
     if left_rname == right_rname and not(left_rc) and right_rc:
         #print("PASS", "Read1" if left[FLAG] & READ1 else "Read2", "rvs" if left[FLAG] & RC else "fwd", "Read1" if right[FLAG] & READ1 else "Read2", "rvs" if right[FLAG] & RC else "fwd", left[TLEN], right[TLEN], left[CIGAR], right[CIGAR])
         right_stop = right_start + reference_len(right[CIGAR]) - 1
@@ -371,13 +381,13 @@ def dedupe(family, stats, targets, min_family_size, min_fragment_size, max_fragm
     if family_size > 1:
         too_few = family_size * 6 // 10
         for read in range(2):
-            for pair in family:
-                print(pair[read][SEQ])
-            print("")
+            #for pair in family:
+                #print(pair[read][SEQ])
+            #print("")
             
             consensus_seq = []
             consensus_qual = []
-            for i in range(len(pair[read][SEQ])):
+            for i in range(len(first_pair[read][SEQ])):
                 bases = Counter()
                 quals = defaultdict(lambda:"!")
                 for pair in family:
@@ -398,7 +408,7 @@ def dedupe(family, stats, targets, min_family_size, min_fragment_size, max_fragm
             first_pair[read][SEQ] = "".join(consensus_seq)
             first_pair[read][QUAL] = "".join(consensus_qual)
             first_pair[read][MAPQ] = str(max(float(pair[read][MAPQ]) for pair in family))
-            print(first_pair[read][SEQ], "\n")
+            #print(first_pair[read][SEQ], "\n")
     
     for read in range(2):
         first_pair[read][POS] = str(first_pair[read][POS])
