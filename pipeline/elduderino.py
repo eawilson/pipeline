@@ -113,7 +113,7 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
     
     stats = {"fragment_sizes": Counter(),
              "family_sizes": Counter(),
-             "fragments_per_target": defaultdict(int, [(t[2]) for t in chain(*details["targets"].values())])}
+             "fragments_per_target": defaultdict(int, [(t[2], 0) for t in chain(*details["targets"].values())])}
     
     unpaired = {}
     
@@ -276,10 +276,14 @@ def dedupe(family, stats, targets, min_family_size, min_fragment_size, max_fragm
     # The segments are the wrong way around, likely due to readthrough.
     # Swap them and trim the readthrough.
     #if left[RNAME] == right[RNAME] and left[FLAG] & RC and not(right[FLAG] & RC):
+        #for pair in family:
+            #pair[1], pair[0] = pair[0], pair[1]
+    
         
-    
-    
-    
+        
+        
+        
+        
     
     first_pair = family[0]
     left, right = first_pair
