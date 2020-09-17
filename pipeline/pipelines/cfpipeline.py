@@ -6,7 +6,7 @@ import sys
 import argparse
 import glob
 
-from pipeline import run, pipe, vcf_pvalue_2_phred, create_report
+from pipeline import run, pipe, vcf_pvalue_2_phred, create_report, Pipe
 from covermi import Panel, covermimain
 
 
@@ -22,7 +22,8 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
         panel (str): Path to covermi panel which must contain targets bedfile.
         umi (str): umi type or None if no umis.
         vep (str): Path to vep data.
-        min_family_size (int or str): Minimum family size.
+        min_family_size (int or str): Minimum family size, families smaller
+            than this will be filtered.
         
     Returns:
         None.
@@ -37,9 +38,11 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     targets_bedfile = (glob.glob(f"{panel}/*.bed") + [panel])[0]
     stats = f"{sample}.stats.json"
     
+    pipe = Pipe()
+    
     interleaved_fastq = f"{sample}.interleaved.fastq"
     udini_options = ["--output", interleaved_fastq,
-                     "--replace"]
+                     "--stats", stats]
     if umi is not None:
         udini_options += ["--umi", umi]
     pipe(["udini"] + input_fastqs + udini_options)
@@ -92,7 +95,7 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     if umi is not None:
         elduderino_options += ["--umi", umi]
     if targets_bedfile is not None:
-        elduderino_options += ["--targets", targets_bedfile]
+        elduderino_options += ["--bed", targets_bedfile]
     pipe(["elduderino", undeduped_sam] + elduderino_options)
     os.unlink(undeduped_sam)
 
@@ -142,33 +145,35 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     vcf_pvalue_2_phred(pvalue_vcf, vcf)
     os.unlink(pvalue_vcf)
     
-    
-    vepjson = f"{sample}.vep"
-    vep_options = ["--no_stats",
-                   "--dir", vep,
-                   "--format", "vcf",
-                   "--fork", threads,
-                   "--json",
-                   "--offline",
-                   "--everything",
-                   "--force_overwrite"]
+    if vep is not None:
+        vepjson = f"{sample}.vep"
+        vep_options = ["--no_stats",
+                    "--dir", vep,
+                    "--format", "vcf",
+                    "--fork", threads,
+                    "--json",
+                    "--offline",
+                    "--everything",
+                    "--force_overwrite"]
 
-    prop = Panel(panel).properties
-    if prop.get("transcript_source", "refseq") == "refseq":
-        vep_options += ["--refseq"]
-    if "assembly" in prop:
-        vep_options += ["--assembly", prop["assembly"]]
-    vep_script = os.path.join(os.path.expanduser("~"), "ensembl-vep/vep")
-    pipe(["perl", vep_script, "-i", vcf,
-                              "-o", vepjson,
-                              "--fasta", reference] + vep_options)
-    create_report(vepjson, panel)
-    os.unlink(vepjson)
+        prop = Panel(panel).properties
+        if prop.get("transcript_source", "refseq") == "refseq":
+            vep_options += ["--refseq"]
+        if "assembly" in prop:
+            vep_options += ["--assembly", prop["assembly"]]
+        vep_script = os.path.join(os.path.expanduser("~"), "ensembl-vep/vep")
+        pipe(["perl", vep_script, "-i", vcf,
+                                "-o", vepjson,
+                                "--fasta", reference] + vep_options)
+        create_report(vepjson, panel)
+        os.unlink(vepjson)
 
     covermi_dir = covermimain(panel, "", bam_path=bam)
     covermi_file = "{}.covermi.tar.gz".format(sample)
     run(["tar", "cvzf", covermi_file, covermi_dir])
     run(["rm", "-r", covermi_dir])
+    
+    print(pipe.durations, file=sys.stderr, flush=True)
 
 
 

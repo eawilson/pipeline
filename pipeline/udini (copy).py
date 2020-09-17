@@ -41,7 +41,7 @@ def udini(input_fastqs,
           min_read_length=50,
           max_consecutive_ns=2):
     
-    # reversed so we can pop the fastqs in the original order.
+    # reversed only so we can pop the fastqs in the original order.
     input_fastqs = list(reversed(input_fastqs))
     
     if not output_fastq.endswith(".fastq") and not output_fastq.endswith(".fastq.gz"):
@@ -50,6 +50,8 @@ def udini(input_fastqs,
     if not(interleaved) and len(input_fastqs) % 2:
         sys.exit("Must be an even number of paired fastqs")
 
+    valid = set(umi for umi in umi_sequences.split())
+
     if umi == "thruplex":
         umi_length = 6
         umi_stem_length = 11
@@ -57,26 +59,54 @@ def udini(input_fastqs,
     elif umi == "thruplex_hv":
         umi_length = 7
         umi_stem_length = 1
-        umi_sequences = "AAGCTGA ACAACGA ACTCGTA ATTGCTC CGAGTAC CGCTAAT " \
-                        "CTAGTAG GACATCG GTCTCTG TACCTCA TCTGGTA TGAACGG " \
-                        "ACGACTC ATCTGGA CAATAGC CCTAGGT CGTCTCA GAGTCTC " \
-                        "GGCAATG TCCACTA TCTCCAT TGTCAAC TGTGTCT TTGTAGT "
+        valid = set(["AAGCTGA",
+                     "ACAACGA",
+                     "ACTCGTA",
+                     "ATTGCTC",
+                     "CGAGTAC",
+                     "CGCTAAT",
+                     "CTAGTAG",
+                     "GACATCG",
+                     "GTCTCTG",
+                     "TACCTCA",
+                     "TCTGGTA",
+                     "TGAACGG",
+                     "ACGACTC",
+                     "ATCTGGA",
+                     "CAATAGC",
+                     "CCTAGGT",
+                     "CGTCTCA",
+                     "GAGTCTC",
+                     "GGCAATG",
+                     "TCCACTA",
+                     "TCTCCAT",
+                     "TGTCAAC",
+                     "TGTGTCT",
+                     "TTGTAGT"])
     
     elif umi == "prism":
         umi_length = 8
         umi_stem_length = 0
-        umi_sequences = "GAGACGAT GCACAACT TTCCAAGG GCGTCATT CGCATGAT " \
-                        "GAAGGAAG ACGGAACA ACTGAGGT CGGCTAAT TGAAGACG " \
-                        "GCTATCCT GTTACGCA TGGACTCT AGCGTGTT ATCCAGAG " \
-                        "GATCGAGT CTTAGGAC TTGCGAAG GTGCCATA CTGTTGAC " \
-                        "TCGCTGTT GATGTGTG TTCGTTGG ACGTTCAG AAGCACTG " \
-                        "TTGCAGAC GTCGAAGA CAATGTGG ACCACGAT ACGACTTG " \
-                        "GATTACCG ACTAGGAG"
+        valid = set(["GAGACGAT", "GCACAACT",
+                     "TTCCAAGG", "GCGTCATT",
+                     "CGCATGAT", "GAAGGAAG",
+                     "ACGGAACA", "ACTGAGGT",
+                     "CGGCTAAT", "TGAAGACG",
+                     "GCTATCCT", "GTTACGCA",
+                     "TGGACTCT", "AGCGTGTT",
+                     "ATCCAGAG", "GATCGAGT",
+                     "CTTAGGAC", "TTGCGAAG",
+                     "GTGCCATA", "CTGTTGAC",
+                     "TCGCTGTT", "GATGTGTG",
+                     "TTCGTTGG", "ACGTTCAG",
+                     "AAGCACTG", "TTGCAGAC",
+                     "GTCGAAGA", "CAATGTGG",
+                     "ACCACGAT", "ACGACTTG",
+                     "GATTACCG", "ACTAGGAG"])
+        
     elif umi is not None:
         sys.exit(f"'{umi}' is not a known UMI type")
-    
-    
-    valid = set(umi for umi in umi_sequences.split())
+        
     if any(len(umi) != umi_length for umi in valid):
         sys.exit(f"Not all UMI sequences are {umi_length} nt long")
 
@@ -109,6 +139,10 @@ def udini(input_fastqs,
                             break
 
                         total_reads += 1
+                        #if total_reads == 10:
+                            #i = 0
+                            #break
+                        
                         if min_read_length and (len(lines[R1][SEQ]) < min_read_length or len(lines[R1][SEQ]) < min_read_length):
                             invalid_short_reads += 1
                             continue
@@ -126,18 +160,17 @@ def udini(input_fastqs,
                             for read in (R1, R2):
                                 umi = lines[read][SEQ][:umi_length]                            
                                 if valid and umi not in valid:
-                                    best = nextbest = umi_length
+                                    best = nextbest = len(umi)
                                     for potential in valid:
                                         ed = edit_distance(potential, umi)
-                                        if ed < best:
+                                        if ed <= best:
                                             nextbest = best
                                             best = ed
                                             corrected = potential
-                                        elif ed < nextbest:
-                                            nextbest = ed
                                     if best > 1 or nextbest < 3:
                                         invalid_umi_reads[read] += 1
                                         invalid_umi = True
+                                        break
                                     umi = corrected
                                 umis[read] = umi
                             

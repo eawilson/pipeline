@@ -6,6 +6,10 @@ import csv
 from collections import defaultdict, Counter
 from itertools import chain
 
+#from queue import Queue
+#from 
+
+
 QNAME = 0
 FLAG = 1
 RNAME = 2
@@ -28,6 +32,15 @@ NOT_PRIMARY_AND_MAPPED = UNMAPPED | MATE_UNMAPPED | SECONDARY | SUPPPLEMENTARY
 
 
 
+#def consumer(input_queue, output_queue, dedupe_func, details):
+    #while True:
+        #family = input_queue.get()
+        #if family is None:
+            #break
+        #consensus = dedupe_func(family, )
+    
+
+
 def read_bed(targets):
     baits = defaultdict(list)
     with open(targets, "rt") as f:
@@ -39,7 +52,8 @@ def read_bed(targets):
                 start = int(row[1]) + 1
                 stop = int(row[2])
             except (ValueError, IndexError):
-                sys.exit(f"{targets} is not a valid bedfile")
+                row = " ".join(row)
+                sys.exit(f'Unable to parse "{row}" within {targets} bedfile')
             if stop < start:
                 sys.exit(f"{targets} has invalid start/stop positions")
             try:
@@ -84,13 +98,8 @@ def reference_len(cigar):
 
 
 
-def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.json", umi=None, min_fragment_size=None, max_fragment_size=None, min_family_size=2, targets=None):
-    if max_fragment_size is not None:
-        max_fragment_size = int(max_fragment_size)
-    if min_fragment_size is not None:
-        min_fragment_size = int(min_fragment_size)
-    min_family_size = int(min_family_size)
-    
+def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.json", umi=None, min_fragment_size=None, max_fragment_size=None, min_family_size=2, targets=None, threads=1):
+   
     if umi == "thruplex":
         dedupe_func = dedupe#_umi_inexact
     elif umi in ("thruplex_hv", "prism"):
@@ -99,6 +108,9 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
         dedupe_func = dedupe
     else:
         sys.exit(f"'{umi}' is not a known UMI type")
+        
+    if threads > 1:
+        pass
     
     details = {"targets": read_bed(targets) if targets is not None else {},
                "min_fragment_size": min_fragment_size,
@@ -200,12 +212,16 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
 def dedupe_umi_exact(size_family, **kwargs):
     umi_families = defaultdict(list)
     for pair in size_family:
-        for tag in pair[11:]:
+        for tag in pair[0][11:]:
             if tag.startswith("RX:Z:"):
                 umi_families[tag].append(pair)
                 break
         else:
             sys.exit("Missing RX tags")
+    #if len(size_family) > 1:
+        #for umi, family in umi_families.items():
+            #print(umi.split(":")[-1], len(family))
+        #print("")
     return "".join([dedupe(family, **kwargs) for family in umi_families.values()])
 
 
@@ -420,8 +436,9 @@ def main():
     parser.add_argument("-f", "--min-fragment-size", help="Minimum fragment size.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-F", "--max-fragment-size", help="Maximum fragment size.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-s", "--stats", help="Statistics file.", dest="statistics", default=argparse.SUPPRESS)
-    parser.add_argument("-t", "--targets", help="Bed file of on-target regions.", default=argparse.SUPPRESS)
+    parser.add_argument("-b", "--bed", help="Bed file of on-target regions.", dest="targets", default=argparse.SUPPRESS)
     parser.add_argument("-u", "--umi", help="UMI type, allowed = thruplex, thruplex_hv, prism.", default=argparse.SUPPRESS)
+    parser.add_argument("-t", "--threads", help="Number of threads to use.", default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         elduderino(**vars(args))

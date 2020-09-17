@@ -8,7 +8,8 @@ import io
 import argparse
 from itertools import zip_longest
 import pdb
-from collections import defaultdict, namedtuple
+import datetime
+from collections import defaultdict, namedtuple, Counter
 
 import covermi
 from boto3 import client
@@ -136,6 +137,41 @@ def illumina_readgroup(filepath):
         identifier = f.readline().split(":")
     flowcell = identifier[2]
     return "@RG\\tID:{}\\tSM:{}".format(flowcell, sample)
+
+
+
+def pretty_duration(seconds):
+    mins, secs = divmod(int(seconds), 60)
+    hours, mins = divmod(mins, 60)
+    duration = [f"{hours} hours"] if hours else []
+    if hours or mins:
+        duration.append(f"{mins} minutes")
+    duration.append(f"{secs} seconds")
+    return " ".join(duration) 
+
+
+
+class Pipe(object):
+    """ Wrapper arond the pipe function that will maintain a record of the
+        time taken to run each command. This is stored by command, ie if
+        a single command is run several times the time will be recorded as
+        the total time of all of the invocation.
+    """
+    def __init__(self):
+        self._durations = Counter()
+        
+    def __call__(self, *args, **kwargs):
+        start = datetime.datetime.now()
+        ret = pipe(*args, **kwargs)
+        stop = datetime.datetime.now()
+        self._durations[args[0][0]] += (stop - start).total_seconds()
+        return ret
+    
+    @property
+    def durations(self):
+        padding = max(len(key) for key in self._durations)
+        template = f"{{:{padding}}} {{}} "
+        return "\n".join(template.format(k, pretty_duration(v)) for k, v in sorted(self._durations.items()))
 
 
 
