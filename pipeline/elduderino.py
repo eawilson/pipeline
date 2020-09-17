@@ -118,8 +118,11 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
                "min_family_size": min_family_size}
     
     stats = {"fragment_sizes": Counter(),
-             "family_sizes": Counter(),
-             "fragments_per_target": defaultdict(int, [(t[2], 0) for t in chain(*details["targets"].values())])}
+             "family_sizes": Counter()}
+    if targets is not None:
+        stats.update({"fragments_per_target": defaultdict(int, [(t[2], 0) for t in chain(*details["targets"].values())]),
+                      "ontarget": 0,
+                      "offtarget": 0})
     
     unpaired = {}
     
@@ -205,7 +208,7 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
         old_stats = {}
     old_stats.update(stats)
     with open(statistics, "wt") as f:
-        json.dump(stats, f, sort_keys=True, indent=4)
+        json.dump(old_stats, f, sort_keys=True, indent=4)
 
 
 
@@ -305,7 +308,7 @@ def dedupe(family, stats, targets, min_family_size, min_fragment_size, max_fragm
         
         if targets:
             best_overlap = 0
-            target = "offtarget"
+            target = None
             for start, stop, name in targets.get(left_rname, ()):
                 if start > right_stop:
                     break
@@ -314,8 +317,13 @@ def dedupe(family, stats, targets, min_family_size, min_fragment_size, max_fragm
                     if overlap > best_overlap:
                         best_overlap = overlap
                         target = name
-            stats["fragments_per_target"][target] += 1
-            passed = passed and target != "offtarget"
+            if target is not None:
+                stats["fragments_per_target"][target] += 1
+                stats["ontarget"] += 1
+                passed = True
+            else:
+                stats["offtarget"] += 1
+                passed = False
     
     else:
         #print("{}:{}-{}  {}:{}-{}".format(left_rname, left_start, "<" if left_rc else ">", right_rname, right_start, "<" if right_rc else ">"))
