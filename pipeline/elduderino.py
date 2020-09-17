@@ -99,7 +99,7 @@ def reference_len(cigar):
 
 
 def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.json", umi=None, min_fragment_size=None, max_fragment_size=None, min_family_size=2, targets=None, threads=1):
-   
+
     if umi == "thruplex":
         dedupe_func = dedupe#_umi_inexact
     elif umi in ("thruplex_hv", "prism"):
