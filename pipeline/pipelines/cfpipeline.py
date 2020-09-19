@@ -162,9 +162,9 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
         if "assembly" in prop:
             vep_options += ["--assembly", prop["assembly"]]
         vep_script = os.path.join(os.path.expanduser("~"), "ensembl-vep/vep")
-        pipe(["perl", vep_script, "-i", vcf,
-                                "-o", vepjson,
-                                "--fasta", reference] + vep_options)
+        pipe([vep_script, "-i", vcf,
+                          "-o", vepjson,
+                          "--fasta", reference] + vep_options)
         create_report(vepjson, panel)
         os.unlink(vepjson)
 

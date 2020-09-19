@@ -5,9 +5,7 @@ import sys
 import csv
 from collections import defaultdict, Counter
 from itertools import chain
-
-#from queue import Queue
-#from 
+from multiprocessing import Process, Queue
 
 
 QNAME = 0

@@ -44,7 +44,8 @@ def udini(input_fastqs,
     # reversed so we can pop the fastqs in the original order.
     input_fastqs = list(reversed(input_fastqs))
     
-    if not output_fastq.endswith(".fastq") and not output_fastq.endswith(".fastq.gz"):
+    if not output_fastq.endswith(".fastq") and \
+       not output_fastq.endswith(".fastq.gz"):
         sys.exit("Output must be a .fastq or .fastq.gz file")
     
     if not(interleaved) and len(input_fastqs) % 2:
@@ -173,7 +174,7 @@ def udini(input_fastqs,
     stats["total_reads"] = total_reads
     stats["invalid_short_reads"] = invalid_short_reads
     stats["invalid_n_reads"] = invalid_n_reads
-    if umi_length:
+    if umi_sequences:
         stats["invalid_umi_reads_r1"] = invalid_umi_reads[R1]
         stats["invalid_umi_reads_r2"] = invalid_umi_reads[R2]
     with open(statistics, "wt") as f:

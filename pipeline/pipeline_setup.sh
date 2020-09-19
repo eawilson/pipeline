@@ -11,7 +11,7 @@ sudo apt-get -y install libncurses5-dev # samtools
 sudo apt-get -y install openjdk-8-jdk # varscan picard
 sudo apt-get -y install libmysqlclient-dev # vep
 sudo apt-get -y install python3-pip
-sudo apt-get install python3-tk
+sudo apt-get -y install python3-tk
 
 sudo cpan App::cpanminus # vep
 sudo cpanm Archive::Zip # vep
@@ -19,15 +19,10 @@ sudo cpanm DBD::mysql # vep
 sudo cpanm Archive::Extract # vep
 sudo cpanm Try::Tiny # vep
 sudo cpanm JSON
+sudo cpanm Module::Build
 
 sudo pip3 install boto3
-sudo pip3 install setuptools
 sudo pip3 install matplotlib
-
-mkdir workspace
-sudo mkfs -t ext4 /dev/nvme0n1
-sudo mount /dev/nvme0n1 workspace
-sudo chmod go+rwx workspace
 
 
 
@@ -37,36 +32,37 @@ make
 sudo mv bwa /usr/local/bin
 cd ..
 
-wget https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2
-tar xvfj htslib-1.9.tar.bz2
-rm htslib-1.9.tar.bz2
-cd htslib-1.9
+wget https://github.com/samtools/htslib/releases/download/1.10.2/htslib-1.10.2.tar.bz2
+tar xvfj htslib-1.10.2.tar.bz2
+rm htslib-1.10.2.tar.bz2
+cd htslib-1.10.2
 autoreconf
 ./configue
 make
 sudo make install
 cd ..
 
-wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
-tar xvfj samtools-1.9.tar.bz2
-rm samtools-1.9.tar.bz2
-cd samtools-1.9
+wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2
+tar xvfj samtools-1.10.tar.bz2
+rm samtools-1.10.tar.bz2
+cd samtools-1.10
 autoreconf
 ./configue
 make
 sudo make install
 cd ..
 
-wget https://github.com/samtools/bcftools/releases/download/1.9/bcftools-1.9.tar.bz2
-tar xvfj bcftools-1.9.tar.bz2
-rm bcftools-1.9.tar.bz2
-cd bcftools-1.9
+wget https://github.com/samtools/bcftools/releases/download/1.10.2/bcftools-1.10.2.tar.bz2
+tar xvfj bcftools-1.10.2.tar.bz2
+rm bcftools-1.10.2.tar.bz2
+cd bcftools-1.10.2
 autoreconf
 ./configue
 make
 sudo make install
 cd ..
 
+# Not the latest version
 wget -O VarScan.v2.3.9.jar https://sourceforge.net/projects/varscan/files/VarScan.v2.3.9.jar/download
 sudo mv VarScan.v2.3.9.jar /usr/local/bin
 echo '#!/bin/bash' >varscan
@@ -79,14 +75,12 @@ sudo bash -c "$(curl -L https://basemount.basespace.illumina.com/install)"
 git clone https://github.com/Ensembl/ensembl-vep.git
 cd ensembl-vep
 perl INSTALL.pl --AUTO a
-sudo cp vep /usr/local/bin/vep-98
-sudo ln -s /usr/local/bin/vep-98 /usr/local/bin/vep
 cd ..
 
-wget -O picard-2.21.2.jar https://github.com/broadinstitute/picard/releases/download/2.21.2/picard.jar
-sudo mv picard-2.21.2.jar /usr/local/bin
+wget -O picard-2.23.4.jar https://github.com/broadinstitute/picard/releases/download/2.23.4/picard.jar
+sudo mv picard-2.23.4.jar /usr/local/bin
 echo '#!/bin/bash' >picard
-echo 'java -jar /usr/local/bin/picard-2.21.2.jar $@' >>picard
+echo 'java -jar /usr/local/bin/picard-2.23.4.jar $@' >>picard
 chmod +x picard
 sudo mv picard /usr/local/bin
 

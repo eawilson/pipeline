@@ -103,7 +103,7 @@ def main():
             response = sqs.delete_message(QueueUrl=queue_url,
                                           ReceiptHandle=message["ReceiptHandle"])
         # I believe this happens if the queue is purged while a job is in progress.
-        except Exception: # Actually throws QueueDoesNotExist, but where to import it from
+        except Exception: # Actually throws QueueDoesNotExist, but where to import it from?
             pass
             
             

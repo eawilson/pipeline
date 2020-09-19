@@ -16,6 +16,7 @@ package =  {"name": "pipeline",
                                                   "terminate=pipeline.runner:terminate",
                                                   "udini=pipeline.udini:main",
                                                   "elduderino=pipeline.elduderino:main",
+                                                  "vcf_pvalue_2_phred=pipeline.vcf_pvalue_2_phred:main",
                                                   "runner=pipeline.runner:main"] },
             }
 
