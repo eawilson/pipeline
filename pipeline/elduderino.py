@@ -75,15 +75,14 @@ def unpack_cigar(cigar_string):
             try:
                 cigar_tuples.append((int(num), character))
             except ValueError:
-                print(cigar_string)
-                sys.exit("Malformed cigar string")
+                sys.exit(f"Malformed cigar string {cigar_string}")
             num = ""
     return tuple(cigar_tuples)
 
 
 
 def repack_cigar(cigar_tuples):
-    return "".join("{}{}".format(*op) for op in cigar_tuples)
+    return "".join(str(v) for v in chain(*cigar_tuples))
 
 
 

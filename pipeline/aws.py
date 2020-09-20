@@ -114,6 +114,9 @@ class s3_open(object):
 
 
 def mount_instance_storage():
+    if not am_i_an_ec2_instance():
+        sys.exit("Not an EC2 instance")
+    
     ephemoral_path = os.path.join(os.path.expanduser("~"), "ephemoral")
     if not os.path.exists(ephemoral_path):
         os.mkdir(ephemoral_path)

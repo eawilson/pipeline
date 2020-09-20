@@ -62,7 +62,7 @@ make
 sudo make install
 cd ..
 
-# Not the latest version
+# Not the latest version, latest version fails ?intermediate version
 wget -O VarScan.v2.3.9.jar https://sourceforge.net/projects/varscan/files/VarScan.v2.3.9.jar/download
 sudo mv VarScan.v2.3.9.jar /usr/local/bin
 echo '#!/bin/bash' >varscan
@@ -72,10 +72,16 @@ sudo mv varscan /usr/local/bin
 
 sudo bash -c "$(curl -L https://basemount.basespace.illumina.com/install)"
 
+
+sudo mkdir /usr/local/lib/site_perl
 git clone https://github.com/Ensembl/ensembl-vep.git
 cd ensembl-vep
-perl INSTALL.pl --AUTO a
+sudo perl INSTALL.pl --AUTO a -d /usr/local/lib/site_perl
+sudo cp -r  modules/Bio/EnsEMBL /usr/local/lib/site_perl/Bio
+sudo mv vep /usr/local/bin
 cd ..
+
+
 
 wget -O picard-2.23.4.jar https://github.com/broadinstitute/picard/releases/download/2.23.4/picard.jar
 sudo mv picard-2.23.4.jar /usr/local/bin

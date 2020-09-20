@@ -18,17 +18,17 @@ from boto3 import client
 
 __all__ = ["run", "pipe", "Pipe"]
 
-ILLUMINA_FASTQ = re.compile(r"(.+)_S([0-9]{1,2})_L([0-9]{3})_R([12])_001\.fastq(\.gz)?$") # name, s_number, lane, read, gzip
+#ILLUMINA_FASTQ = re.compile(r"(.+)_S([0-9]{1,2})_L([0-9]{3})_R([12])_001\.fastq(\.gz)?$") # name, s_number, lane, read, gzip
 
 
 
-def illumina_readgroup(filepath):
-    basename = os.path.basename(filepath)
-    sample = "_".join(basename.split("_")[:-4]) # remove the _Sx_Lxxx_Rx_001.fastq from the name
-    with open(filepath) as f:
-        identifier = f.readline().split(":")
-    flowcell = identifier[2]
-    return "@RG\\tID:{}\\tSM:{}".format(flowcell, sample)
+#def illumina_readgroup(filepath):
+    #basename = os.path.basename(filepath)
+    #sample = "_".join(basename.split("_")[:-4]) # remove the _Sx_Lxxx_Rx_001.fastq from the name
+    #with open(filepath) as f:
+        #identifier = f.readline().split(":")
+    #flowcell = identifier[2]
+    #return "@RG\\tID:{}\\tSM:{}".format(flowcell, sample)
 
 
 
