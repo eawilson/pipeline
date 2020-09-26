@@ -6,6 +6,9 @@ import csv
 from collections import defaultdict, Counter
 from itertools import chain
 from multiprocessing import Process, Queue
+from contextlib import nullcontext
+from functools import partial
+
 
 
 QNAME = 0
@@ -30,13 +33,34 @@ NOT_PRIMARY_AND_MAPPED = UNMAPPED | MATE_UNMAPPED | SECONDARY | SUPPPLEMENTARY
 
 
 
-#def consumer(input_queue, output_queue, dedupe_func, details):
-    #while True:
-        #family = input_queue.get()
-        #if family is None:
-            #break
-        #consensus = dedupe_func(family, )
+def dedupe_process(input_queue, output_queue, stats_queue, dedupe_func, stats, **details):
+    while True:
+        size_family = input_queue.get()
+        if size_family is None:
+            break
+        output_queue.put(dedupe_func(size_family, stats=stats, **details))
+    stats_queue.put(stats)
     
+
+
+def filewriter_process(output_queue, output_sam):
+    with open(output_sam, "wt") as f_out:
+        while True:
+            text = output_queue.get()
+            text is None:
+                break
+            f_out.write(text)
+
+
+
+def dedupe_blocking(size_family, dedupe_func=None, f_out=None, **kwargs):
+    f_out.write(dedupe_func(size_family, **kwargs))
+
+
+
+def dedupe_nonblocking(size_family, input_queue=None):
+    input_queue.put(size_family)
+
 
 
 def read_bed(targets):
@@ -105,9 +129,6 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
         dedupe_func = dedupe
     else:
         sys.exit(f"'{umi}' is not a known UMI type")
-        
-    if threads > 1:
-        pass
     
     details = {"targets": read_bed(targets) if targets is not None else {},
                "min_fragment_size": min_fragment_size,
@@ -117,20 +138,40 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
     stats = {"fragment_sizes": Counter(),
              "family_sizes": Counter()}
     if targets is not None:
-        stats.update({"fragments_per_target": defaultdict(int, [(t[2], 0) for t in chain(*details["targets"].values())]),
+        stats.update({"fragments_per_target": Counter({val[2]: 0 for val in chain(*details["targets"].values())}),
                       "ontarget": 0,
                       "offtarget": 0})
     
-    unpaired = {}
     
-    current_rname = ""
-    paired = defaultdict(list)
-    max_pos = 0
-    paired2 = defaultdict(list)
-    max_pos2 = 0
+    multithreaded = (threads > 1)
+    with (open(output_sam, "wt") if not multithreaded else nullcontext()) as f_out:
+        
+        if multithreaded:
+            input_queue = Queue()
+            output_queue = Queue()
+            stats_queue = Queue()
+            workers = []
+            for i in range(threads - 1):
+                workers.append(Process(target=dedupe_process, args=(input_queue, output_queue, stats_queue, dedupe_func, stats, **details)))
+            workers.append(Process(target=filewriter_process, args=(output_queue, output_sam)))
+            for worker in workers:
+                worker.start()
+            dedupe_family = partial(dedupe_nonblocking, input_queue=input_queue)
+            
+        else:
+            dedupe_family = partial(dedupe_blocking, dedupe_func=dedupe_func, f_out=f_out, stats=stats, **details)
 
-    with open(output_sam, "wt") as f_out:
+        
+        unpaired = {}
+        
+        current_rname = ""
+        paired = defaultdict(list)
+        max_pos = 0
+        paired2 = defaultdict(list)
+        max_pos2 = 0
+
         with open(input_sam, "rt") as f_in:
+            previous_rnames = set()
             sort_check_rname = ""
             sort_check_pos = 0
             reader = csv.reader(f_in, delimiter="\t")
@@ -148,7 +189,10 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
                 if rname == sort_check_rname:
                     if pos < sort_check_pos:
                         sys.exit("SAM file must be sorted by position")
+                elif sort_check_rname in previous_rnames:
+                    sys.exit("SAM file must be sorted by position")
                 else:
+                    previous_rnames.add(sort_check_rname)
                     sort_check_rname = rname
                 sort_check_pos = pos
 
@@ -183,7 +227,7 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
                     
                 else:
                     for size_family in paired.values():
-                        f_out.write(dedupe_func(size_family, stats=stats, **details))
+                        dedupe_family(size_family)
                     paired = paired2
                     max_pos = max_pos2
                     paired2 = defaultdict(list)
@@ -195,7 +239,25 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
                         max_pos = pos
                     
             for size_family in chain(paired.values(), paired2.values()):
-                f_out.write(dedupe_func(size_family, stats=stats, **details))
+                dedupe_family(size_family)
+
+
+        if multithreaded:
+            for worker in workers[:-1]:
+                input_queue.put(None)
+            for worker in workers[:-1]:
+                _stats = stats_queue.get()
+                try:
+                    for key in ("fragment_sizes", "family_sizes", "fragments_per_target"):
+                        for k, v in _stats[key].items():
+                            stats[key][k] += v
+                    for key in ("ontarget", "offtarget"):
+                        stats[key] += _stats[key]
+                except KeyError:
+                    pass
+            output_queue.put(None)
+            for worker in workers:
+                worker.join()
 
     
     try:
@@ -226,7 +288,7 @@ def dedupe_umi_exact(size_family, **kwargs):
 
 
 
-def dedupe_umi_inexact(size_famil, **kwargs):
+def dedupe_umi_inexact(size_family, **kwargs):
     umi_pairs = []
     #for pair in size_family:
         #for tag in pair[0][11:]:
@@ -443,7 +505,7 @@ def main():
     parser.add_argument("-s", "--stats", help="Statistics file.", dest="statistics", default=argparse.SUPPRESS)
     parser.add_argument("-b", "--bed", help="Bed file of on-target regions.", dest="targets", default=argparse.SUPPRESS)
     parser.add_argument("-u", "--umi", help="UMI type, allowed = thruplex, thruplex_hv, prism.", default=argparse.SUPPRESS)
-    parser.add_argument("-t", "--threads", help="Number of threads to use.", default=argparse.SUPPRESS)
+    parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         elduderino(**vars(args))

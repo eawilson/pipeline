@@ -11,7 +11,7 @@ from covermi import Panel, covermimain
 
 
 
-def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_family_size=1):
+def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_family_size=1, threads=None):
     """Cell free pipeline.
 
     Args:
@@ -22,8 +22,9 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
         panel (str): Path to covermi panel which must contain targets bedfile.
         umi (str): umi type or None if no umis.
         vep (str): Path to vep data.
-        min_family_size (int or str): Minimum family size, families smaller
+        min_family_size (int): Minimum family size, families smaller
             than this will be filtered.
+        threads (int): Number of threads to use.
         
     Returns:
         None.
@@ -32,7 +33,8 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     # Calculate number of available threads with which to run bwa, samtools
     # and vep. Will use all available threads on the assumption that this
     # is the only program running on the machine.
-    threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
+    if threads is None:
+        threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
     
     reference = (glob.glob(f"{reference}/*.fna") + [reference])[0]
     targets_bedfile = (glob.glob(f"{panel}/*.bed") + [panel])[0]
@@ -91,7 +93,8 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     unsorted_sam = f"{sample}.unsorted.sam"
     elduderino_options = ["--output", unsorted_sam,
                           "--stats", stats,
-                          "--min-family-size", min_family_size]
+                          "--min-family-size", min_family_size,
+                          "--threads", threads]
     if umi is not None:
         elduderino_options += ["--umi", umi]
     if targets_bedfile is not None:
@@ -161,10 +164,9 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
             vep_options += ["--refseq"]
         if "assembly" in prop:
             vep_options += ["--assembly", prop["assembly"]]
-        vep_script = os.path.join(os.path.expanduser("~"), "ensembl-vep/vep")
-        pipe([vep_script, "-i", vcf,
-                          "-o", vepjson,
-                          "--fasta", reference] + vep_options)
+        pipe(["vep", "-i", vcf,
+                     "-o", vepjson,
+                     "--fasta", reference] + vep_options)
         create_report(vepjson, panel)
         os.unlink(vepjson)
 
@@ -185,7 +187,8 @@ def main():
     parser.add_argument("-p", "--panel", help="Directory containing panel data.", required=True)
     parser.add_argument("-v", "--vep", help="Directory containing vep data.", required=True)
     parser.add_argument("-u", "--umi", help="Umi.", default=argparse.SUPPRESS)
-    parser.add_argument("-m", "--min-family-size", help="Minimum family size.", default=argparse.SUPPRESS)
+    parser.add_argument("-m", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     args = parser.parse_args()
     cfpipeline(**vars(args))
 
