@@ -247,14 +247,14 @@ def elduderino(input_sam, output_sam="output.deduped.sam", statistics="stats.jso
                 input_queue.put(None)
             for worker in workers[:-1]:
                 _stats = stats_queue.get()
-                try:
-                    for key in ("fragment_sizes", "family_sizes", "fragments_per_target"):
-                        for k, v in _stats[key].items():
+                for key, val in _stats.items():
+                    if key in ("fragment_sizes", "family_sizes", "fragments_per_target"):
+                        for k, v in val.items():
                             stats[key][k] += v
-                    for key in ("ontarget", "offtarget"):
+                    if key in ("ontarget", "offtarget"):
                         stats[key] += _stats[key]
-                except KeyError:
-                    pass
+                    else:
+                        sys.exit(f"Unexpected statistic {key}")
             output_queue.put(None)
             for worker in workers:
                 worker.join()
