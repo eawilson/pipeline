@@ -71,7 +71,6 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     namesorted_unfixed_undeduped_sam = f"{sample}.namesorted.unfixed.undeduped.sam"
     pipe(["samtools", "sort", "-n",
                               "-o", namesorted_unfixed_undeduped_sam,
-                              "-T", "temp",
                               "-@", threads, 
                               unsorted_unfixed_undeduped_sam])
     os.unlink(unsorted_unfixed_undeduped_sam)
@@ -84,11 +83,10 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
 
     undeduped_sam = f"{sample}.undeduped.sam"
     pipe(["samtools", "sort", "-o", undeduped_sam,
-                              "-T", "temp",
                               "-@", threads, 
                               namesorted_undeduped_sam])
     os.unlink(namesorted_undeduped_sam)
-    
+    sys.exit()
 
     unsorted_sam = f"{sample}.unsorted.sam"
     elduderino_options = ["--output", unsorted_sam,
@@ -105,7 +103,6 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
 
     sam = f"{sample}.sam"
     pipe(["samtools", "sort", "-o", sam,
-                              "-T", "temp",
                               "-@", threads, 
                               unsorted_sam])
     os.unlink(unsorted_sam)
@@ -185,7 +182,7 @@ def main():
     parser.add_argument("-s", "--sample", help="Sample name.", required=True)
     parser.add_argument("-r", "--reference", help="Reference genome.", required=True)
     parser.add_argument("-p", "--panel", help="Directory containing panel data.", required=True)
-    parser.add_argument("-v", "--vep", help="Directory containing vep data.", required=True)
+    parser.add_argument("-v", "--vep", help="Directory containing vep data.")
     parser.add_argument("-u", "--umi", help="Umi.", default=argparse.SUPPRESS)
     parser.add_argument("-m", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)

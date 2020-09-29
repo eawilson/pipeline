@@ -47,7 +47,7 @@ def s3_put(bucket, filename, prefix=""):
     s3 = client("s3")
     basename = os.path.basename(filename)
     print("Uploading {} to S3.".format(basename))
-    s3.upload_file(filename, bucket, "{}/{}".format(prefix, basename) if prefix else basename)
+    s3.upload_file(filename, bucket, "{}/{}".format(prefix.rstrip("/"), basename) if prefix else basename)
 
 
 

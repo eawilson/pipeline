@@ -12,8 +12,8 @@ BUCKET = "omdc-data"
 
 
 def enqueue():
-    project = "scan"
-    panel = "Pan_Cancer"
+    project = "EBVL"
+    panel = "EBVL"
     
     sqs = boto3.client("sqs")
     queue_url = sqs.get_queue_url(QueueName="samples")["QueueUrl"]
@@ -37,11 +37,11 @@ def enqueue():
                 "Output": f"s3://{BUCKET}/projects/{project}/analyses/{sample}",
                 "Args": urls,
                 "Kwargs": {"--sample": sample,
-                           "--reference": f"s3://{BUCKET}/reference/37/sequence/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.tar.gz",
+                           "--reference": f"s3://{BUCKET}/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set.tar.gz",
                            "--panel": f"s3://{BUCKET}/panels/{panel}.tar.gz",
-                           "--vep": f"s3://{BUCKET}/reference/homo_sapiens_refseq_vep_98_GRCh37.tar.gz",
-                           "--umi": "thruplex",
-                           "--min-family-size": "2"},
+                           "--vep": f"s3://{BUCKET}/reference/vep_101_GRCh37_homo_sapiens_refseq.tar.gz",
+                           "--umi": "thruplex_hv",
+                           "--min-family-size": "1"},
                 }
         
         message = json.dumps(data)
