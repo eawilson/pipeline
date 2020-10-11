@@ -1,4 +1,5 @@
 pipeline.egg-info/**
 pipeline/__pycache__/**
+pipeline/pipelines/__pycache__/**
 pipeline/*.so
 build/**

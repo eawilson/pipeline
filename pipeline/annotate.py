@@ -2,7 +2,7 @@ import json, pdb, os, csv
 from collections import defaultdict
 from itertools import chain
 
-from covermi.gr import load_principal, load_targets, SequencedVariant, Chrom
+#from covermi.gr import appris, load_targets, SequencedVariant, Chrom
 from covermi import Panel, Gr
 
 __all__ = ["create_report"]
@@ -18,11 +18,12 @@ def transcript_version_sort(cons):
 
 
 def create_report(vep_json_file, panel, everything=False):
-
+    
     transcript_ids, gene_symbols, _ = load_targets(panel.targets if "targets" in panel else None)
     transcript_ids = set(transcript_id.split(".")[0] for transcript_id in transcript_ids)
-    principal = load_principal(panel.principal if "principal" in panel else None)
-
+    principal = appris(panel.get("principal", None))
+    
+    
     def refseq_sort(cons):
         return [BIOTYPE[cons["biotype"]], int(cons["gene_id"]), \
                 not(cons["transcript_id"].startswith("N")), not(principal[cons["transcript_id"]]),"canonical" not in cons, cons["transcript_id"]]
@@ -40,7 +41,7 @@ def create_report(vep_json_file, panel, everything=False):
             vep_output = json.loads(line)
 
             # create variant
-            row = vep_output["input"].strip().split("\t")
+            row = vep_output["input"].rstrip().split("\t")
             try:
                 chrom = Chrom(row[0])
             except KeyError:

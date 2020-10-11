@@ -12,10 +12,12 @@ package =  {"name": "pipeline",
             "include_package_data": True,
             "zip_safe": True,
             "entry_points": { "console_scripts": ["cfpipeline=pipeline.pipelines.cfpipeline:main",
+                                                  "cfpipeline_trim_no_dedupe=pipeline.pipelines.cfpipeline_trim_no_dedupe:main",
                                                   "mount_instance_storage=pipeline.aws:mount_instance_storage",
                                                   "udini=pipeline.udini:main",
                                                   "elduderino=pipeline.elduderino:main",
                                                   "vcf_pvalue_2_phred=pipeline.vcf_pvalue_2_phred:main",
+                                                  "covermi_stats=pipeline.covermi_stats:main",
                                                   "runner=pipeline.runner:main"] },
             }
 
