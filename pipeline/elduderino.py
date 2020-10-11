@@ -245,7 +245,7 @@ def elduderino(input_sam,
                     sort_check_rname = rname
                 sort_check_pos = pos
 
-                if flag & NOT_PRIMARY_AND_MAPPED: ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                if flag & NOT_PRIMARY_AND_MAPPED: #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                     continue
                 
                 if not((flag & READ1) ^ (flag & READ2)):
@@ -330,20 +330,19 @@ def elduderino(input_sam,
 
 
 def dedupe_umi_exact(size_family, **kwargs):
-    umi_families = defaultdict(list)
-    for pair in size_family:
-        for tag in pair[0][11:]:
-            if tag.startswith("RX:Z:"):
-                umi_families[tag].append(pair)
-                break
-        else:
-            sys.exit("Missing RX tags")
-    #if len(size_family) > 1:
-        #for umi, family in umi_families.items():
-            #print(umi.split(":")[-1], len(family))
-        #print("")
-    return "".join([dedupe(family, **kwargs) for family in umi_families.values()])
-
+    if len(size_family) > 1:
+        umi_families = defaultdict(list)
+        for pair in size_family:
+            for tag in pair[0][11:]:
+                if tag.startswith("RX:Z:"):
+                    umi_families[tag].append(pair)
+                    break
+            else:
+                sys.exit("Missing RX tags")
+        return "".join([dedupe(family, **kwargs) for family in umi_families.values()])
+    
+    else:
+        return dedupe(size_family, **kwargs)
 
 
 def dedupe_umi_inexact(size_family, **kwargs):
@@ -450,9 +449,11 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
             if left_rc and not right_rc:
                 # Inverted read directions therefore readthrough into opposite umi
                 readthrough = True
-                fragment_size = len(left[SEQ]) - left_read_pos + hard_clip(left[CIGAR][-1])
+                fragment_size = len(left[SEQ]) - left_read_pos + hard_clip(left[CIGAR][-1]) + hard_clip(right[CIGAR][0])
                 if targets and not is_ontarget(targets, (left_rname, right_start, left_start + left[CIGAR].reference_len - 1), stats=stats):
                     passed = False
+                else:
+                    pdb.set_trace()#+++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 
             elif not left_rc and right_rc:
                 # Correct read directions therefore no readthrough
@@ -462,17 +463,17 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
 
         elif not left_rc and right_rc:
             # Segments don't overlap but are correctly orientated
-            fragment_size = right_start - left_start + len(right[SEQ])
+            fragment_size = right_start - left_start + len(right[SEQ]) + hard_clip(right[CIGAR][-1])
             for num, op in left[CIGAR]:
                 if op in "ISH":
                     fragment_size += num
                 elif op in "DN":
                     fragment_size -= num
-            if fragment_size > max_fragment_size:
+            if max_fragment_size is not None and fragment_size > max_fragment_size:
                 fragment_size = 0
             elif targets and not is_ontarget(targets, (left_rname, left_start, right_start + right[CIGAR].reference_len - 1), stats=stats):
                 passed = False
-        
+    
         
     stats["fragment_sizes"][fragment_size] += 1
     if not fragment_size and targets:
@@ -488,6 +489,8 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
 
     if not passed:
         return ""
+    
+    return ""#+++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
     
     if segments_overlap:
@@ -551,8 +554,9 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
             #print(first_pair[read][SEQ], "\n")
     
     for read in range(2):
-        first_pair[read][POS] = str(first_pair[read][POS])
         first_pair[read][FLAG] = str(first_pair[read][FLAG])
+        first_pair[read][POS] = str(first_pair[read][POS])
+        first_pair[read][CIGAR] = str(first_pair[read][CIGAR])
     
     return "{}\n{}\n".format("\t".join(first_pair[0]), "\t".join(first_pair[1]))
 
