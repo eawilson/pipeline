@@ -43,9 +43,10 @@ def download(client, path, destination=""):
         if not os.path.exists(path):
             print(f"Downloading {key}.")
             client.download_file(bucket, key, downloadname)
-            if downloadname.endswith(".tar.gz"):
+            if downloadname.endswith(".tar.gz") or downloadname.endswith(".tar"):
                 print(f"Unpacking {key}.")
-                subprocess.run(["tar", "-xzf", os.path.basename(downloadname)], cwd=destination)
+                args = "-xzf" if downloadname.endswith(".gz") else "-xf"
+                subprocess.run(["tar", args, os.path.basename(downloadname)], cwd=destination)
                 os.unlink(downloadname)
                 if not os.path.exists(path):
                     raise RuntimeError(f"Member not present in archive {key}.")
@@ -82,7 +83,7 @@ def main():
         body = json.loads(message["Body"])
         
         if body["Script"][:5].lower() == ("s3://"):    
-            body["Script"] = os.path.join(".", download(s3, body["Script"], destination="downloads"))        
+            body["Script"] = os.path.join(".", download(s3, body["Script"], destination="downloads"))
         body["Args"] = [download(s3, url) for url in body.get("Args", ())]
         body["Kwargs"] = {k: download(s3, v, destination="downloads") for k, v in body.get("Kwargs", {}).items()}
         

@@ -6,12 +6,11 @@ import sys
 import argparse
 import glob
 
-from pipeline import run, pipe, vcf_pvalue_2_phred, create_report, Pipe
-from covermi import Panel, covermimain
+from pipeline import run, vcf_pvalue_2_phred, Pipe
 
 
 
-def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_family_size=1, max_fragment_size=None, threads=None):
+def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, min_family_size=1, max_fragment_size=None, threads=None):
     """Cell free pipeline.
 
     Args:
@@ -38,7 +37,7 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
         threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
     
     reference = (glob.glob(f"{reference}/*.fna") + [reference])[0]
-    targets_bedfile = (glob.glob(f"{panel}/*.bed") + [panel])[0]
+    targets_bedfile = (glob.glob(f"{panel}/*.bed") + [None])[0] if panel is not None else None
     stats = f"{sample}.stats.json"
     pipe = Pipe()
     
@@ -141,29 +140,22 @@ def cfpipeline(sample, input_fastqs, reference, panel, umi=None, vep=None, min_f
     vcf_pvalue_2_phred(pvalue_vcf, vcf)
     os.unlink(pvalue_vcf)
     
-    if vep is not None:
-        vepjson = f"{sample}.vep"
-        vep_options = ["--no_stats",
-                    "--dir", vep,
-                    "--format", "vcf",
-                    "--fork", threads,
-                    "--json",
-                    "--offline",
-                    "--everything",
-                    "--force_overwrite"]
-        if "refseq" in vep:
-            vep_options += ["--refseq"]
-        
-        pipe(["vep", "-i", vcf,
-                     "-o", vepjson,
-                     "--fasta", reference] + vep_options)
-        create_report(vepjson, panel)
-        os.unlink(vepjson)
     
-    pipe(["covermi_stats", bam, "--panel", panel,
-                                "--output", f"{sample}.covermi.pdf",
-                                "--stats", stats,
-                                "--sample", sample])
+    if vep is not None:
+        annotate_options = ["--reference", reference,
+                            "--vep", vep,
+                            "--output", f"{sample}.annotation.tsv",
+                            "--threads", threads]
+        if panel is not None:
+            annotate_options += ["--panel", panel]
+        pipe(["annotate_panel", vcf] + annotate_options)
+    
+    
+    if panel is not None:
+        pipe(["covermi_stats", bam, "--panel", panel,
+                                    "--output", f"{sample}.covermi.pdf",
+                                    "--stats", stats,
+                                    "--sample", sample])
     
     print(pipe.durations, file=sys.stderr, flush=True)
 
@@ -174,14 +166,19 @@ def main():
     parser.add_argument('input_fastqs', nargs="+", help="Fastq files.")
     parser.add_argument("-n", "--sample", help="Sample name.", required=True)
     parser.add_argument("-r", "--reference", help="Reference genome.", required=True)
-    parser.add_argument("-p", "--panel", help="Directory containing panel data.", required=True)
+    parser.add_argument("-p", "--panel", help="Directory containing panel data.", default=argparse.SUPPRESS)
     parser.add_argument("-u", "--umi", help="Umi.", default=argparse.SUPPRESS)
-    parser.add_argument("-v", "--vep", help="Directory containing vep data.")
+    parser.add_argument("-v", "--vep", help="Directory containing vep data.", default=argparse.SUPPRESS)
     parser.add_argument("-m", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-f", "--max-fragment-size", help="Maximum template legth to be considered a genuine read pair.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     args = parser.parse_args()
-    cfpipeline(**vars(args))
+    try:
+        cfpipeline(**vars(args))
+    except OSError as e:
+        # File input/output error. This is not an unexpected error so just
+        # print and exit rather than displaying a full stack trace.
+        sys.exit(str(e))
 
 
 

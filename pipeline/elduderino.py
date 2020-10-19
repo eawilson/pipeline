@@ -422,6 +422,7 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
     left_start = left[POS]
     right_start = right[POS]
     left_read_pos = -1
+    right_read_pos = 0
     if left_rname == right_rname:
         
         # Do the two segments overlap? Find left_read_pos that overlaps right_start
@@ -437,10 +438,10 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
                 # Subtract non ref consuming bases at the start of right
                 # left_read_pos will now overlap the first baes of right
                 for num, op in right[CIGAR]:
-                    if op in "SI":
-                        left_read_pos -= num
-                    elif op in CONSUMES_REF:
+                    if op in CONSUMES_REF:
                         break
+                    if op in CONSUMES_READ:
+                        right_read_pos += num
                 segments_overlap = True
                 break
         
@@ -449,7 +450,7 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
             if left_rc and not right_rc:
                 # Inverted read directions therefore readthrough into opposite umi
                 readthrough = True
-                fragment_size = len(left[SEQ]) - left_read_pos + hard_clip(left[CIGAR][-1]) + hard_clip(right[CIGAR][0])
+                fragment_size = len(left[SEQ]) - left_read_pos
                 if targets and not is_ontarget(targets, (left_rname, right_start, left_start + left[CIGAR].reference_len - 1), stats=stats):
                     passed = False
                 else:
@@ -457,15 +458,15 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
                 
             elif not left_rc and right_rc:
                 # Correct read directions therefore no readthrough
-                fragment_size = len(right[SEQ]) + left_read_pos + hard_clip(left[CIGAR][0]) + hard_clip(right[CIGAR][-1])
+                fragment_size = len(right[SEQ]) + left_read_pos
                 if targets and not is_ontarget(targets, (left_rname, left_start, right_start + right[CIGAR].reference_len - 1), stats=stats):
                     passed = False
 
         elif not left_rc and right_rc:
             # Segments don't overlap but are correctly orientated
-            fragment_size = right_start - left_start + len(right[SEQ]) + hard_clip(right[CIGAR][-1])
+            fragment_size = right_start - left_start + len(right[SEQ])
             for num, op in left[CIGAR]:
-                if op in "ISH":
+                if op in "IS":
                     fragment_size += num
                 elif op in "DN":
                     fragment_size -= num

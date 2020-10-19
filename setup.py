@@ -19,6 +19,7 @@ package =  {"name": "pipeline",
                                                   "vcf_pvalue_2_phred=pipeline.vcf_pvalue_2_phred:main",
                                                   "covermi_stats=pipeline.covermi_stats:main",
                                                   "viral_copies=pipeline.viral_copies:main",
+                                                  "annotate_panel=pipeline.annotate_panel:main",
                                                   "runner=pipeline.runner:main"] },
             }
 

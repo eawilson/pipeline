@@ -16,7 +16,7 @@ def viral_copies(statistics, targets, exclude=""):
     
     baseline = []
     depths = defaultdict(list)
-    for target, depth in stats.get("fragments_per_target", ()):
+    for target, depth in stats.get("fragments_per_target", {}).items():
         target = "_".join(target.split("_")[:-1])
         if target in targets:
             depths[target].append(depth)
@@ -24,6 +24,7 @@ def viral_copies(statistics, targets, exclude=""):
             baseline.append(depth)
     
     baseline = mean(baseline)
+    stats["viral_copies_per_cell"] = {}
     for target, depth in depths.items():
         stats["viral_copies_per_cell"][target] = mean(depth) / baseline
         
@@ -34,7 +35,7 @@ def viral_copies(statistics, targets, exclude=""):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('stats', help="Input stats file.", dest="statistics")
+    parser.add_argument('statistics', help="Input stats file.")
     parser.add_argument("-t", "--targets", help="Viral targets.", required=True)
     parser.add_argument("-e", "--exclude", help="Targets to exclude when calculating baseline.", default=argparse.SUPPRESS)
     
