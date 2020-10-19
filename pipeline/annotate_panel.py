@@ -25,11 +25,9 @@ def chrom2int(chrom):
 
 
 
-def annotate_panel(vcf, reference, vep, threads=None, output="output.tsv", panel=None):
+def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None):
     if threads is None:
         threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
-
-    reference = (glob.glob(f"{reference}/*.fna") + [reference])[0]
 
     vepjson = "{}.vep.json".format(output[:-4])
     vep_options = ["--no_stats",
@@ -44,9 +42,7 @@ def annotate_panel(vcf, reference, vep, threads=None, output="output.tsv", panel
     if "refseq" in vep:
         vep_options += ["--refseq"]
     
-    pipe(["vep", "-i", vcf,
-                 "-o", vepjson,
-                 "--fasta", reference] + vep_options)
+    pipe(["vep", "-i", vcf, "-o", vepjson] + vep_options)
     
     targets = None
     needed_genes = set()
@@ -209,7 +205,6 @@ def annotate_panel(vcf, reference, vep, threads=None, output="output.tsv", panel
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('vcf', help="Input vcf file.")
-    parser.add_argument("-r", "--reference", help="Reference genome.", required=True)
     parser.add_argument("-v", "--vep", help="Directory containing vep data.", required=True)
     parser.add_argument("-o", "--output", help="Output annotated tsv.", default=argparse.SUPPRESS)
     parser.add_argument("-p", "--panel", help="Directory containing panel data.", default=argparse.SUPPRESS)
