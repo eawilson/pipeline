@@ -14,12 +14,13 @@ BUCKET = "omdc-data"
 def enqueue():
     project = "EBVL"
     panel = "EBVL"
+    analyses = "analyses2"
     
     sqs = boto3.client("sqs")
     queue_url = sqs.get_queue_url(QueueName="samples")["QueueUrl"]
 
     complete = set()
-    for key in s3_list(BUCKET, f"projects/{project}/analyses", extension=".bam"):
+    for key in s3_list(BUCKET, f"projects/{project}/{analyses}", extension=".bam"):
         splitkey = key.split("/")
         if len(splitkey) >= 2:
             complete.add(splitkey[-2])
@@ -34,14 +35,15 @@ def enqueue():
     n = 0
     for sample, urls in sorted(fastqs.items()):
         data = {"Script": "cfpipeline",
-                "Output": f"s3://{BUCKET}/projects/{project}/analyses/{sample}",
+                "Output": f"s3://{BUCKET}/projects/{project}/{analyses}/{sample}",
                 "Args": urls,
                 "Kwargs": {"--sample": sample,
                            "--reference": f"s3://{BUCKET}/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set.tar.gz",
                            "--panel": f"s3://{BUCKET}/panels/{panel}.tar.gz",
-                           "--vep": f"s3://{BUCKET}/reference/vep_101_GRCh37_homo_sapiens_refseq.tar.gz",
+                           "--vep": f"s3://{BUCKET}/reference/vep_101_GRCh37_homo_sapiens_refseq.tar",
                            "--umi": "thruplex_hv",
                            "--min-family-size": "1"},
+                           "--cnv": "EBER1 EBER2 EBNA2"},
                 }
         
         message = json.dumps(data)

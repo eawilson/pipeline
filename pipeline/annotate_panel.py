@@ -36,8 +36,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buff
                    "--json",
                    "--offline",
                    "--everything",
-                   "--use_transcript_ref",
-                   "--warning_file", "STDERR", 
+                   "--warning_file", "STDERR",
                    "--force_overwrite"]
     if int(threads) > 1:
         vep_options += ["--fork", threads]
@@ -47,6 +46,19 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buff
         vep_options += ["--buffer_size", buffer_size]
     
     pipe(["vep", "-i", vcf, "-o", vepjson] + vep_options)
+    
+    
+    format_values = -1
+    with open(vcf, "rt") as f:
+        for row in f:
+            if not row.startswith("#"):
+                break
+            if row == "##source=strelka":
+                format_values = -1
+            headings = row
+    if format_values < 0:
+        format_values = len(headings.split()) - format_values
+    
     
     targets = None
     needed_genes = set()
@@ -87,7 +99,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buff
                     "canonical" in cons,
                     -int(cons["transcript_id"].translate(DELETE_NON_DIGIT))]
     
-    depth_alt_depths = DepthAltDepths()
+    depth_alt_depths = DepthAltDepths(format_values=format_values)
     annotations = []
     with open(vepjson) as f:
         for line in f:
