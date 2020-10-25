@@ -6,7 +6,7 @@ from statistics import mean
 
 
 
-def viral_copies(statistics, targets, exclude=""):
+def panel_copy_number(statistics, targets, exclude=""):
     
     with open(statistics, "rt") as f_in:
         stats = json.load(f_in)
@@ -24,9 +24,9 @@ def viral_copies(statistics, targets, exclude=""):
             baseline.append(depth)
     
     baseline = mean(baseline)
-    stats["viral_copies_per_cell"] = {}
+    stats["copies_per_cell"] = {}
     for target, depth in depths.items():
-        stats["viral_copies_per_cell"][target] = mean(depth) / baseline
+        stats["copies_per_cell"][target] = mean(depth) / baseline
         
     with open(statistics, "wt") as f_out:
         json.dump(stats, f_out, sort_keys=True, indent=4)
@@ -36,12 +36,12 @@ def viral_copies(statistics, targets, exclude=""):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('statistics', help="Input stats file.")
-    parser.add_argument("-t", "--targets", help="Viral targets.", required=True)
-    parser.add_argument("-e", "--exclude", help="Targets to exclude when calculating baseline.", default=argparse.SUPPRESS)
+    parser.add_argument("-t", "--targets", help="Targets over which to calculate copy numbers.", required=True)
+    parser.add_argument("-e", "--exclude", help="Targets to exclude from baseline.", default=argparse.SUPPRESS)
     
     args = parser.parse_args()
     try:
-        viral_copies(**vars(args))
+        panel_copy_number(**vars(args))
     except OSError as e:
         # File input/output error. This is not an unexpected error so just
         # print and exit rather than displaying a full stack trace.

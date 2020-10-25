@@ -6,11 +6,11 @@ import sys
 import argparse
 import glob
 
-from pipeline import run, vcf_pvalue_2_phred, Pipe
+from pipeline import run, Pipe
 
 
 
-def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, min_family_size=1, max_fragment_size=None, threads=None):
+def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, min_family_size=1, max_fragment_size=None, cnv=None, threads=None):
     """Cell free pipeline.
 
     Args:
@@ -26,6 +26,8 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
         max_fragment_size (int): Maximum template length of aligned pair that
             will be considered genuine, pairs with a tlen greater than this
             will be treated as discordant..
+        cnv (str): Whitespace separated list of target names, as specified in
+            panel bedfile, over which to calculate copy number variation.
         threads (int): Number of threads to use, defaults to all available
             threads if not specified.
         
@@ -137,8 +139,12 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
                                                  varscan_options, stdout=f_out)
     os.unlink(mpileup)
     vcf = f"{sample}.vcf"
-    vcf_pvalue_2_phred(pvalue_vcf, vcf)
+    pipe(["vcf_pvalue_2_phred", pvalue_vcf, "--output", vcf])
     os.unlink(pvalue_vcf)
+    
+    
+    if cnv is not None:
+        pipe(["panel_copy_numbers", stats, "--targets", cnv])
     
     
     if vep is not None:
@@ -171,6 +177,7 @@ def main():
     parser.add_argument("-v", "--vep", help="Directory containing vep data.", default=argparse.SUPPRESS)
     parser.add_argument("-m", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-f", "--max-fragment-size", help="Maximum template legth to be considered a genuine read pair.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-c", "--cnv", help="Targets over which to calculate copy numbers.", default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:

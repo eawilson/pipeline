@@ -25,7 +25,7 @@ def chrom2int(chrom):
 
 
 
-def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None):
+def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buffer_size=None):
     if threads is None:
         threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
 
@@ -33,14 +33,18 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None):
     vep_options = ["--no_stats",
                    "--dir", vep,
                    "--format", "vcf",
-                   "--fork", threads,
                    "--json",
                    "--offline",
                    "--everything",
+                   "--use_transcript_ref",
                    "--warning_file", "STDERR", 
                    "--force_overwrite"]
+    if int(threads) > 1:
+        vep_options += ["--fork", threads]
     if "refseq" in vep:
         vep_options += ["--refseq"]
+    if buffer_size is not None:
+        vep_options += ["--buffer_size", buffer_size]
     
     pipe(["vep", "-i", vcf, "-o", vepjson] + vep_options)
     
@@ -209,6 +213,8 @@ def main():
     parser.add_argument("-o", "--output", help="Output annotated tsv.", default=argparse.SUPPRESS)
     parser.add_argument("-p", "--panel", help="Directory containing panel data.", default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-b", "--buffer-size", help="Number of variants to read into memory simultaneously. " + \
+                                                    "Only needed if vep is being killed for running out of memory.", type=int, default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         annotate_panel(**vars(args))
