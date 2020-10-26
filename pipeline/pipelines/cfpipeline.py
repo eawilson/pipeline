@@ -81,7 +81,7 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
         elduderino_options += ["--umi", umi]
     if targets_bedfile is not None:
         elduderino_options += ["--bed", targets_bedfile]
-    pipe(["elduderino2", undeduped_sam] + elduderino_options)
+    pipe(["elduderino", undeduped_sam] + elduderino_options)
     os.unlink(undeduped_sam)
 
 
