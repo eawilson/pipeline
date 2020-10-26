@@ -57,7 +57,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buff
                 format_values = -1
             headings = row
     if format_values < 0:
-        format_values = len(headings.split()) - format_values
+        format_values = len(headings.split()) + format_values
     
     
     targets = None
