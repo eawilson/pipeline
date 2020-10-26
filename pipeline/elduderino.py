@@ -453,8 +453,6 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
                 fragment_size = len(left[SEQ]) - left_read_pos
                 if targets and not is_ontarget(targets, (left_rname, right_start, left_start + left[CIGAR].reference_len - 1), stats=stats):
                     passed = False
-                else:
-                    pdb.set_trace()#+++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 
             elif not left_rc and right_rc:
                 # Correct read directions therefore no readthrough
