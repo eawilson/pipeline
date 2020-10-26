@@ -24,21 +24,18 @@ def parse_url(url):
 
 
 def download(client, path, destination=""):
-    if path[:5].lower() == ("s3://"):    
+    if path[:5].lower() == ("s3://"):
         bucket, key = parse_url(path)
-        parts = key.split("/")
-        downloadname = parts[-1]
-        path = downloadname
-        for i in range(len(parts)):
-            if parts[i].endswith(".tar.gz"):
-                key = "/".join(parts[:i+1])
-                downloadname = parts[i]
-                path = os.path.join(parts[i][:-7], *parts[i+1:])
-                
+        downloadname = key.split("/")[-1]
         if destination:
             os.makedirs(destination, exist_ok=True)
             downloadname = os.path.join(destination, downloadname)
-            path = os.path.join(destination, path)
+        if downloadname.endswith(".tar.gz"):
+            path = downloadname[:-7]
+        elif downloadname.endswith(".tar"):
+            path = downloadname[:-4]
+        else:
+            path = downloadname
 
         if not os.path.exists(path):
             print(f"Downloading {key}.")
@@ -48,8 +45,6 @@ def download(client, path, destination=""):
                 args = "-xzf" if downloadname.endswith(".gz") else "-xf"
                 subprocess.run(["tar", args, os.path.basename(downloadname)], cwd=destination)
                 os.unlink(downloadname)
-                if not os.path.exists(path):
-                    raise RuntimeError(f"Member not present in archive {key}.")
     return path
 
 

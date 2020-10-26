@@ -12,6 +12,7 @@ sudo apt-get -y install openjdk-8-jdk # varscan picard
 sudo apt-get -y install libmysqlclient-dev # vep
 sudo apt-get -y install python3-pip
 sudo apt-get -y install python3-tk
+sudo apt-get -y install unzip
 
 sudo cpan App::cpanminus # vep
 sudo cpanm Archive::Zip # vep
@@ -25,6 +26,15 @@ sudo pip3 install boto3
 sudo pip3 install matplotlib
 
 
+wget "https://api.bintray.com/content/basespace/BaseSpaceCLI-EarlyAccess-BIN/latest/\$latest/amd64-linux/bs?bt_package=latest" -O bs
+chmod +x bs
+sudo mv /usr/local/bin/bs
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+rm awscliv2.zip
+sudo rm -rf aws
 
 git clone https://github.com/lh3/bwa.git
 cd bwa
