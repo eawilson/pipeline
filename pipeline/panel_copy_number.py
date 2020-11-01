@@ -6,19 +6,24 @@ from statistics import mean
 
 
 
-def panel_copy_number(statistics, targets, exclude=""):
+def panel_copy_number(statistics, targets):
     
     with open(statistics, "rt") as f_in:
         stats = json.load(f_in)
 
-    targets = set(targets.split())
-    exclude = set(exclude.split())
+    include = set()
+    exclude = set()
+    for target in targets.split():
+        if target.startswith("-"):
+            exclude.add(target[1:])
+        else:
+            include.add(target)
     
     baseline = []
     depths = defaultdict(list)
     for target, depth in stats.get("fragments_per_target", {}).items():
         target = "_".join(target.split("_")[:-1])
-        if target in targets:
+        if target in include:
             depths[target].append(depth)
         elif target not in exclude:
             baseline.append(depth)
@@ -36,8 +41,8 @@ def panel_copy_number(statistics, targets, exclude=""):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('statistics', help="Input stats file.")
-    parser.add_argument("-t", "--targets", help="Targets over which to calculate copy numbers.", required=True)
-    parser.add_argument("-e", "--exclude", help="Targets to exclude from baseline.", default=argparse.SUPPRESS)
+    parser.add_argument("-t", "--targets", help="Target names over which to calculate copy numbers. " \
+                                                "names preceeded by - will be excluded from baseline.", required=True)
     
     args = parser.parse_args()
     try:

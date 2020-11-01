@@ -69,7 +69,7 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
                               undeduped_unsorted_sam])
     os.unlink(undeduped_unsorted_sam)
     
-    
+
     unsorted_sam = f"{sample}.unsorted.sam"
     elduderino_options = ["--output", unsorted_sam,
                           "--stats", stats,

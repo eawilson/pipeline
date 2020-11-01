@@ -48,13 +48,20 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buff
     pipe(["vep", "-i", vcf, "-o", vepjson] + vep_options)
     
     
+    # Is this really the best way to do this?
     format_values = -1
     with open(vcf, "rt") as f:
         for row in f:
             if not row.startswith("#"):
                 break
-            if row == "##source=strelka":
-                format_values = -1
+            if row.startswith("##source="):
+                source = row[9:]
+                if source == "strelka":
+                    format_values = -1
+                elif source == "VarScan2":
+                    format_values = -1
+                else:
+                    print(f"Unsupported variant caller {source}", file=sys.stderr)
             headings = row
     if format_values < 0:
         format_values = len(headings.split()) + format_values
@@ -90,7 +97,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buff
                     -int(major),
                     int(minor)]
     
-    else:
+    else: # ensembl transcripts
         def consequence_sort(cons):
             # Version numbers not in vep as of version 101, but who knows the future ...
             return [BIOTYPE[cons["biotype"]],
@@ -226,7 +233,7 @@ def main():
     parser.add_argument("-p", "--panel", help="Directory containing panel data.", default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-b", "--buffer-size", help="Number of variants to read into memory simultaneously. " + \
-                                                    "Only needed if vep is being killed for running out of memory.", type=int, default=argparse.SUPPRESS)
+                                                    "Only needed if vep is being killed for running out of memory!", type=int, default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         annotate_panel(**vars(args))

@@ -8,6 +8,8 @@ from itertools import chain
 from multiprocessing import Process, Queue
 from collections.abc import Sequence
 
+from covermi import bed, Gr, Entry
+
 try:
     from contextlib import nullcontext
 except ImportError: # python <3.7
@@ -50,7 +52,9 @@ def dedupe_process(input_queue, output_queue, stats_queue, dedupe_func, stats, *
         size_family = input_queue.get()
         if size_family is None:
             break
-        output_queue.put(dedupe_func(size_family, stats=stats, **details))
+        output = dedupe_func(size_family, stats=stats, **details)
+        if output:
+            output_queue.put(output)
     stats_queue.put(stats)
     
 
@@ -65,49 +69,19 @@ def filewriter_process(output_queue, output_sam):
 
 
 
-def bed(path):
-    baits = defaultdict(list)
-    if path:
-        with open(path, "rt") as f:
-            reader = csv.reader(f, delimiter="\t")
-            for row in reader:
-                try:
-                    chrom = row[0]
-                    # Add one to convert 0-based bed start to 1-based sam start
-                    start = int(row[1]) + 1
-                    stop = int(row[2])
-                except (ValueError, IndexError):
-                    row = " ".join(row)
-                    sys.exit(f'Unable to parse "{row}" within {path} bedfile')
-                if stop < start:
-                    sys.exit(f"{path} has invalid start/stop positions")
-                try:
-                    name = "{}_{}".format(row[3], f"{chrom}:{start}-{stop}")
-                except IndexError:
-                    name = f"{chrom}:{start}-{stop}"
-                baits[chrom] += [(start, stop, name)]
-        for contig in baits.values():
-            contig.sort()
-    return baits
-
-
-# add binary search +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-def is_ontarget(targets, *coordinates, stats=None):
+def is_ontarget(contigs, reads, stats):
     best_offset = None
     match = None
-    for rname, start, stop in coordinates:
-        for bstart, bstop, bname in targets.get(rname, ()):
-            if bstart > stop:
-                break
-            if bstop >= start:
-                offset = abs(start + stop - bstart - bstop)
-                try:
-                    if offset > best_offset:
-                        continue
-                except TypeError:
-                    pass
-                best_offset = offset
-                match = bname
+    for read in reads:
+        for bait in contigs.touched_by(read):
+            offset = abs(read.start + read.stop - bait.start - bait.stop)
+            try:
+                if offset > best_offset:
+                    continue
+            except TypeError:
+                pass
+            best_offset = offset
+            match = bait.name
     
     if match is not None:
         stats["fragments_per_target"][match] += 1
@@ -119,39 +93,91 @@ def is_ontarget(targets, *coordinates, stats=None):
 
 
 
-class Cigar(Sequence):
-    def __init__(self, cigar_string):
-        cigar_tuples = []
-        num = ""
-        for character in cigar_string:
-            if character.isnumeric():
-                num += character
+def cigar2tuple(cig):
+    tup = []
+    num = ""
+    for char in cig:
+        if char.isnumeric():
+            num += char
+        else:
+            try:
+                tup.append((int(num), char))
+            except ValueError:
+                raise ValueError(f"Malformed cigar string {cig}")
+            num = ""
+    if num:
+        raise ValueError(f"Malformed cigar string {cig}")
+    return tuple(tup)
+
+
+
+def tuple2cigar(tup):
+    return "".join(str(val) for val in chain(*tup))
+
+
+
+def cigar_len(tup, ops):
+    return sum(num for num, op in tup if op in ops)
+
+
+
+def ltrim_read(read, bases):
+    read[SEQ] = read[SEQ][bases:]
+    read[QUAL] = read[QUAL][bases:]
+    new_cigar = []
+    for num, op in read[CIGAR]:
+        if bases:
+            if op in CONSUMES_READ:
+                if num < bases:
+                    bases -= num
+                    if op in CONSUMES_REF:
+                        read[POS] += num
+                else:
+                    if op in CONSUMES_REF:
+                        read[POS] += bases
+                    num -= bases
+                    bases = 0
+            
+            elif op in CONSUMES_REF:
+                read[POS] += num
+
+        if num and not bases:
+            new_cigar.append((num, op))
+    read[CIGAR] = new_cigar
+
+
+
+def rtrim_read(read, bases):
+    read[SEQ] = read[SEQ][:-bases]
+    read[QUAL] = read[QUAL][:-bases]
+    new_cigar = list(read[CIGAR])
+    while bases and new_cigar:
+        num, op = new_cigar.pop()
+        if op in CONSUMES_READ:
+            if num <= bases:
+                bases -= num
             else:
-                try:
-                    cigar_tuples.append((int(num), character))
-                except ValueError:
-                    sys.exit(f"Malformed cigar string {cigar_string}")
-                num = ""
-        if num:
-            sys.exit(f"Malformed cigar string {cigar_string}")
-        self._cigar = tuple(cigar_tuples)
-        self.reference_len = sum(num for num, op in cigar_tuples if op in CONSUMES_REF)
+                new_cigar.append((num - bases, op))
+                bases = 0
+    read[CIGAR] = new_cigar
 
-    def __repr__(self):
-        return "{}({})".format(type(self).__name__, repr(str(self)))
 
-    def __str__(self):
-        return "".join(str(v) for v in chain(*self._cigar))
-    
-    def __getitem__(self, index):
-        return self._cigar[index]
-    
-    def __len__(self):
-        return len(self._cigar)
-    
-    def __hash__(self):
-        return hash(self._cigar)
 
+def collapse_optical(family):
+    tile_families = defaultdict(list)
+    for pair in family:
+        try:
+            instrument, run, flowcell, lane, tile, x, y = pair[0][QNAME].split(":")
+            tile_families[(instrument, run, flowcell, lane, tile)].append((int(x), int(y), pair))
+        except (TypeError, ValueError):
+            # Not an illumina identifier
+            return
+        
+    for tile_family in tile_families.values():
+        pass
+    
+    
+    
 
 
 def elduderino(input_sam,
@@ -167,7 +193,7 @@ def elduderino(input_sam,
                dont_dedupe=False):
     
     if umi == "thruplex":
-        dedupe_func = dedupe#_umi_inexact
+        dedupe_func = dedupe_umi_inexact
     elif umi in ("thruplex_hv", "prism"):
         dedupe_func = dedupe_umi_exact
     elif umi is None:
@@ -175,7 +201,12 @@ def elduderino(input_sam,
     else:
         sys.exit(f"'{umi}' is not a known UMI type")
     
-    details = {"targets": bed(targets),
+    targets = Gr(bed(targets))
+    for target in targets:
+        loc = f"{target.chrom}:{target.start}-{target.stop}"
+        target.name = loc if target.name == "." else f"{target.name}_{loc}"
+    
+    details = {"targets": targets,
                "max_fragment_size": max_fragment_size,
                "filter_fragments_shorter_than": filter_fragments_shorter_than,
                "filter_fragments_longer_than": filter_fragments_longer_than,
@@ -184,7 +215,7 @@ def elduderino(input_sam,
     stats = {"fragment_sizes": Counter(),
              "family_sizes": Counter()}
     if targets is not None:
-        stats.update({"fragments_per_target": Counter({val[2]: 0 for val in chain(*details["targets"].values())}),
+        stats.update({"fragments_per_target": {bait.name: 0 for bait in details["targets"]},
                       "ontarget_deduplicated_reads": 0,
                       "offtarget_deduplicated_reads": 0})
     
@@ -207,7 +238,9 @@ def elduderino(input_sam,
             
         else:
             def dedupe_family(size_family):
-                f_out.write(dedupe_func(size_family, stats=stats, **details))
+                output = dedupe_func(size_family, stats=stats, **details)
+                if output:
+                    f_out.write(output)
             write = f_out.write
 
         
@@ -251,7 +284,10 @@ def elduderino(input_sam,
                 if not((flag & READ1) ^ (flag & READ2)):
                     sys.exit("Invalid segment SAM flags")
                 
-                cigar = read[CIGAR] = Cigar(read[CIGAR])
+                try:
+                    cigar = read[CIGAR] = cigar2tuple(read[CIGAR])
+                except ValueError as e:
+                    sys.exit(str(e))
                 
                 try:
                     mate = unpaired.pop(qname)
@@ -264,9 +300,9 @@ def elduderino(input_sam,
                     continue
                 
                 read_rc = flag & RC
-                read_begin = pos if not read_rc else pos + cigar.reference_len - 1
+                read_begin = pos if not read_rc else pos + cigar_len(cigar, CONSUMES_REF) - 1
                 mate_rc = mate[FLAG] & RC
-                mate_begin = mate[POS] if not mate_rc else mate[POS] + mate[CIGAR].reference_len - 1
+                mate_begin = mate[POS] if not mate_rc else mate[POS] + cigar_len(mate[CIGAR], CONSUMES_REF) - 1
                 location = (mate[RNAME], mate_begin, mate_rc, rname, read_begin, read_rc)
                 
                 if mate_begin > read_begin:
@@ -282,7 +318,7 @@ def elduderino(input_sam,
                     
                 else:
                     if multithreaded and not all(worker.is_alive() for worker in workers):
-                        sys.exit()
+                        sys.exit("Worker thread unexpectedly terminated")
                     
                     for size_family in paired.values():
                         dedupe_family(size_family)
@@ -317,7 +353,7 @@ def elduderino(input_sam,
         for worker in workers:
             worker.join()
 
-    
+
     try:
         with open(statistics, "rt") as f:
             old_stats = json.load(f)
@@ -339,56 +375,49 @@ def dedupe_umi_exact(size_family, **kwargs):
                     break
             else:
                 sys.exit("Missing RX tags")
-        return "".join([dedupe(family, **kwargs) for family in umi_families.values()])
+        return "".join(dedupe(family, **kwargs) for family in umi_families.values())
     
     else:
         return dedupe(size_family, **kwargs)
 
 
+
 def dedupe_umi_inexact(size_family, **kwargs):
-    umi_pairs = []
-    #for pair in size_family:
-        #for tag in pair[0][11:]:
-            #if tag.startswith("RX:Z:"):
-                #left, right = tag[5:].split("-")
-                #umi_pairs.append([left, right, pair])
-                #break
-        #else:
-            #sys.exit("Missing RX tags")
+    if len(size_family) > 1:
+        umi_pairs = []
+        for pair in size_family:
+            for tag in pair[0][11:]:
+                if tag.startswith("RX:Z:"):
+                    left, right = tag[5:].split("-")
+                    umi_pairs.append((left, right, pair))
+                    break
+            else:
+                sys.exit("Missing RX tags")
+
+        families = []
+        while umi_pairs:
+            left, right, pair = umi_pairs.pop()
+            families.append([pair])
+            lefts = set([left])
+            rights = set([right])
+            changed = True
+            while changed:
+                changed = False
+                remaining = []
+                for umi_pair in umi_pairs:
+                    left, right, pair = umi_pair
+                    if left in lefts or right in rights:
+                        families[-1].append(pair)
+                        lefts.add(left)
+                        rights.add(right)
+                        changed = True
+                    else:
+                        remaining.append(umi_pair)
+                umi_pairs = remaining        
+        return "".join(dedupe(family, **kwargs) for family in families)
     
-    
-    #while umi_pairs:
-        #remaining = []
-        #left, right, pair = umi_pairs.pop()
-        #family = [pair]
-        #left_umis = set([left])
-        #right_umis = set([right])
-        #for pair in umi_pairs:
-            #if pair[0] in left_umis or pair[1] in right_umis:
-            
-            
-            
-            #else:
-                
-        
-        
-        
-        
-    #umi_families = defaultdict(list)
-    #for pair in family:
-        #for tag in pair[11:]:
-            #if tag.startswith("RX:Z:"):
-                #umi_families[tag[5:]].append(pair)
-                #break
-        #else:
-            #sys.exit("Missing RX tags")
-    #for sub_family in umi_families.values():
-        #dedupe(sub_family)
-
-
-
-def hard_clip(cigar_op):
-    return cigar_op[0] if cigar_op[1] == "H" else 0
+    else:
+        return dedupe(size_family, **kwargs)
 
 
 
@@ -409,91 +438,104 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
     if family_size < min_family_size and passed:
         passed = False
 
-    readthrough = False
     segments_overlap = False
     fragment_size = 0
+    left, right = first_pair = family[0]
     
-    first_pair = family[0]
-    left, right = first_pair
-    left_rname = left[RNAME]
-    right_rname = right[RNAME]
-    left_rc = left[FLAG] & RC
-    right_rc = right[FLAG] & RC
-    left_start = left[POS]
-    right_start = right[POS]
-    left_read_pos = -1
-    right_read_pos = 0
-    if left_rname == right_rname:
-        
-        # Do the two segments overlap? Find left_read_pos that overlaps right_start
-        ref_pos = left_start - 1
+    # Are the segments on the same contig and orientated in opposite directions
+    # If yes then they may be correctly orientated and overlap
+    if left[RNAME] == right[RNAME] and (left[FLAG] & RC) != (right[FLAG] & RC):
+        # Do the two segments overlap? Find left_read_pos that overlaps first base of right read
+        left_read_pos = -1
+        ref_pos = left[POS] - 1
+        right_pos = right[POS]
         for num, op in left[CIGAR]:
             if op in CONSUMES_REF:
-                if ref_pos + num > right_start:
-                    num = right_start - ref_pos
+                if ref_pos + num > right_pos:
+                    num = right_pos - ref_pos
                 ref_pos += num
             if op in CONSUMES_READ:
                 left_read_pos += num
-            if ref_pos == right_start:
+            
+            if ref_pos == right_pos:
+                segments_overlap = True
                 # Subtract non ref consuming bases at the start of right
                 # left_read_pos will now overlap the first baes of right
+                # this may be negative if they are the wrong way round
                 for num, op in right[CIGAR]:
                     if op in CONSUMES_REF:
                         break
                     if op in CONSUMES_READ:
-                        right_read_pos += num
-                segments_overlap = True
+                        left_read_pos -= num
+                
+                # left and right are the wrong way around therefore swap them
+                if left_read_pos < 0:
+                    family = [(r, l) for l, r in family]
+                    left, right = first_pair = family[0]
+                    left_read_pos = -left_read_pos
+                
+                # Inverted read directions
+                if left[FLAG] & RC:
+                    # readthrough at start of left read
+                    if left_read_pos:
+                        ltrim_read(left, left_read_pos)
+                        right[PNEXT] = str(left[POS])
+                        left_read_pos = 0
+
+                    overhang = len(right[SEQ]) - len(left[SEQ])
+                    # readthrough at end of right read
+                    if overhang > 0:
+                        rtrim_read(right, overhang)
+                
+                # Correct read directions but still a chance of an overhang
+                # at the end of left if right is unexpectedly short although
+                # this is unlikely to happen in practice
+                else:
+                    overhang = len(left[SEQ]) - left_read_pos - len(right[SEQ])
+                    # readthrough at end of right read
+                    if overhang > 0:
+                        rtrim_read(left, overhang)
+                
                 break
-        
+
         
         if segments_overlap:
-            if left_rc and not right_rc:
-                # Inverted read directions therefore readthrough into opposite umi
-                readthrough = True
-                fragment_size = len(left[SEQ]) - left_read_pos
-                if targets and not is_ontarget(targets, (left_rname, right_start, left_start + left[CIGAR].reference_len - 1), stats=stats):
-                    passed = False
-                
-            elif not left_rc and right_rc:
-                # Correct read directions therefore no readthrough
-                fragment_size = len(right[SEQ]) + left_read_pos
-                if targets and not is_ontarget(targets, (left_rname, left_start, right_start + right[CIGAR].reference_len - 1), stats=stats):
-                    passed = False
+            fragment_size = len(right[SEQ]) + left_read_pos
 
-        elif not left_rc and right_rc:
+        elif right[FLAG] & RC:
             # Segments don't overlap but are correctly orientated
-            fragment_size = right_start - left_start + len(right[SEQ])
+            fragment_size = right[POS] + len(right[SEQ]) - left[POS]
             for num, op in left[CIGAR]:
                 if op in "IS":
                     fragment_size += num
                 elif op in "DN":
                     fragment_size -= num
-            if max_fragment_size is not None and fragment_size > max_fragment_size:
-                fragment_size = 0
-            elif targets and not is_ontarget(targets, (left_rname, left_start, right_start + right[CIGAR].reference_len - 1), stats=stats):
-                passed = False
-    
         
-    stats["fragment_sizes"][fragment_size] += 1
-    if not fragment_size and targets:
-        coordinates = ((left_rname, left_start, left_start + left[CIGAR].reference_len - 1), (right_rname, right_start, right_start + right[CIGAR].reference_len - 1))
-        if not is_ontarget(targets, *coordinates, stats=stats):
+        if max_fragment_size is not None and fragment_size > max_fragment_size:
+            fragment_size = 0
+        elif targets and not is_ontarget(targets, Entry(left[RNAME], left[POS], right[POS] + cigar_len(right[CIGAR], CONSUMES_REF) - 1), stats):
             passed = False
     
     
-    if filter_fragments_shorter_than is not None and fragment_size >= filter_fragments_shorter_than:
+    stats["fragment_sizes"][fragment_size] += 1
+    if targets and not fragment_size:
+        reads = Gr((Entry(left[RNAME], left[POS], left[POS] + cigar_len(left[CIGAR], CONSUMES_REF) - 1),
+                     Entry(right[RNAME], right[POS], right[POS] + cigar_len(right[CIGAR], CONSUMES_REF) - 1)))
+        if not is_ontarget(targets, reads, stats):
+            passed = False
+    
+    
+    if filter_fragments_shorter_than is not None and fragment_size < filter_fragments_shorter_than:
         passed = False
-    if filter_fragments_longer_than is not None and fragment_size < filter_fragments_longer_than:
+    if filter_fragments_longer_than is not None and (fragment_size == 0 or fragment_size > filter_fragments_longer_than):
         passed = False
 
     if not passed:
         return ""
     
-    return ""#+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    
-    
+    #pdb.set_trace()
     if segments_overlap:
-        overlap_len = len(left[SEQ]) - left_read_pos
+        overlap_len = min(len(left[SEQ]) - left_read_pos, len(right[SEQ]))
         for left, right in family:
             left_seq = list(left[SEQ])
             left_qual = list(left[QUAL])
@@ -521,12 +563,8 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
     
     
     if family_size > 1:
-        sixty_percent = family_size * 6 // 10
-        for read in range(2):
-            #for pair in family:
-                #print(pair[read][SEQ])
-            #print("")
-            
+        sixty_percent = (family_size * 6 // 10) + 1
+        for read in (0, 1):
             consensus_seq = []
             consensus_qual = []
             for i in range(len(first_pair[read][SEQ])):
@@ -540,22 +578,22 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
                         quals[base] = qual
                 
                 base, count = sorted(bases.items(), key=lambda x:x[1])[-1]
-                if count > sixty_percent:
-                    consensus_seq.append(base)
-                    consensus_qual.append(quals[base])
-                else:
+                if count < sixty_percent:
                     consensus_seq.append("N")
                     consensus_qual.append("!")
+                else:
+                    consensus_seq.append(base)
+                    consensus_qual.append(quals[base])
 
             first_pair[read][SEQ] = "".join(consensus_seq)
             first_pair[read][QUAL] = "".join(consensus_qual)
             first_pair[read][MAPQ] = str(max(int(pair[read][MAPQ]) for pair in family))
             #print(first_pair[read][SEQ], "\n")
     
-    for read in range(2):
+    for read in (0, 1):
         first_pair[read][FLAG] = str(first_pair[read][FLAG])
         first_pair[read][POS] = str(first_pair[read][POS])
-        first_pair[read][CIGAR] = str(first_pair[read][CIGAR])
+        first_pair[read][CIGAR] = tuple2cigar(first_pair[read][CIGAR])
     
     return "{}\n{}\n".format("\t".join(first_pair[0]), "\t".join(first_pair[1]))
 
