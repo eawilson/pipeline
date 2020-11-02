@@ -64,7 +64,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buff
                     #print(f"Unsupported variant caller {source}", file=sys.stderr)
             #headings = row
     #if format_values < 0:
-    format_values = len(headings.split()) + format_values
+    #format_values = len(headings.split()) + format_values
     
     
     targets = None
@@ -106,7 +106,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buff
                     "canonical" in cons,
                     -int(cons["transcript_id"].translate(DELETE_NON_DIGIT))]
     
-    depth_alt_depths = DepthAltDepths(format_values=format_values)
+    depth_alt_depths = DepthAltDepths()
     annotations = []
     with open(vepjson) as f:
         for line in f:
