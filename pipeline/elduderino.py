@@ -6,7 +6,7 @@ import csv
 from collections import defaultdict, Counter
 from itertools import chain
 from multiprocessing import Process, Queue
-from collections.abc import Sequence
+from collections.abc import Sequence, Mapping
 
 from covermi import bed, Gr, Entry
 
@@ -191,6 +191,7 @@ def elduderino(input_sam,
                targets=None,
                threads=1,
                dont_dedupe=False):
+    threads = 1
     
     if umi == "thruplex":
         dedupe_func = dedupe_umi_inexact
@@ -344,7 +345,7 @@ def elduderino(input_sam,
         for worker in workers[:-1]:
             _stats = stats_queue.get()
             for key, val in _stats.items():
-                if isinstance(val, Counter):
+                if isinstance(val, Mapping):
                     for k, v in val.items():
                         stats[key][k] += v
                 else:
