@@ -148,8 +148,7 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
     
     
     if vep is not None:
-        annotate_options = ["--reference", reference,
-                            "--vep", vep,
+        annotate_options = ["--vep", vep,
                             "--output", f"{sample}.annotation.tsv",
                             "--threads", threads]
         if panel is not None:
