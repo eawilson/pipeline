@@ -8,7 +8,7 @@ from covermi import Panel, Cov, Plot
 
 
 def covermi_stats(bam_path, panel_path, output_path="coverage.pdf", statistics="stats.json", sample=""):
-    
+    pdb.set_trace()
     panel = Panel(panel_path)
     if "targets" in panel:
         roi = panel.targets

@@ -34,8 +34,8 @@ def enqueue(dry_run=False):
     
     n = 0
     for sample, urls in sorted(fastqs.items()):
-        if "-c-" in sample or n:
-            continue
+        #if "-c-" in sample or n:
+            #continue
         data = {"Script": "cfpipeline",
                 "Output": f"s3://{BUCKET}/projects/{project}/{analyses}/{sample}",
                 "Args": urls,

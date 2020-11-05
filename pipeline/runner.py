@@ -67,9 +67,7 @@ def main():
         if any(os.path.isfile(fn) for fn in os.listdir()):
             raise RuntimeError("Working directory is not empty.")
         
-        response = sqs.receive_message(QueueUrl=queue_url,
-                                       VisibilityTimeout=30*60,
-                                       WaitTimeSeconds=20)
+        response = sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=20)
         
         try:
             message = response["Messages"][0]
@@ -96,8 +94,7 @@ def main():
                 os.unlink(fn)
         
         try:
-            response = sqs.delete_message(QueueUrl=queue_url,
-                                          ReceiptHandle=message["ReceiptHandle"])
+            response = sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
         # I believe this happens if the queue is purged while a job is in progress.
         except Exception: # Actually throws QueueDoesNotExist, but where to import it from?
             pass
