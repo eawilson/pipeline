@@ -6,11 +6,11 @@ import sys
 import argparse
 import glob
 
-from pipeline import run, Pipe
+from pipeline import run, Pipe, order_fastqs
 
 
 
-def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, min_family_size=1, max_fragment_size=None, cnv=None, threads=None):
+def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, min_family_size=1, max_fragment_size=None, cnv=None, threads=None, rtrim=None, no_elduderino=False):
     """Cell free pipeline.
 
     Args:
@@ -30,6 +30,8 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
             panel bedfile, over which to calculate copy number variation.
         threads (int): Number of threads to use, defaults to all available
             threads if not specified.
+        rtrim (int): Number of bases to trim from the end of read.
+        no_elduderino (bool): Do not run elduderino.
         
     Returns:
         None.
@@ -50,7 +52,9 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
                      "--stats", stats]
     if umi is not None:
         udini_options += ["--umi", umi]
-    pipe(["udini"] + input_fastqs + udini_options)
+    if rtrim is not None:
+        udini_options += ["--rtrim", rtrim]
+    pipe(["udini"] + order_fastqs(input_fastqs) + udini_options)
     
     
     undeduped_unsorted_sam = f"{sample}.undeduped.unsorted.sam"
@@ -81,8 +85,11 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
         elduderino_options += ["--umi", umi]
     if targets_bedfile is not None:
         elduderino_options += ["--bed", targets_bedfile]
-    pipe(["elduderino", undeduped_sam] + elduderino_options)
-    os.unlink(undeduped_sam)
+    if not no_elduderino:
+        pipe(["elduderino", undeduped_sam] + elduderino_options)
+        os.unlink(undeduped_sam)
+    else:
+        unsorted_sam = undeduped_sam
 
 
     namesorted_unfixed_sam = f"{sample}.namesorted.unfixed.sam"
@@ -178,6 +185,8 @@ def main():
     parser.add_argument("-f", "--max-fragment-size", help="Maximum template legth to be considered a genuine read pair.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-c", "--cnv", help="Targets over which to calculate copy numbers.", default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-i", "--rtrim", help="Trim bases from the end of the read.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-e", "--no-elduderino", help="Don't run elduderino.", action="store_const", const=True, default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         cfpipeline(**vars(args))

@@ -51,7 +51,7 @@ def enqueue(dry_run=False):
         if not dry_run:
             sqs.send_message(QueueUrl=queue_url, MessageBody=message)
             n += 1
-        break
+
     print(f"{n} messages queued.")
 
 

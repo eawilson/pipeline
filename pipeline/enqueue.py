@@ -12,8 +12,8 @@ BUCKET = "omdc-data"
 
 
 def enqueue():
-    project = "EBVL"
-    panel = "EBVL"
+    project = "accept"
+    panel = "Accept"
     analyses = "analyses2"
     
     sqs = boto3.client("sqs")
@@ -41,17 +41,15 @@ def enqueue():
                            "--reference": f"s3://{BUCKET}/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set.tar.gz",
                            "--panel": f"s3://{BUCKET}/panels/{panel}.tar.gz",
                            "--vep": f"s3://{BUCKET}/reference/vep_101_GRCh37_homo_sapiens_refseq.tar",
-                           "--umi": "thruplex_hv",
-                           "--min-family-size": "1"},
-                           "--cnv": "EBER1 EBER2 EBNA2"},
+                           "--min-family-size": "2"},
                 }
         
         message = json.dumps(data)
         print(message, "\n")
         
-        sqs.send_message(QueueUrl=queue_url,
-                         MessageBody= message)
+        sqs.send_message(QueueUrl=queue_url, MessageBody=message)
         n += 1
+        break
     print(f"{n} messages queued.")
 
 

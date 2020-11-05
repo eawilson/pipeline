@@ -191,7 +191,9 @@ def elduderino(input_sam,
                targets=None,
                threads=1,
                dont_dedupe=False):
+    
     threads = 1
+    print(f"Multithreading not ready, threads = {threads}", file=sys.stderr)
     
     if umi == "thruplex":
         dedupe_func = dedupe_umi_inexact

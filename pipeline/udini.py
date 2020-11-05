@@ -39,7 +39,8 @@ def udini(input_fastqs,
           umi_sequences="",
           statistics="stats.json",
           min_read_length=50,
-          max_consecutive_ns=2):
+          max_consecutive_ns=2,
+          rtrim = 0):
     
     # reversed so we can pop the fastqs in the original order.
     input_fastqs = list(reversed(input_fastqs))
@@ -151,13 +152,17 @@ def udini(input_fastqs,
                                                                     lines[R2][QUAL][:umi_length])
                             for read in (R1, R2):
                                 lines[read][NAME] += f" {tag}\n"
-                                lines[read][SEQ] = lines[read][SEQ][umi_length + umi_stem_length:]
-                                lines[read][QUAL] = lines[read][QUAL][umi_length + umi_stem_length:]
+                                length = len(lines[read][SEQ]) - rtrim
+                                lines[read][SEQ] = lines[read][SEQ][umi_length + umi_stem_length:length]
+                                lines[read][QUAL] = lines[read][QUAL][umi_length + umi_stem_length:length]
                                     
                         else:
                             for read in (R1, R2):
                                 lines[read][NAME] = "{}\n".format(lines[read][NAME])
-                            
+                                if rtrim:
+                                    length = len(lines[read][SEQ]) - rtrim
+                                    lines[read][SEQ] = lines[read][SEQ][:length]
+                                    lines[read][QUAL] = lines[read][QUAL][:length]
                                     
                         if lines[R1][NAME] != lines[R2][NAME]:
                             sys.exit("Mismatched paired reads, names don't match")
@@ -192,6 +197,7 @@ def main():
     parser.add_argument("-l", "--umi-length", help="UMI length.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-k", "--umi-stem-length", help="UMI stem length.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-q", "--umi-sequences", help="UMI sequences.", default=argparse.SUPPRESS)
+    parser.add_argument("-r", "--rtrim", help="Trim bases from the end of the read.", default=argparse.SUPPRESS)
 
     parser.add_argument("-m", "--min-read-length", help="Reads shoter than min-read-legth will be filtered.", default=argparse.SUPPRESS)
     parser.add_argument("-n", "--max-consecutive-ns", help="Reads containing more Ns than max-consecutive-ns will be filtered.", default=argparse.SUPPRESS)

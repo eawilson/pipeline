@@ -1,22 +1,17 @@
 import subprocess
 import os
 import sys
-import pdb
 import re
-import csv
-import io
-import argparse
-from itertools import zip_longest
 import pdb
 import datetime
-from collections import defaultdict, namedtuple, Counter
+from collections import defaultdict, Counter
 
 import covermi
 from boto3 import client
 
 
 
-__all__ = ["run", "pipe", "Pipe"]
+__all__ = ["run", "pipe", "Pipe", "order_fastqs"]
 
 #ILLUMINA_FASTQ = re.compile(r"(.+)_S([0-9]{1,2})_L([0-9]{3})_R([12])_001\.fastq(\.gz)?$") # name, s_number, lane, read, gzip
 
@@ -98,5 +93,30 @@ def run(args, exit_on_failure=True):
             print(line, file=sys.stderr, flush=True)
         sys.exit(completedprocess.returncode)
     return completedprocess
+
+
+
+def order_fastqs(fastqs):
+    pairs = defaultdict(list)
+    for fastq in fastqs:
+        with open(fastq, "rt") as f:
+            qname = f.readline().split()[0]
+            pairs[qname].append(fastq)
+    return list(chain(*(pair for pair in pairs.values())))
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 
