@@ -5,6 +5,7 @@ import json
 import sys
 from contextlib import closing
 from itertools import chain
+from collections import defaultdict
 
 R1 = 0
 R2 = 1
