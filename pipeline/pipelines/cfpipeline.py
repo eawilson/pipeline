@@ -6,7 +6,7 @@ import sys
 import argparse
 import glob
 
-from pipeline import run, Pipe, order_fastqs
+from pipeline import run, Pipe
 
 
 
@@ -54,7 +54,7 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
         udini_options += ["--umi", umi]
     if rtrim is not None:
         udini_options += ["--rtrim", rtrim]
-    pipe(["udini"] + order_fastqs(input_fastqs) + udini_options)
+    pipe(["udini"] + input_fastqs + udini_options)
     
     
     undeduped_unsorted_sam = f"{sample}.undeduped.unsorted.sam"

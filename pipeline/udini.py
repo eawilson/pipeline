@@ -16,6 +16,16 @@ QUAL = 3
 
 
 
+def order_fastqs(fastqs):
+    pairs = defaultdict(list)
+    for fastq in fastqs:
+        with fqopen(fastq, "rt") as f:
+            qname = f.readline().split()[0]
+            pairs[qname].append(fastq)
+    return list(chain(*(pair for pair in pairs.values())))
+
+
+
 def fqopen(fn, *args, **kwargs):
     return (gzip.open if fn.endswith(".gz") else open)(fn, *args, **kwargs)
 
@@ -43,7 +53,7 @@ def udini(input_fastqs,
           rtrim = 0):
     
     # reversed so we can pop the fastqs in the original order.
-    input_fastqs = list(reversed(input_fastqs))
+    input_fastqs = list(reversed(order_fastqs(input_fastqs)))
     
     if not output_fastq.endswith(".fastq") and \
        not output_fastq.endswith(".fastq.gz"):
