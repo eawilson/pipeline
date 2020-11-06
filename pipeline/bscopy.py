@@ -1,6 +1,7 @@
 import os
 import glob
 import argparse
+import sys
 
 from pipeline import s3_put, s3_list
 
@@ -9,6 +10,9 @@ from pipeline import s3_put, s3_list
 def bscopy(bsruns, project, dry_run=False):
     for bsrun in bsruns:
         stem = os.path.expanduser(f"~/basespace/Projects/{bsrun}/Samples")
+        if not os.path.exists(stem):
+            sys.exit(f"Basespace run {bsrun} does not exist")
+
         for sample in os.listdir(stem):
             if sample.startswith("."):
                 continue
@@ -19,11 +23,12 @@ def bscopy(bsruns, project, dry_run=False):
     #        real_sample = sample[:-8].upper()
 
             prefix = f"projects/{project}/samples/{bsrun}"
+            
             if True:#not s3_list("omdc-data", prefix):
                 for fastq in glob.glob(f"{stem}/{sample}/Files/*fastq.gz"):
                     if not dry_run:
                         s3_put("omdc-data", fastq, prefix=prefix)
-                    elsw:
+                    else:
                         print(fastq)
 
 
