@@ -6,7 +6,7 @@ from pipeline import s3_put, s3_list
 
 
 
-def main(bsruns, project, dry_run=False):
+def bscopy(bsruns, project, dry_run=False):
     for bsrun in bsruns:
         stem = os.path.expanduser(f"~/basespace/Projects/{bsrun}/Samples")
         for sample in os.listdir(stem):
@@ -35,7 +35,7 @@ def main():
     parser.add_argument('-d', "--dry-run", action="store_const", const=True, default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
-        cfpipeline(**vars(args))
+        bscopy(**vars(args))
     except OSError as e:
         # File input/output error. This is not an unexpected error so just
         # print and exit rather than displaying a full stack trace.
