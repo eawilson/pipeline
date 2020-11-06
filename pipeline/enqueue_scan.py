@@ -58,6 +58,11 @@ def enqueue(dry_run=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', "--dry-run", action="store_const", const=True, default=argparse.SUPPRESS)
+    parser.add_argument('-p', "--panel", required=True)
+    parser.add_argument('-j', "--project", required=True)
+    parser.add_argument('-a', "--analyses", required=True)
+    parser.add_argument('-m', "--min-family-size", type=int, default=argparse.SUPPRESS)
+    parser.add_argument('-u', "--umi", default=argparse.SUPPRESS)
     args = parser.parse_args()
     enqueue(**vars(args))
             
