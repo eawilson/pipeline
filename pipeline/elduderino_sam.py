@@ -41,13 +41,10 @@ SECONDARY = 0X100
 FILTERED = 0x200
 SUPPPLEMENTARY = 0x800
 NOT_PRIMARY_AND_MAPPED = UNMAPPED | MATE_UNMAPPED | SECONDARY | SUPPPLEMENTARY
-NOT_PRIMARY = SECONDARY | SUPPPLEMENTARY
 
 CONSUMES_REF = "MDN=X"
 CONSUMES_READ = "MIS=X"
 
-
-RCOMPLEMENT = maketrans("ATGC", "TACG")
 
 
 def dedupe_process(input_queue, output_queue, stats_queue, dedupe_func, stats, **details):
@@ -62,8 +59,8 @@ def dedupe_process(input_queue, output_queue, stats_queue, dedupe_func, stats, *
     
 
 
-def filewriter_process(output_queue, output_file):
-    with open(output_file, "wt") as f_out:
+def filewriter_process(output_queue, output_sam):
+    with open(output_sam, "wt") as f_out:
         while True:
             text = output_queue.get()
             if text is None:
@@ -72,12 +69,12 @@ def filewriter_process(output_queue, output_file):
 
 
 
-def is_ontarget(contigs, templates, stats):
+def is_ontarget(contigs, reads, stats):
     best_offset = None
     match = None
-    for template in templates:
-        for bait in contigs.touched_by(template):
-            offset = abs(template.start + template.stop - bait.start - bait.stop)
+    for read in reads:
+        for bait in contigs.touched_by(read):
+            offset = abs(read.start + read.stop - bait.start - bait.stop)
             try:
                 if offset > best_offset:
                     continue
@@ -97,9 +94,6 @@ def is_ontarget(contigs, templates, stats):
 
 
 def cigar2tuple(cig):
-    if cig == "*":
-        return ()
-    
     tup = []
     num = ""
     for char in cig:
@@ -109,16 +103,16 @@ def cigar2tuple(cig):
             try:
                 tup.append((int(num), char))
             except ValueError:
-                sys.exit(f"Malformed cigar string {cig}")
+                raise ValueError(f"Malformed cigar string {cig}")
             num = ""
     if num:
-        raise sys.exit(f"Malformed cigar string {cig}")
+        raise ValueError(f"Malformed cigar string {cig}")
     return tuple(tup)
 
 
 
 def tuple2cigar(tup):
-    return "".join(str(val) for val in chain(*tup)) or "*"
+    return "".join(str(val) for val in chain(*tup))
 
 
 
@@ -187,7 +181,7 @@ def collapse_optical(family):
 
 
 def elduderino(input_sam,
-               output_file="output.deduped.sam",
+               output_sam="output.deduped.sam",
                statistics="stats.json",
                umi=None,
                filter_fragments_shorter_than=None,
@@ -201,9 +195,6 @@ def elduderino(input_sam,
     threads = 1
     print(f"Multithreading not ready, threads = {threads}", file=sys.stderr)
     
-    if not ooutput_file.endswith(".sam") and not output_file.endswith(".fastq"):
-        sys.exit(f"{output_file} is not a valid output file type")
-    
     if umi == "thruplex":
         dedupe_func = dedupe_umi_inexact
     elif umi in ("thruplex_hv", "prism"):
@@ -211,7 +202,7 @@ def elduderino(input_sam,
     elif umi is None:
         dedupe_func = dedupe
     else:
-        sys.exit(f"'{umi}' is not a valid UMI type")
+        sys.exit(f"'{umi}' is not a known UMI type")
     
     targets = Gr(bed(targets))
     for target in targets:
@@ -222,8 +213,7 @@ def elduderino(input_sam,
                "max_fragment_size": max_fragment_size,
                "filter_fragments_shorter_than": filter_fragments_shorter_than,
                "filter_fragments_longer_than": filter_fragments_longer_than,
-               "min_family_size": 1 if dont_dedupe else min_family_size,
-               "output_sam": output_file.endswith(".sam")}
+               "min_family_size": 1 if dont_dedupe else min_family_size}
     
     stats = {"fragment_sizes": Counter(),
              "family_sizes": Counter()}
@@ -234,7 +224,7 @@ def elduderino(input_sam,
     
     
     multithreaded = (threads > 1)
-    with (open(output_file, "wt") if not multithreaded else nullcontext()) as f_out:
+    with (open(output_sam, "wt") if not multithreaded else nullcontext()) as f_out:
         
         if multithreaded:
             input_queue = Queue()
@@ -243,7 +233,7 @@ def elduderino(input_sam,
             workers = []
             for i in range(threads - 1):
                 workers.append(Process(target=dedupe_process, args=(input_queue, output_queue, stats_queue, dedupe_func, stats), kwargs=details))
-            workers.append(Process(target=filewriter_process, args=(output_queue, output_file)))
+            workers.append(Process(target=filewriter_process, args=(output_queue, output_sam)))
             for worker in workers:
                 worker.start()
             dedupe_family = input_queue.put
@@ -277,9 +267,9 @@ def elduderino(input_sam,
                     continue
                 
                 qname = read[QNAME]
+                flag = read[FLAG] = int(read[FLAG])
                 rname = read[RNAME]
                 pos = read[POS] = int(read[POS])
-                read[FLAG] = int(read[FLAG])
                 
                 if rname == sort_check_rname:
                     if pos < sort_check_pos:
@@ -291,11 +281,16 @@ def elduderino(input_sam,
                     sort_check_rname = rname
                 sort_check_pos = pos
 
-                # Secondary or supplementary read or both segments unmapped
-                if read[FLAG] & NOT_PRIMARY or (read[FLAG] & UNMAPPED and read[FLAG] & MATE_UNMAPPED):
+                if flag & NOT_PRIMARY_AND_MAPPED: #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                     continue
                 
-                read[CIGAR] = cigar2tuple(read[CIGAR])
+                if not((flag & READ1) ^ (flag & READ2)):
+                    sys.exit("Invalid segment SAM flags")
+                
+                try:
+                    cigar = read[CIGAR] = cigar2tuple(read[CIGAR])
+                except ValueError as e:
+                    sys.exit(str(e))
                 
                 try:
                     mate = unpaired.pop(qname)
@@ -307,15 +302,11 @@ def elduderino(input_sam,
                     dedupe_family([(mate, read)])
                     continue
                 
-                if mate[FLAG] & UNMAPPED:
-                    read, mate = (mate, read)
-                
-                mate_begin = mate[POS] if not (mate[FLAG] & RC) else mate[POS] + cigar_len(mate[CIGAR], CONSUMES_REF) - 1
-                if not read[FLAG] & UNMAPPED:
-                    read_begin = pos if not (read[FLAG] & RC) else pos + cigar_len(cigar, CONSUMES_REF) - 1
-                else:
-                    read_begin = mate_begin
-                location = (mate[RNAME], mate_begin, mate[FLAG], rname, read_begin, read[FLAG])
+                read_rc = flag & RC
+                read_begin = pos if not read_rc else pos + cigar_len(cigar, CONSUMES_REF) - 1
+                mate_rc = mate[FLAG] & RC
+                mate_begin = mate[POS] if not mate_rc else mate[POS] + cigar_len(mate[CIGAR], CONSUMES_REF) - 1
+                location = (mate[RNAME], mate_begin, mate_rc, rname, read_begin, read_rc)
                 
                 if mate_begin > read_begin:
                     read_begin = mate_begin
@@ -433,12 +424,7 @@ def dedupe_umi_inexact(size_family, **kwargs):
 
 
 
-def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fragments_shorter_than, filter_fragments_longer_than, output_sam):
-    if family[0][1][FLAG] & UNMAPPED and len(family) > 1:
-        for pair in family:
-            print(pait[1][SEQ])
-        print("")
-    
+def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fragments_shorter_than, filter_fragments_longer_than):
     passed = True
     family_size = len(family)
     stats["family_sizes"][family_size] += 1
@@ -461,7 +447,7 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
     
     # Are the segments on the same contig and orientated in opposite directions
     # If yes then they may be correctly orientated and overlap
-    if left[RNAME] == right[RNAME] and (left[FLAG] & RC) != (right[FLAG] & RC) and not right[FLAG] & UNMAPPED:
+    if left[RNAME] == right[RNAME] and (left[FLAG] & RC) != (right[FLAG] & RC):
         # Do the two segments overlap? Find left_read_pos that overlaps first base of right read
         left_read_pos = -1
         ref_pos = left[POS] - 1
@@ -537,7 +523,7 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
     stats["fragment_sizes"][fragment_size] += 1
     if targets and not fragment_size:
         reads = Gr((Entry(left[RNAME], left[POS], left[POS] + cigar_len(left[CIGAR], CONSUMES_REF) - 1),
-                    Entry(right[RNAME], right[POS], right[POS] + cigar_len(right[CIGAR], CONSUMES_REF) - 1)))
+                     Entry(right[RNAME], right[POS], right[POS] + cigar_len(right[CIGAR], CONSUMES_REF) - 1)))
         if not is_ontarget(targets, reads, stats):
             passed = False
     
@@ -550,6 +536,7 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
     if not passed:
         return ""
     
+    #pdb.set_trace()
     if segments_overlap:
         overlap_len = min(len(left[SEQ]) - left_read_pos, len(right[SEQ]))
         for left, right in family:
@@ -604,31 +591,21 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
             first_pair[read][SEQ] = "".join(consensus_seq)
             first_pair[read][QUAL] = "".join(consensus_qual)
             first_pair[read][MAPQ] = str(max(int(pair[read][MAPQ]) for pair in family))
-
+            #print(first_pair[read][SEQ], "\n")
     
-    if output_sam:
-        for read in first_pair:
-            read[FLAG] = str(read[FLAG])
-            read[POS] = str(read[POS])
-            read[CIGAR] = tuple2cigar(read[CIGAR])
-        
-        return "{}\n{}\n".format("\t".join(first_pair[0]), "\t".join(first_pair[1]))
-
-    else:
-        for read in first_pair:
-            if read[FLAG] & RC:
-                read[SEQ] = read[SEQ][::-1].translate(RCOMPLEMENT)
-                read[QUAL] = read[QUAL][::-1]
-        if right[FLAG] & READ1 and left[FLAG] & READ2:
-            right, left = first_pair
-        return "{}\n{}\n+\n{}\n{}\n{}\n+\n{}\n".format(left[QNAME], left[SEQ], left[QUAL], right[QNAME], right[SEQ], right[QUAL])
+    for read in (0, 1):
+        first_pair[read][FLAG] = str(first_pair[read][FLAG])
+        first_pair[read][POS] = str(first_pair[read][POS])
+        first_pair[read][CIGAR] = tuple2cigar(first_pair[read][CIGAR])
+    
+    return "{}\n{}\n".format("\t".join(first_pair[0]), "\t".join(first_pair[1]))
 
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_sam', help="Input sam file.")
-    parser.add_argument("-o", "--output", help="Output file, may be sam (default) or fastq.", dest="output_file", default=argparse.SUPPRESS)
+    parser.add_argument("-o", "--output", help="Output sam file.", dest="output_sam", default=argparse.SUPPRESS)
     parser.add_argument("-m", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-M", "--max-fragment-size", help="Maximum template legth to be considered a genuine read pair.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-f", "--filter-fragments-shorter-than", help="Filter fragments shorter than.", type=int, default=argparse.SUPPRESS)

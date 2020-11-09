@@ -11,7 +11,7 @@ import boto3
 BUCKET = "omdc-data"
 
 
-def enqueue(panel, project, analyses, min_family_size=None, umi=None, dry_run=False):
+def enqueue(panel, project, analyses, min_family_size=None, umi=None, cnv=None, dry_run=False):
     #project = "accept"
     #panel = "Accept"
     #analyses = "analyses3"
@@ -21,6 +21,8 @@ def enqueue(panel, project, analyses, min_family_size=None, umi=None, dry_run=Fa
         kwargs["--min-family-size"] = min_family_size
     if umi is not None:
         kwargs["--umi"] = umi
+    if cnv is not None:
+        kwargs["--cnv"] = cnv
     
     sqs = boto3.client("sqs")
     queue_url = sqs.get_queue_url(QueueName="samples")["QueueUrl"]
@@ -69,6 +71,7 @@ if __name__ == "__main__":
     parser.add_argument('-a', "--analyses", required=True)
     parser.add_argument('-m', "--min-family-size", default=argparse.SUPPRESS)
     parser.add_argument('-u', "--umi", default=argparse.SUPPRESS)
+    parser.add_argument('-c', "--cnv", default=argparse.SUPPRESS)
     parser.add_argument('-d', "--dry-run", action="store_const", const=True, default=argparse.SUPPRESS)
     args = parser.parse_args()
     enqueue(**vars(args))
