@@ -10,7 +10,7 @@ from pipeline import run, Pipe
 
 
 
-def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, min_family_size=1, max_fragment_size=None, cnv=None, threads=None, rtrim=None, no_elduderino=False):
+def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_family_size=1, max_fragment_size=0, cnv="", threads=None, rtrim=0, no_elduderino=False):
     """Cell free pipeline.
 
     Args:
@@ -41,20 +41,18 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
         threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
     
     reference = (glob.glob(f"{reference}/*.fna") + [reference])[0]
-    targets_bedfile = (glob.glob(f"{panel}/*.bed") + [None])[0] if panel is not None else None
+    targets_bedfile = (glob.glob(f"{panel}/*.bed") + [None])[0] if panel else ""
     stats = f"{sample}.stats.json"
     pipe = Pipe()
     
     
     # Remove umis and do some basic fastq qc
     interleaved_fastq = f"{sample}.interleaved.fastq"
-    udini_options = ["--output", interleaved_fastq,
-                     "--stats", stats]
-    if umi is not None:
-        udini_options += ["--umi", umi]
-    if rtrim is not None:
-        udini_options += ["--rtrim", rtrim]
-    pipe(["udini"] + input_fastqs + udini_options)
+    pipe(["udini", "--output", interleaved_fastq,
+                   "--stats", stats,
+                   "--umi", umi,
+                   "--rtrim", rtrim] + \
+                   input_fastqs)
     
     
     undeduped_unsorted_sam = f"{sample}.undeduped.unsorted.sam"
@@ -62,6 +60,7 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
         pipe(["bwa", "mem", "-t", threads, 
                             "-p", 
                             "-C", 
+                            "-Y", 
                             reference, 
                             interleaved_fastq], stdout=f_out)
     os.unlink(interleaved_fastq)
@@ -73,21 +72,18 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
                               undeduped_unsorted_sam])
     os.unlink(undeduped_unsorted_sam)
     
-    sys.exit()
-    unsorted_sam = f"{sample}.unsorted.sam"
-    elduderino_options = ["--output", unsorted_sam,
-                          "--stats", stats,
-                          "--min-family-size", min_family_size,
-                          "--threads", threads]
-    if max_fragment_size is not None:
-        elduderino_options += ["--max-fragment-size", max_fragment_size]
-    if umi is not None:
-        elduderino_options += ["--umi", umi]
-    if targets_bedfile is not None:
-        elduderino_options += ["--bed", targets_bedfile]
+
     if not no_elduderino:
-        pipe(["elduderino", undeduped_sam] + elduderino_options)
-        os.unlink(undeduped_sam)
+        unsorted_sam = f"{sample}.unsorted.sam"
+        pipe(["elduderino", "--output", unsorted_sam,
+                            "--stats", stats,
+                            "--min-family-size", min_family_size,
+                            "--threads", threads,
+                            "--max-fragment-size", max_fragment_size,
+                            "--umi", umi,
+                            "--bed", targets_bedfile,
+                            undeduped_sam])
+        #os.unlink(undeduped_sam)
     else:
         unsorted_sam = undeduped_sam
 
@@ -119,55 +115,49 @@ def cfpipeline(sample, input_fastqs, reference, panel=None, umi=None, vep=None, 
     
 
     mpileup = f"{sample}.mpileup"
-    mpileup_options = ["-A",
-                       "-B",
-                       "-q", "10",
-                       "-d", "10000000"]
     pipe(["samtools", "mpileup", "-o", mpileup,
-                                 "-f", reference] + 
-                                 mpileup_options + [bam])
+                                 "-f", reference,
+                                 "-A",
+                                 "-B",
+                                 "-q", "10",
+                                 "-d", "10000000",
+                                 bam])
+
     pvalue_vcf = f"{sample}.pvalue.vcf"
-    varscan_options = ["--min-coverage", "1",
-                       "--min-var-freq", "0", 
-                       "--min-avg-qual", "20",
-                       "--min-reads2", "3",
-                       "--p-value", "0.05",
-                    #"--min-coverage-normal", "1",
-                    #"--min-coverage-tumor", "1",
-                    #"--min-freq-for-hom","0.75",
-                    #"--somatic-p-value", "0.05",
-                       "--strand-filter", "1",]
-                    #"--validation", "1"
-
-
     with open(pvalue_vcf, "wb") as f_out:
-        pipe(["varscan", "mpileup2cns", mpileup, "--variants", 
-                                                 "--output-vcf", "1"] + 
-                                                 varscan_options, stdout=f_out)
+        pipe(["varscan", "mpileup2cns", "--variants", 
+                                        "--output-vcf", "1", 
+                                        "--min-coverage", "1",
+                                        "--min-var-freq", "0", 
+                                        "--min-avg-qual", "20",
+                                        "--min-reads2", "3",
+                                        "--p-value", "0.05",
+                                        "--strand-filter", "1",
+                                        mpileup], stdout=f_out)        
     os.unlink(mpileup)
+    
     vcf = f"{sample}.vcf"
     pipe(["vcf_pvalue_2_phred", pvalue_vcf, "--output", vcf])
     os.unlink(pvalue_vcf)
     
     
-    if cnv is not None:
+    if cnv:
         pipe(["panel_copy_numbers", stats, "--targets", cnv])
     
     
-    if vep is not None:
-        annotate_options = ["--vep", vep,
-                            "--output", f"{sample}.annotation.tsv",
-                            "--threads", threads]
-        if panel is not None:
-            annotate_options += ["--panel", panel]
-        pipe(["annotate_panel", vcf] + annotate_options)
-    
-    
-    if panel is not None:
-        pipe(["covermi_stats", bam, "--panel", panel,
-                                    "--output", f"{sample}.covermi.pdf",
-                                    "--stats", stats,
-                                    "--sample", sample])
+    if vep:
+        pipe(["annotate_panel", "--vep", vep,
+                                "--output", f"{sample}.annotation.tsv",
+                                "--threads", threads,
+                                "--panel", panel,
+                                vcf])
+              
+    if panel:
+        pipe(["covermi_stats", "--panel", panel,
+                               "--output", f"{sample}.covermi.pdf",
+                               "--stats", stats,
+                               "--sample", sample,
+                               bam])
     
     print(pipe.durations, file=sys.stderr, flush=True)
 

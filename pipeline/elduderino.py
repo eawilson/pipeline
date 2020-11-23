@@ -7,6 +7,7 @@ from collections import defaultdict, Counter
 from itertools import chain
 from multiprocessing import Process, Queue
 from collections.abc import Sequence, Mapping
+from math import sqrt
 
 from covermi import bed, Gr, Entry
 
@@ -40,14 +41,17 @@ READ2 = 0x80
 SECONDARY = 0X100
 FILTERED = 0x200
 SUPPPLEMENTARY = 0x800
-NOT_PRIMARY_AND_MAPPED = UNMAPPED | MATE_UNMAPPED | SECONDARY | SUPPPLEMENTARY
-NOT_PRIMARY = SECONDARY | SUPPPLEMENTARY
+SEC_OR_SUP = SECONDARY | SUPPPLEMENTARY
+BOTH_UNMAPPED = UNMAPPED | MATE_UNMAPPED
 
 CONSUMES_REF = "MDN=X"
 CONSUMES_READ = "MIS=X"
 
+LEFT = 0
+RIGHT = 1
 
-RCOMPLEMENT = maketrans("ATGC", "TACG")
+RCOMPLEMENT = str.maketrans("ATGC", "TACG")
+
 
 
 def dedupe_process(input_queue, output_queue, stats_queue, dedupe_func, stats, **details):
@@ -72,12 +76,12 @@ def filewriter_process(output_queue, output_file):
 
 
 
-def is_ontarget(contigs, templates, stats):
+def is_ontarget(baits, reads, stats):
     best_offset = None
     match = None
-    for template in templates:
-        for bait in contigs.touched_by(template):
-            offset = abs(template.start + template.stop - bait.start - bait.stop)
+    for read in reads:
+        for bait in baits.touched_by(read):
+            offset = abs(read.start + read.stop - bait.start - bait.stop)
             try:
                 if offset > best_offset:
                     continue
@@ -96,36 +100,42 @@ def is_ontarget(contigs, templates, stats):
 
 
 
-def cigar2tuple(cig):
-    if cig == "*":
+def string2cigar(cigstr):
+    if cigstr == "*":
         return ()
     
-    tup = []
+    cig = []
     num = ""
-    for char in cig:
+    for char in cigstr:
         if char.isnumeric():
             num += char
         else:
             try:
-                tup.append((int(num), char))
+                cig.append((int(num), char))
             except ValueError:
-                sys.exit(f"Malformed cigar string {cig}")
+                sys.exit(f"Malformed cigar string {cigstr}")
             num = ""
     if num:
-        raise sys.exit(f"Malformed cigar string {cig}")
-    return tuple(tup)
+        raise sys.exit(f"Malformed cigar string {cigstr}")
+    return cig
 
 
 
-def tuple2cigar(tup):
-    return "".join(str(val) for val in chain(*tup)) or "*"
+def cigar2string(cig):
+    return "".join(str(val) for val in chain(*cig)) or "*"
 
 
 
-def cigar_len(tup, ops):
-    return sum(num for num, op in tup if op in ops)
+def cigar_len(cig, ops):
+    return sum(num for num, op in cig if op in ops)
 
 
+
+def hard2softclip(cig):
+    pass
+    
+    
+    
 
 def ltrim_read(read, bases):
     read[SEQ] = read[SEQ][bases:]
@@ -180,7 +190,11 @@ def collapse_optical(family):
             return
         
     for tile_family in tile_families.values():
-        pass
+        if len(tile_family) == 2:
+            x0, y0, pair = tile_family[0]
+            x1, y1, pair = tile_family[1]
+            dist = sqrt(((x0 - x1) ** 2) + ((y0 - y1) ** 2))
+            print(int(dist))
     
     
     
@@ -189,29 +203,46 @@ def collapse_optical(family):
 def elduderino(input_sam,
                output_file="output.deduped.sam",
                statistics="stats.json",
-               umi=None,
-               filter_fragments_shorter_than=None,
-               filter_fragments_longer_than=None,
-               max_fragment_size=None,
+               umi="",
+               filter_fragments_shorter_than=0,
+               filter_fragments_longer_than=0,
+               max_fragment_size=0,
                min_family_size=1,
-               targets=None,
+               targets="",
                threads=1,
                dont_dedupe=False):
     
     threads = 1
     print(f"Multithreading not ready, threads = {threads}", file=sys.stderr)
     
-    if not ooutput_file.endswith(".sam") and not output_file.endswith(".fastq"):
+    
+    supplementary = defaultdict(list)
+    if output_file.endswith(".sam"):
+        output_sam = True
+        with open(input_sam, "rt") as f_in:
+            reader = csv.reader(f_in, delimiter="\t")
+            for read in reader:
+                if not read[0].startswith("@") and int(read[FLAG]) & SEC_OR_SUP == SUPPPLEMENTARY:
+                    read[FLAG] = int(read[FLAG])
+                    read[POS] = int(read[POS])
+                    read[CIGAR] = string2cigar(read[CIGAR])
+                    read[SEQ] = read[QUAL] = ""
+                    supplementary[read[QNAME]].append(read)
+    elif output_file.endswith(".fastq"):
+        output_sam = False
+    else:
         sys.exit(f"{output_file} is not a valid output file type")
+    
     
     if umi == "thruplex":
         dedupe_func = dedupe_umi_inexact
     elif umi in ("thruplex_hv", "prism"):
         dedupe_func = dedupe_umi_exact
-    elif umi is None:
+    elif not umi:
         dedupe_func = dedupe
     else:
         sys.exit(f"'{umi}' is not a valid UMI type")
+    
     
     targets = Gr(bed(targets))
     for target in targets:
@@ -223,11 +254,12 @@ def elduderino(input_sam,
                "filter_fragments_shorter_than": filter_fragments_shorter_than,
                "filter_fragments_longer_than": filter_fragments_longer_than,
                "min_family_size": 1 if dont_dedupe else min_family_size,
-               "output_sam": output_file.endswith(".sam")}
+               "output_sam": output_sam,
+               "supplementary": supplementary}
     
     stats = {"fragment_sizes": Counter(),
              "family_sizes": Counter()}
-    if targets is not None:
+    if targets:
         stats.update({"fragments_per_target": {bait.name: 0 for bait in details["targets"]},
                       "ontarget_deduplicated_reads": 0,
                       "offtarget_deduplicated_reads": 0})
@@ -292,10 +324,10 @@ def elduderino(input_sam,
                 sort_check_pos = pos
 
                 # Secondary or supplementary read or both segments unmapped
-                if read[FLAG] & NOT_PRIMARY or (read[FLAG] & UNMAPPED and read[FLAG] & MATE_UNMAPPED):
+                if read[FLAG] & SEC_OR_SUP or read[FLAG] & BOTH_UNMAPPED == BOTH_UNMAPPED:
                     continue
                 
-                read[CIGAR] = cigar2tuple(read[CIGAR])
+                read[CIGAR] = string2cigar(read[CIGAR])
                 
                 try:
                     mate = unpaired.pop(qname)
@@ -312,7 +344,7 @@ def elduderino(input_sam,
                 
                 mate_begin = mate[POS] if not (mate[FLAG] & RC) else mate[POS] + cigar_len(mate[CIGAR], CONSUMES_REF) - 1
                 if not read[FLAG] & UNMAPPED:
-                    read_begin = pos if not (read[FLAG] & RC) else pos + cigar_len(cigar, CONSUMES_REF) - 1
+                    read_begin = pos if not (read[FLAG] & RC) else pos + cigar_len(read[CIGAR], CONSUMES_REF) - 1
                 else:
                     read_begin = mate_begin
                 location = (mate[RNAME], mate_begin, mate[FLAG], rname, read_begin, read[FLAG])
@@ -400,28 +432,28 @@ def dedupe_umi_inexact(size_family, **kwargs):
         for pair in size_family:
             for tag in pair[0][11:]:
                 if tag.startswith("RX:Z:"):
-                    left, right = tag[5:].split("-")
-                    umi_pairs.append((left, right, pair))
+                    l_umi, r_umi = tag[5:].split("-")
+                    umi_pairs.append((l_umi, r_umi, pair))
                     break
             else:
                 sys.exit("Missing RX tags")
 
         families = []
         while umi_pairs:
-            left, right, pair = umi_pairs.pop()
+            l_umi, r_umi, pair = umi_pairs.pop()
             families.append([pair])
-            lefts = set([left])
-            rights = set([right])
+            lefts = set([l_umi])
+            rights = set([r_umi])
             changed = True
             while changed:
                 changed = False
                 remaining = []
                 for umi_pair in umi_pairs:
-                    left, right, pair = umi_pair
-                    if left in lefts or right in rights:
+                    l_umi, r_umi, pair = umi_pair
+                    if l_umi in lefts or r_umi in rights:
                         families[-1].append(pair)
-                        lefts.add(left)
-                        rights.add(right)
+                        lefts.add(l_umi)
+                        rights.add(r_umi)
                         changed = True
                     else:
                         remaining.append(umi_pair)
@@ -433,35 +465,45 @@ def dedupe_umi_inexact(size_family, **kwargs):
 
 
 
-def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fragments_shorter_than, filter_fragments_longer_than, output_sam):
-    if family[0][1][FLAG] & UNMAPPED and len(family) > 1:
-        for pair in family:
-            print(pait[1][SEQ])
-        print("")
-    
-    passed = True
+def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fragments_shorter_than, filter_fragments_longer_than, output_sam, supplementary):
     family_size = len(family)
+    
+    if family_size > 1:
+        collapse_optical(family)
+    
+    
     stats["family_sizes"][family_size] += 1
+    if family_size > 1:
+        min_family_size = max(min_family_size, (family_size * 6 // 10) + 1)
+        cigar_families = defaultdict(list)
+        for pair in family:
+            cigar_families[(tuple(pair[0][CIGAR]), tuple(pair[1][CIGAR]))].append(pair)
+        family = sorted(cigar_families.values(), key=lambda x:len(x))[-1]
+        family_size = len(family)
+    
     
     if family_size > 1:
         sixty_percent = (family_size * 6 // 10) + 1
-        cigar_families = defaultdict(list)
+        supplementaries = defaultdict(list)
         for pair in family:
-            cigar_families[(pair[0][CIGAR], pair[1][CIGAR])].append(pair)
-        family = sorted(cigar_families.values(), key=lambda x:len(x))[-1]
-        family_size = len(family)
-        if family_size < sixty_percent:
-            passed = False
-    if family_size < min_family_size and passed:
-        passed = False
+            for single in supplementary.get(pair[0][QNAME], ()):
+                supplementaries[(single[RNAME], single[POS], tuple(single[CIGAR]), single[FLAG])].append(single)
+        supplementaries = [singles[0] for singles in supplementaries.values() if not len(singles) < sixty_percent]
+        
+    else:
+        supplementaries = supplementary.get(family[0][0][QNAME], ())
+
 
     segments_overlap = False
     fragment_size = 0
     left, right = first_pair = family[0]
+    ltrim = [0, 0]
+    rtrim = [0, 0]
     
     # Are the segments on the same contig and orientated in opposite directions
     # If yes then they may be correctly orientated and overlap
-    if left[RNAME] == right[RNAME] and (left[FLAG] & RC) != (right[FLAG] & RC) and not right[FLAG] & UNMAPPED:
+    right_mapped = not (right[FLAG] & UNMAPPED)
+    if left[RNAME] == right[RNAME] and (left[FLAG] & RC) != (right[FLAG] & RC) and right_mapped:
         # Do the two segments overlap? Find left_read_pos that overlaps first base of right read
         left_read_pos = -1
         ref_pos = left[POS] - 1
@@ -495,6 +537,7 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
                 if left[FLAG] & RC:
                     # readthrough at start of left read
                     if left_read_pos:
+                        ltrim[LEFT] = left_read_pos
                         ltrim_read(left, left_read_pos)
                         right[PNEXT] = str(left[POS])
                         left_read_pos = 0
@@ -502,6 +545,7 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
                     overhang = len(right[SEQ]) - len(left[SEQ])
                     # readthrough at end of right read
                     if overhang > 0:
+                        rtrim[RIGHT] = overhang
                         rtrim_read(right, overhang)
                 
                 # Correct read directions but still a chance of an overhang
@@ -511,6 +555,7 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
                     overhang = len(left[SEQ]) - left_read_pos - len(right[SEQ])
                     # readthrough at end of right read
                     if overhang > 0:
+                        rtrim[LEFT] = overhang
                         rtrim_read(left, overhang)
                 
                 break
@@ -528,27 +573,32 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
                 elif op in "DN":
                     fragment_size -= num
         
-        if max_fragment_size is not None and fragment_size > max_fragment_size:
-            fragment_size = 0
-        elif targets and not is_ontarget(targets, Entry(left[RNAME], left[POS], right[POS] + cigar_len(right[CIGAR], CONSUMES_REF) - 1), stats):
-            passed = False
+            if max_fragment_size and fragment_size > max_fragment_size:
+                fragment_size = 0
     
     
     stats["fragment_sizes"][fragment_size] += 1
-    if targets and not fragment_size:
-        reads = Gr((Entry(left[RNAME], left[POS], left[POS] + cigar_len(left[CIGAR], CONSUMES_REF) - 1),
-                    Entry(right[RNAME], right[POS], right[POS] + cigar_len(right[CIGAR], CONSUMES_REF) - 1)))
-        if not is_ontarget(targets, reads, stats):
-            passed = False
-    
-    
-    if filter_fragments_shorter_than is not None and fragment_size < filter_fragments_shorter_than:
-        passed = False
-    if filter_fragments_longer_than is not None and (fragment_size == 0 or fragment_size > filter_fragments_longer_than):
-        passed = False
+    if targets:
+        reads = Gr()
+        if fragment_size:
+            reads.add(Entry(left[RNAME], left[POS], right[POS] + cigar_len(right[CIGAR], CONSUMES_REF) - 1))
+        else:
+            reads.add(Entry(left[RNAME], left[POS], left[POS] + cigar_len(left[CIGAR], CONSUMES_REF) - 1))
+            reads.add(Entry(right[RNAME], right[POS], right[POS] + cigar_len(right[CIGAR], CONSUMES_REF) - 1))
 
-    if not passed:
+        for single in supplementaries:
+            reads.add(Entry(single[RNAME], single[POS], single[POS] + cigar_len(single[CIGAR], CONSUMES_REF) - 1))
+        
+        reads.sort()
+        if not is_ontarget(targets, reads, stats):
+            return ""
+    
+    
+    if family_size < min_family_size or \
+        fragment_size < filter_fragments_shorter_than or \
+        (filter_fragments_longer_than != 0 and (fragment_size == 0 or fragment_size > filter_fragments_longer_than)):
         return ""
+    
     
     if segments_overlap:
         overlap_len = min(len(left[SEQ]) - left_read_pos, len(right[SEQ]))
@@ -579,19 +629,16 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
     
     
     if family_size > 1:
-        sixty_percent = (family_size * 6 // 10) + 1
-        for read in (0, 1):
+        for read in (LEFT, RIGHT) if right_mapped else (LEFT,):
             consensus_seq = []
             consensus_qual = []
             for i in range(len(first_pair[read][SEQ])):
                 bases = Counter()
-                quals = defaultdict(lambda:"!")
+                quals = defaultdict(list)
                 for pair in family:
                     base = pair[read][SEQ][i]
-                    qual = pair[read][QUAL][i]
                     bases[base] += 1
-                    if qual > quals[base]:
-                        quals[base] = qual
+                    quals[base].append(ord(pair[read][QUAL][i]))
                 
                 base, count = sorted(bases.items(), key=lambda x:x[1])[-1]
                 if count < sixty_percent:
@@ -599,27 +646,57 @@ def dedupe(family, stats, targets, min_family_size, max_fragment_size, filter_fr
                     consensus_qual.append("!")
                 else:
                     consensus_seq.append(base)
-                    consensus_qual.append(quals[base])
+                    qual = sum(quals.pop(base))
+                    qual -= sum(chain(*quals.values()))
+                    if qual < 33:
+                        qual = 33
+                    elif qual > 93:
+                        qual = 93
+                    consensus_qual.append(chr(min(qual, 62)))
 
             first_pair[read][SEQ] = "".join(consensus_seq)
             first_pair[read][QUAL] = "".join(consensus_qual)
             first_pair[read][MAPQ] = str(max(int(pair[read][MAPQ]) for pair in family))
-
+    
     
     if output_sam:
-        for read in first_pair:
-            read[FLAG] = str(read[FLAG])
-            read[POS] = str(read[POS])
-            read[CIGAR] = tuple2cigar(read[CIGAR])
-        
-        return "{}\n{}\n".format("\t".join(first_pair[0]), "\t".join(first_pair[1]))
+        reads = list(first_pair)
+        for single in supplementaries:
+            read = single[FLAG] & READ1 == right[FLAG] & READ1
+            
+            # Sequences orientated the same way
+            if single[FLAG] & RC == first_pair[read][FLAG] & RC:
+                if ltrim[read]:
+                    ltrim_read(single, ltrim[read])
+                if rtrim[read]:
+                    rtrim_read(single, rtrim[read])
+                single[SEQ] = first_pair[read][SEQ]
+                single[QUAL] = first_pair[read][QUAL]
+            
+            # Sequences orientated opposite ways
+            else:
+                if ltrim[read]:
+                    rtrim_read(single, ltrim[read])
+                if rtrim[read]:
+                    ltrim_read(single, rtrim[read])
+                single[SEQ] = first_pair[read][SEQ][::-1].translate(RCOMPLEMENT)
+                single[QUAL] = first_pair[read][QUAL][::-1]
+
+            reads.append(single)
+
+        for single in reads:
+            single[FLAG] = str(single[FLAG])
+            single[POS] = str(single[POS])
+            single[CIGAR] = cigar2string(single[CIGAR])
+            
+        return "".join("{}\n".format("\t".join(single)) for single in reads)
 
     else:
-        for read in first_pair:
-            if read[FLAG] & RC:
-                read[SEQ] = read[SEQ][::-1].translate(RCOMPLEMENT)
-                read[QUAL] = read[QUAL][::-1]
-        if right[FLAG] & READ1 and left[FLAG] & READ2:
+        for single in first_pair:
+            if single[FLAG] & RC:
+                single[SEQ] = single[SEQ][::-1].translate(RCOMPLEMENT)
+                single[QUAL] = single[QUAL][::-1]
+        if right[FLAG] & READ1:
             right, left = first_pair
         return "{}\n{}\n+\n{}\n{}\n{}\n+\n{}\n".format(left[QNAME], left[SEQ], left[QUAL], right[QNAME], right[SEQ], right[QUAL])
 

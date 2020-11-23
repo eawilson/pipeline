@@ -25,7 +25,7 @@ def chrom2int(chrom):
 
 
 
-def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buffer_size=None):
+def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel="", buffer_size=None):
     if threads is None:
         threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
 
@@ -70,7 +70,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buff
     targets = None
     needed_genes = set()
     needed_transcripts = set()
-    if panel is not None:
+    if panel:
         panel = Panel(panel)
         if "targets" in panel:
             targets = panel.targets
@@ -82,7 +82,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel=None, buff
                 if len(name) > 1:
                     needed_transcripts.add(name[1])
         
-    principal = appris(panel.paths.get("principal", None) if panel is not None else None)
+    principal = appris(panel.paths.get("principal", None) if panel else None)
 
     if "refseq" in vep:
         def consequence_sort(cons):

@@ -68,7 +68,7 @@ def pipe(args, exit_on_failure=True, **kwargs):
         needed. The command is echoed to stderr before the command is run.
     """
     args = [str(arg) for arg in args]
-    quoted_args = [(f'"{arg}"' if " " in arg else arg) for arg in args]
+    quoted_args = [(f'"{arg}"' if (" " in arg or arg == "") else arg) for arg in args]
     print(" ".join(quoted_args), file=sys.stderr, flush=True)
     completedprocess = subprocess.run(args, **kwargs)
     sys.stderr.flush()

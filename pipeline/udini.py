@@ -17,16 +17,6 @@ QUAL = 3
 
 
 
-def order_fastqs(fastqs):
-    pairs = defaultdict(list)
-    for fastq in fastqs:
-        with fqopen(fastq, "rt") as f:
-            qname = f.readline().split()[0]
-            pairs[qname].append(fastq)
-    return list(chain(*(pair for pair in pairs.values())))
-
-
-
 def fqopen(fn, *args, **kwargs):
     return (gzip.open if fn.endswith(".gz") else open)(fn, *args, **kwargs)
 
@@ -44,17 +34,17 @@ def edit_distance(one, two):
 def udini(input_fastqs,
           output_fastq="output.fastq",
           interleaved=False,
-          umi=None,
+          umi="",
           umi_length=0,
           umi_stem_length=0,
           umi_sequences="",
           statistics="stats.json",
           min_read_length=50,
           max_consecutive_ns=2,
-          rtrim = 0):
+          rtrim=0):
     
     # reversed so we can pop the fastqs in the original order.
-    input_fastqs = list(reversed(order_fastqs(input_fastqs)))
+    input_fastqs = list(reversed(input_fastqs))
     
     if not output_fastq.endswith(".fastq") and \
        not output_fastq.endswith(".fastq.gz"):
@@ -85,7 +75,7 @@ def udini(input_fastqs,
                         "TCGCTGTT GATGTGTG TTCGTTGG ACGTTCAG AAGCACTG " \
                         "TTGCAGAC GTCGAAGA CAATGTGG ACCACGAT ACGACTTG " \
                         "GATTACCG ACTAGGAG"
-    elif umi is not None:
+    elif umi:
         sys.exit(f"'{umi}' is not a known UMI type")
     
     
@@ -208,7 +198,7 @@ def main():
     parser.add_argument("-l", "--umi-length", help="UMI length.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-k", "--umi-stem-length", help="UMI stem length.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-q", "--umi-sequences", help="UMI sequences.", default=argparse.SUPPRESS)
-    parser.add_argument("-r", "--rtrim", help="Trim bases from the end of the read.", default=argparse.SUPPRESS)
+    parser.add_argument("-r", "--rtrim", help="Trim bases from the end of the read.", type=int, default=argparse.SUPPRESS)
 
     parser.add_argument("-m", "--min-read-length", help="Reads shoter than min-read-legth will be filtered.", default=argparse.SUPPRESS)
     parser.add_argument("-n", "--max-consecutive-ns", help="Reads containing more Ns than max-consecutive-ns will be filtered.", default=argparse.SUPPRESS)
