@@ -18,8 +18,13 @@ package =  {"name": "pipeline",
                                                   "elduderino=pipeline.elduderino:main",
                                                   "vcf_pvalue_2_phred=pipeline.vcf_pvalue_2_phred:main",
                                                   "covermi_stats=pipeline.covermi_stats:main",
+                                                  "vcf_stats=pipeline.vcf_stats:main",
                                                   "panel_copy_number=pipeline.panel_copy_number:main",
                                                   "annotate_panel=pipeline.annotate_panel:main",
+                                                  "filter_sam=pipeline.filter_sam:main",
+                                                  "trim_sam=pipeline.trim_sam:main",
+                                                  "fragment_plot=pipeline.fragment_plot:main",
+                                                  "bscopy=pipeline.bscopy:main",
                                                   "runner=pipeline.runner:main"] },
             }
 

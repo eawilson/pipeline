@@ -21,7 +21,7 @@ def bscopy(bsruns, project, include=None, exclude=None, dry_run=False):
                 print(f"Skipping {sample}")
                 continue
             
-            prefix = f"projects/{project}/samples3/{bsrun}/{sample}"
+            prefix = f"projects/{project}/samples/{bsrun}/{sample}"
             
             uploaded = s3_list("omdc-data", prefix)
             for fastq in glob.glob(f"{stem}/{sample}/Files/*fastq.gz"):

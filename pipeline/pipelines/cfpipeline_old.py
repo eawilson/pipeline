@@ -10,7 +10,7 @@ from pipeline import run, Pipe
 
 
 
-def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_family_size=1, cnv="", threads=None):
+def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_family_size=1, max_fragment_size=0, cnv="", threads=None, rtrim=0, no_elduderino=False):
     """Cell free pipeline.
 
     Args:
@@ -23,10 +23,15 @@ def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_fa
         vep (str): Path to vep data.
         min_family_size (int): Minimum family size, families smaller
             than this will be filtered.
+        max_fragment_size (int): Maximum template length of aligned pair that
+            will be considered genuine, pairs with a tlen greater than this
+            will be treated as discordant..
         cnv (str): Whitespace separated list of target names, as specified in
             panel bedfile, over which to calculate copy number variation.
         threads (int): Number of threads to use, defaults to all available
             threads if not specified.
+        rtrim (int): Number of bases to trim from the end of read.
+        no_elduderino (bool): Do not run elduderino.
         
     Returns:
         None.
@@ -45,89 +50,62 @@ def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_fa
     interleaved_fastq = f"{sample}.interleaved.fastq"
     pipe(["udini", "--output", interleaved_fastq,
                    "--stats", stats,
-                   "--umi", umi] + \
+                   "--umi", umi,
+                   "--rtrim", rtrim] + \
                    input_fastqs)
     
     
-    unsorted_sam = f"{sample}.unsorted.sam"
-    with open(unsorted_sam, "wb") as f_out:
+    undeduped_unsorted_sam = f"{sample}.undeduped.unsorted.sam"
+    with open(undeduped_unsorted_sam, "wb") as f_out:
         pipe(["bwa", "mem", "-t", threads, 
-                            "-p", # interleaved paired end fastq
-                            "-C", # Append fastq comment to sam
-                            "-Y", # Soft clip non-primary reads
+                            "-p", 
+                            "-C", 
+                            "-Y", 
                             reference, 
                             interleaved_fastq], stdout=f_out)
     os.unlink(interleaved_fastq)
     
     
-    untrimmed_sam = f"{sample}.untrimmed.sam"
-    pipe(["samtools", "sort", "-n", # sort by name
-                              "-o", untrimmed_sam,
+    undeduped_sam = f"{sample}.undeduped.sam"
+    pipe(["samtools", "sort", "-o", undeduped_sam,
                               "-@", threads,
+                              undeduped_unsorted_sam])
+    os.unlink(undeduped_unsorted_sam)
+    
+
+    if not no_elduderino:
+        unsorted_sam = f"{sample}.unsorted.sam"
+        pipe(["elduderino", "--output", unsorted_sam,
+                            "--stats", stats,
+                            "--min-family-size", min_family_size,
+                            "--threads", threads,
+                            "--max-fragment-size", max_fragment_size,
+                            "--umi", umi,
+                            "--bed", targets_bedfile,
+                            undeduped_sam])
+        #os.unlink(undeduped_sam)
+    else:
+        unsorted_sam = undeduped_sam
+
+
+    namesorted_unfixed_sam = f"{sample}.namesorted.unfixed.sam"
+    pipe(["samtools", "sort", "-n",
+                              "-o", namesorted_unfixed_sam,
+                              "-@", threads, 
                               unsorted_sam])
     os.unlink(unsorted_sam)
     
-    
-    trimmed_sam = f"{sample}.trimmed.sam"
-    pipe(["trim_sam", "--output", trimmed_sam,
-                      "--stats", stats,
-                      "--threads", threads,
-                      untrimmed_sam])
-    os.unlink(untrimmed_sam)
-    
-    
-    undeduplicated_sam = f"{sample}.undeduplicated.sam"
-    pipe(["samtools", "sort", "-o", undeduplicated_sam,
-                              "-@", threads,
-                              trimmed_sam])
-    os.unlink(trimmed_sam)
-    
-    
-    deduplicated_sam = f"{sample}.deduplicated.sam"
-    pipe(["elduderino", "--output", deduplicated_sam,
-                        "--stats", stats,
-                        "--min-family-size", min_family_size,
-                        "--umi", umi,
-                        "--threads", threads,
-                        undeduplicated_sam])
-    os.unlink(undeduplicated_sam)
-    
-    
-    unfiltered_sam = f"{sample}.unfiltered.sam"
-    pipe(["samtools", "sort", "-n", # sort by name
-                              "-o", unfiltered_sam,
-                              "-@", threads,
-                              deduplicated_sam])
-    os.unlink(deduplicated_sam)
-    
-    
-    filtered_sam = f"{sample}.filtered.sam"
-    pipe(["filter_sam", "--output", filtered_sam,
-                        "--bed", targets_bedfile,
-                        "--stats", stats,
-                        "--threads", threads,
-                        unfiltered_sam])
-    os.unlink(unfiltered_sam)
 
-
-    unfixed_sam = f"{sample}.unfixed.sam"
-    pipe(["samtools", "sort", "-n", # sort by name
-                              "-o", unfixed_sam,
-                              "-@", threads, 
-                              filtered_sam])
-    os.unlink(filtered_sam)
-    
-
-    fixed_sam = f"{sample}.fixed.sam"
-    pipe(["samtools", "fixmate", unfixed_sam, fixed_sam])
-    os.unlink(unfixed_sam)
+    namesorted_sam = f"{sample}.namesorted.sam"
+    pipe(["samtools", "fixmate", namesorted_unfixed_sam, namesorted_sam])
+    os.unlink(namesorted_unfixed_sam)
 
 
     sam = f"{sample}.sam"
     pipe(["samtools", "sort", "-o", sam,
                               "-@", threads, 
-                              fixed_sam])
-    os.unlink(fixed_sam)
+                              namesorted_sam])
+    os.unlink(namesorted_sam)
 
 
     bam = f"{sample}.bam"
@@ -164,7 +142,7 @@ def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_fa
     
     
     if cnv:
-        pipe(["panel_copy_number", stats, "--targets", cnv])
+        pipe(["panel_copy_numbers", stats, "--targets", cnv])
     
     
     if vep:
@@ -181,17 +159,6 @@ def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_fa
                                "--sample", sample,
                                bam])
     
-    fragment_plot = f"{sample}.fragment.sizes.pdf"
-    pipe(["fragment_plot", stats, 
-                           "--sample", sample,
-                           "--output", fragment_plot])
-    
-    vaf_plot = f"{sample}.vaf.pdf"
-    pipe(["vcf_stats", vcf, 
-                       "--stats", stats,
-                       "--sample", sample,
-                       "--output", vaf_plot])
-        
     print(pipe.durations, file=sys.stderr, flush=True)
 
 
@@ -205,8 +172,11 @@ def main():
     parser.add_argument("-u", "--umi", help="Umi.", default=argparse.SUPPRESS)
     parser.add_argument("-v", "--vep", help="Directory containing vep data.", default=argparse.SUPPRESS)
     parser.add_argument("-m", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-f", "--max-fragment-size", help="Maximum template legth to be considered a genuine read pair.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-c", "--cnv", help="Targets over which to calculate copy numbers.", default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-i", "--rtrim", help="Trim bases from the end of the read.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-e", "--no-elduderino", help="Don't run elduderino.", action="store_const", const=True, default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         cfpipeline(**vars(args))

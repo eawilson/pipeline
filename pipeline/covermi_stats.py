@@ -8,7 +8,6 @@ from covermi import Panel, Cov, Plot
 
 
 def covermi_stats(bam_path, panel_path, output_path="coverage.pdf", statistics="stats.json", sample=""):
-    pdb.set_trace()
     panel = Panel(panel_path)
     if "targets" in panel:
         roi = panel.targets
@@ -21,14 +20,14 @@ def covermi_stats(bam_path, panel_path, output_path="coverage.pdf", statistics="
     
     stats = {"coverage": {},
              "coverage_by_gene": defaultdict(dict)}
-    for depth in (30, 100, 1000):
+    for depth in (30, 100, 500, 1000, 2000):
         for i in cov.calculate(roi, depth):
-            stats["coverage_by_gene"][f"{depth}x"][i.name] = "{:.0f}".format(i.percent_covered)
-            stats["coverage_by_gene"]["mean_depth"][i.name] = "{:.0f}".format(i.depth)
+            stats["coverage_by_gene"][f"{depth}x"][i.name] = int(i.percent_covered)
+            stats["coverage_by_gene"]["mean_depth"][i.name] = int(i.depth)
     
         i = cov.calculate(roi, depth, name="Total")
-        stats["coverage"][f"{depth}x"] = "{:.0f}".format(i.percent_covered)
-        stats["coverage"]["mean_depth"] = "{:.0f}".format(i.depth)
+        stats["coverage"][f"{depth}x"] = int(i.percent_covered)
+        stats["coverage"]["mean_depth"] = int(i.depth)
     
     try:
         with open(statistics, "rt") as f:
