@@ -35,9 +35,12 @@ def am_i_an_ec2_instance():
 
 
 
-def s3_get(bucket, key, filename=None):
-    if filename is None:
+def s3_get(bucket, key, filename="", prefix=""):
+    if not filename:
         filename = key.split("/")[-1]
+    if prefix:
+        prefix = prefix.rstrip("/")
+        filename = f"{prefix}/{filename}"
     s3 = client("s3")
     s3.download_file(bucket, key, filename)
 

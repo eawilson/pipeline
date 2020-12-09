@@ -11,7 +11,7 @@ import boto3
 BUCKET = "omdc-data"
 
 
-def enqueue(panel, project, analyses, min_family_size=None, umi=None, cnv=None, dry_run=False):
+def enqueue(project, panel, analyses="analyses", samples="samples", min_family_size=None, umi=None, cnv=None, run=(), dry_run=False):
     #project = "accept"
     #panel = "Accept"
     #analyses = "analyses3"
@@ -34,11 +34,12 @@ def enqueue(panel, project, analyses, min_family_size=None, umi=None, cnv=None, 
             complete.add(splitkey[-2])
 
     fastqs = defaultdict(list)
-    for key in s3_list(BUCKET, f"projects/{project}/samples", extension=".fastq.gz"):
-        sample = key.split("/")[-2] or key.split("/")[-3]
-        
-        if sample not in complete:
-            fastqs[sample] += [f"s3://{BUCKET}/{key}"]
+    for key in s3_list(BUCKET, f"projects/{project}/{samples}", extension=".fastq.gz"):
+        splitkey = key.split("/")
+        if not run or any(name in splitkey for name in run):
+            sample = splitkey[-2] or splitkey[-3]
+            if sample not in complete:
+                fastqs[sample] += [f"s3://{BUCKET}/{key}"]
     
     n = 0
     for sample, urls in sorted(fastqs.items()):
@@ -48,7 +49,7 @@ def enqueue(panel, project, analyses, min_family_size=None, umi=None, cnv=None, 
                 "Output": f"s3://{BUCKET}/projects/{project}/{analyses}/{sample}",
                 "Args": urls,
                 "Kwargs": {"--sample": sample,
-                           "--reference": f"s3://{BUCKET}/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set.tar.gz",
+                           "--reference": f"s3://{BUCKET}/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.tar.gz",
                            "--panel": f"s3://{BUCKET}/panels/{panel}.tar.gz",
                            "--vep": f"s3://{BUCKET}/reference/vep_101_GRCh37_homo_sapiens_refseq.tar",
                            **kwargs,
@@ -66,12 +67,14 @@ def enqueue(panel, project, analyses, min_family_size=None, umi=None, cnv=None, 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', "--panel", required=True)
     parser.add_argument('-j', "--project", required=True)
-    parser.add_argument('-a', "--analyses", required=True)
+    parser.add_argument('-p', "--panel", required=True)
+    parser.add_argument('-a', "--analyses", default=argparse.SUPPRESS)
+    parser.add_argument('-s', "--samples", default=argparse.SUPPRESS)
     parser.add_argument('-m', "--min-family-size", default=argparse.SUPPRESS)
     parser.add_argument('-u', "--umi", default=argparse.SUPPRESS)
     parser.add_argument('-c', "--cnv", default=argparse.SUPPRESS)
+    parser.add_argument('-r', "--run", nargs="*", default=argparse.SUPPRESS)
     parser.add_argument('-d', "--dry-run", action="store_const", const=True, default=argparse.SUPPRESS)
     args = parser.parse_args()
     enqueue(**vars(args))
