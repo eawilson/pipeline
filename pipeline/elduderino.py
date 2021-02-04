@@ -1,6 +1,5 @@
 import pdb
 import argparse
-import json
 import sys
 import csv
 from collections import defaultdict, Counter
@@ -9,7 +8,8 @@ from multiprocessing import Process, Queue
 from collections.abc import Sequence, Mapping
 from math import sqrt
 
-from covermi import bed, Gr, Entry
+from .utils import save_stats, string2cigar
+
 
 try:
     from contextlib import nullcontext
@@ -79,27 +79,6 @@ def filewriter_process(output_queue, output_file):
 
 
 
-def string2cigar(cigstr):
-    if cigstr == "*":
-        return ()
-    
-    cig = []
-    num = ""
-    for char in cigstr:
-        if char.isnumeric():
-            num += char
-        else:
-            try:
-                cig.append((int(num), char))
-            except ValueError:
-                sys.exit(f"Malformed cigar string {cigstr}")
-            num = ""
-    if num:
-        raise sys.exit(f"Malformed cigar string {cigstr}")
-    return cig
-
-
-
 def cigar_len(cig, ops):
     return sum(num for num, op in cig if op in ops)
 
@@ -128,7 +107,7 @@ def collapse_optical(family):
 
 def elduderino(input_sam,
                output_file="output.deduped.sam",
-               statistics="stats.json",
+               stats_file="stats.json",
                umi="",
                min_family_size=1,
                threads=1):
@@ -291,15 +270,7 @@ def elduderino(input_sam,
         for worker in workers:
             worker.join()
 
-
-    try:
-        with open(statistics, "rt") as f:
-            old_stats = json.load(f)
-    except OSError:
-        old_stats = {}
-    old_stats.update(stats)
-    with open(statistics, "wt") as f:
-        json.dump(old_stats, f, sort_keys=True, indent=4)
+    save_stats(stats_file, stats)
 
 
 
@@ -459,7 +430,7 @@ def main():
     parser.add_argument('input_sam', help="Input sam file.")
     parser.add_argument("-o", "--output", help="Output file, may be sam (default) or fastq.", dest="output_file", default=argparse.SUPPRESS)
     parser.add_argument("-m", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
-    parser.add_argument("-s", "--stats", help="Statistics file.", dest="statistics", default=argparse.SUPPRESS)
+    parser.add_argument("-s", "--stats", help="Statistics file.", dest="stats_file", default=argparse.SUPPRESS)
     parser.add_argument("-u", "--umi", help="UMI type, allowed = thruplex, thruplex_hv, prism.", default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     args = parser.parse_args()

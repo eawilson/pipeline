@@ -10,18 +10,18 @@ import sys
 import os
 
 
-def fragment_plot(stats, output="fragment.sizes.pdf", sample=""):
+def fragment_plot(stats_file, output="fragment.sizes.pdf", sample=""):
     
     if not sample:
-        sample = os.path.basename(stats).split(".")[0]
+        sample = os.path.basename(stats_file).split(".")[0]
     
-    with open(stats, "rt") as f:
+    with open(stats_file, "rt") as f:
         try:
             sizes = json.load(f)["fragment_sizes"]
             sizes.pop("0", None)
             size, count = zip(*sorted([(int(x), int(y)) for x, y in sizes.items()]))
         except (json.JSONDecodeError, KeyError, ValueError):
-            sys.exit(f"Invalid stats file {stats}")
+            sys.exit(f"Invalid stats file {stats_file}")
     
     target = sum(count) // 2
     for median, n in zip(size, count):
@@ -47,7 +47,7 @@ def fragment_plot(stats, output="fragment.sizes.pdf", sample=""):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('stats', help="Statistics file.")
+    parser.add_argument('stats_file', help="Statistics file.")
     parser.add_argument("-o", "--output", help="Output pdf.", dest="output", default=argparse.SUPPRESS)
     parser.add_argument("-n", "--sample", help="Sample name.", default=argparse.SUPPRESS)
     

@@ -1,11 +1,11 @@
 import pdb
 import argparse
 import gzip
-import json
 import sys
 from contextlib import closing
 from itertools import chain
-from collections import defaultdict
+
+from .utils import save_stats
 
 R1 = 0
 R2 = 1
@@ -38,10 +38,10 @@ def udini(input_fastqs,
           umi_length=0,
           umi_stem_length=0,
           umi_sequences="",
-          statistics="stats.json",
+          stats_file="stats.json",
           min_read_length=50,
-          max_consecutive_ns=2,
-          rtrim=0):
+          max_read_length=0,
+          max_consecutive_ns=2):
     
     # reversed so we can pop the fastqs in the original order.
     input_fastqs = list(reversed(input_fastqs))
@@ -90,6 +90,7 @@ def udini(input_fastqs,
     total_reads = 0
     invalid_umi_reads = [0, 0]
     invalid_short_reads = 0
+    invalid_length_reads = 0
     invalid_n_reads = 0
     fastqs = [None, None]
     lines = [[None, None, None, None], [None, None, None, None]]
@@ -112,18 +113,28 @@ def udini(input_fastqs,
                             break
 
                         total_reads += 1
-                        if min_read_length and (len(lines[R1][SEQ]) < min_read_length or len(lines[R1][SEQ]) < min_read_length):
+                        if len(lines[R1][SEQ] != len(lines[R2][SEQ]:
+                            invalid_length_reads += 1
+                            continue
+                        
+                        if min_read_length and len(lines[R1][SEQ]) < min_read_length:
                             invalid_short_reads += 1
                             continue
                         
-                        if max_consecutive_ns and (max_consecutive_ns in lines[read][SEQ] or max_consecutive_ns in lines[read][SEQ]):
+                        if max_consecutive_ns and (max_consecutive_ns in lines[R1][SEQ] or max_consecutive_ns in lines[R2][SEQ]):
                             invalid_n_reads += 1
                             continue
 
                         for read in (R1, R2):
                             lines[read][NAME] = lines[read][NAME].split(" ")[0].rstrip()
-
+                        if lines[R1][NAME] != lines[R2][NAME]:
+                            sys.exit("Mismatched paired reads, names don't match")
+                        
                         if umi_length:
+                            rtrim = len(lines[read][SEQ])
+                            if rtrim < max_read_length:
+                                rtrim -= umi_length + umi_stem_length
+
                             invalid_umi = False
                             umis = ["", ""]
                             for read in (R1, R2):
@@ -153,38 +164,26 @@ def udini(input_fastqs,
                                                                     lines[R2][QUAL][:umi_length])
                             for read in (R1, R2):
                                 lines[read][NAME] += f" {tag}\n"
-                                length = len(lines[read][SEQ]) - rtrim
-                                lines[read][SEQ] = lines[read][SEQ][umi_length + umi_stem_length:length]
-                                lines[read][QUAL] = lines[read][QUAL][umi_length + umi_stem_length:length]
+                                lines[read][SEQ] = lines[read][SEQ][umi_length + umi_stem_length:rtrim]
+                                lines[read][QUAL] = lines[read][QUAL][umi_length + umi_stem_length:rtrim]
                                     
                         else:
                             for read in (R1, R2):
                                 lines[read][NAME] = "{}\n".format(lines[read][NAME])
-                                if rtrim:
-                                    length = len(lines[read][SEQ]) - rtrim
-                                    lines[read][SEQ] = lines[read][SEQ][:length]
-                                    lines[read][QUAL] = lines[read][QUAL][:length]
                                     
-                        if lines[R1][NAME] != lines[R2][NAME]:
-                            sys.exit("Mismatched paired reads, names don't match")
                         f_out.writelines(chain(*lines))
                             
                     if i:
                         sys.exit("Truncated fastq")
     
-    try:
-        with open(statistics, "rt") as f:
-            stats = json.load(f)
-    except OSError:
-        stats = {}
-    stats["total_reads"] = total_reads
-    stats["invalid_short_reads"] = invalid_short_reads
-    stats["invalid_n_reads"] = invalid_n_reads
+    stats = {"total_reads": total_reads,
+             "invalid_short_reads": invalid_short_reads,
+             "invalid_length_reads": invalid_length_reads,
+             "invalid_n_reads": invalid_n_reads}
     if umi_sequences:
         stats["invalid_umi_reads_r1"] = invalid_umi_reads[R1]
         stats["invalid_umi_reads_r2"] = invalid_umi_reads[R2]
-    with open(statistics, "wt") as f:
-        json.dump(stats, f, sort_keys=True, indent=4)
+    save_stats(stats_file, stats)
 
 
 
@@ -198,12 +197,12 @@ def main():
     parser.add_argument("-l", "--umi-length", help="UMI length.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-k", "--umi-stem-length", help="UMI stem length.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-q", "--umi-sequences", help="UMI sequences.", default=argparse.SUPPRESS)
-    parser.add_argument("-r", "--rtrim", help="Trim bases from the end of the read.", type=int, default=argparse.SUPPRESS)
 
     parser.add_argument("-m", "--min-read-length", help="Reads shoter than min-read-legth will be filtered.", default=argparse.SUPPRESS)
+    parser.add_argument("-M", "--max-read-length", help="Reads shoter than this will be assumed to have read through into th opposite umi.", default=argparse.SUPPRESS)
     parser.add_argument("-n", "--max-consecutive-ns", help="Reads containing more Ns than max-consecutive-ns will be filtered.", default=argparse.SUPPRESS)
     
-    parser.add_argument("-s", "--stats", help="Statistics file.", dest="statistics", default=argparse.SUPPRESS)
+    parser.add_argument("-s", "--stats", help="Statistics file.", dest="stats_file", default=argparse.SUPPRESS)
     
     args = parser.parse_args()
     try:

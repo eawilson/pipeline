@@ -1,7 +1,6 @@
 import pdb
 import argparse
 import sys
-import json
 from collections import Counter, defaultdict
 
 from matplotlib.backends.backend_pdf import FigureCanvasPdf, PdfPages
@@ -9,6 +8,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 from matplotlib.backends.backend_pdf import PdfPages
 
+from .utils import save_stats
 
 
 nucleotide = {"A": "R", "G": "R", "C": "Y", "T": "Y"}
@@ -66,17 +66,9 @@ def vcf_stats(vcf_path, stats_file="stats.json", output="vafs.pdf", sample=""):
     pdf.savefig(figure)
     pdf.close()
     
-    
-    try:
-        with open(stats_file, "rt") as f:
-            stats = json.load(f)
-    except OSError:
-        stats = {}
-    stats["variants"] = {"total": total,
-                         "snp/indel": float(snps) / (indels or 1),
-                         "ti/tv": float(ti) / (tv or 1)}
-    with open(stats_file, "wt") as f:
-        json.dump(stats, f, sort_keys=True, indent=4)
+    save_stats(stats_file, {"variants": {"total": total,
+                                         "snp/indel": float(snps) / (indels or 1),
+                                         "ti/tv": float(ti) / (tv or 1)}})
 
 
 

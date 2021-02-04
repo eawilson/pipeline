@@ -75,8 +75,8 @@ cd ..
 # Not the latest version, latest version fails ?intermediate version
 wget -O VarScan.v2.3.9.jar https://sourceforge.net/projects/varscan/files/VarScan.v2.3.9.jar/download
 sudo mv VarScan.v2.3.9.jar /usr/local/bin
-echo '#!/bin/bash' >varscan
-echo 'java -jar /usr/local/bin/VarScan.v2.3.9.jar $@' >>varscan
+echo '#!/usr/bin/env bash
+java -jar /usr/local/bin/VarScan.v2.3.9.jar "$@"' >varscan
 chmod +x varscan
 sudo mv varscan /usr/local/bin
 
@@ -95,8 +95,8 @@ cd ..
 
 wget -O picard-2.23.4.jar https://github.com/broadinstitute/picard/releases/download/2.23.4/picard.jar
 sudo mv picard-2.23.4.jar /usr/local/bin
-echo '#!/bin/bash' >picard
-echo 'java -jar /usr/local/bin/picard-2.23.4.jar $@' >>picard
+echo '#!/usr/bin/env bash
+java -jar /usr/local/bin/picard-2.23.4.jar "$@"' >picard
 chmod +x picard
 sudo mv picard /usr/local/bin
 
@@ -116,6 +116,15 @@ cd covermi
 sudo python3 setup.py install
 cd ..
 
-
-
-
+VARDICT=VarDict-1.8.2
+wget "https://github.com/AstraZeneca-NGS/VarDictJava/releases/download/v1.8.2/$VARDICT.tar"
+tar -xf $VARDICT.tar
+rm $VARDICT.tar
+sudo mv $VARDICT/bin/
+sudo mv $VARDICT/bin/var2vcf_valid.pl /usr/local/bin
+echo '#!/bin/bash
+APP_HOME=/usr/local/bin/VarDict-1.8.2
+CLASSPATH=$APP_HOME/lib/VarDict-1.8.2.jar:$APP_HOME/lib/commons-cli-1.2.jar:$APP_HOME/lib/commons-math3-3.6.1.jar:$APP_HOME/lib/jregex-1.2_01.jar:$APP_HOME/lib/htsjdk-2.21.1.jar
+java -Xms768m -Xmx8g -classpath "$CLASSPATH" com.astrazeneca.vardict.Main -c 1 -S 2 -E 3 -g 4 "$@"' >vardict
+chmod +x vardict
+sudo mv vardict /usr/local/bin

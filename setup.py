@@ -24,6 +24,7 @@ package =  {"name": "pipeline",
                                                   "filter_sam=pipeline.filter_sam:main",
                                                   "trim_sam=pipeline.trim_sam:main",
                                                   "fragment_plot=pipeline.fragment_plot:main",
+                                                  "breakpoint=pipeline.breakpoint:main",
                                                   "bscopy=pipeline.bscopy:main",
                                                   "runner=pipeline.runner:main"] },
             }

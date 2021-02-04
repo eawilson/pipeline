@@ -1,7 +1,7 @@
 from collections import defaultdict
 import json
-import uuid
 import argparse
+import re
 
 from pipeline.aws import s3_list
 import boto3
@@ -11,10 +11,12 @@ import boto3
 BUCKET = "omdc-data"
 
 
-def enqueue(project, panel, analyses="analyses", samples="samples", min_family_size=None, umi=None, cnv=None, run=(), dry_run=False):
+def enqueue(project, panel, input="samples", output="analyses", samples="", min_family_size=None, umi=None, cnv=None, run=(), dry_run=False):
     #project = "accept"
     #panel = "Accept"
-    #analyses = "analyses3"
+    #output = "output3"
+    
+    sample_regex = re.compile(samples)
     
     kwargs = {}
     if min_family_size is not None:
@@ -28,25 +30,20 @@ def enqueue(project, panel, analyses="analyses", samples="samples", min_family_s
     queue_url = sqs.get_queue_url(QueueName="samples")["QueueUrl"]
 
     complete = set()
-    for key in s3_list(BUCKET, f"projects/{project}/{analyses}", extension=".bam"):
-        splitkey = key.split("/")
-        if len(splitkey) >= 2:
-            complete.add(splitkey[-2])
+    for key in s3_list(BUCKET, f"projects/{project}/{output}", extension=".bam"):
+        sample = key.split("/")[-1].split("_")[0]
+        complete.add(sample)
 
     fastqs = defaultdict(list)
-    for key in s3_list(BUCKET, f"projects/{project}/{samples}", extension=".fastq.gz"):
-        splitkey = key.split("/")
-        if not run or any(name in splitkey for name in run):
-            sample = splitkey[-2] or splitkey[-3]
-            if sample not in complete:
-                fastqs[sample] += [f"s3://{BUCKET}/{key}"]
+    for key in s3_list(BUCKET, f"projects/{project}/{input}", extension=".fastq.gz"):
+        sample = key.split("/")[-1].split("_")[0]
+        if sample not in complete and sample_regex.fullmatch(sample):
+            fastqs[sample] += [f"s3://{BUCKET}/{key}"]
     
     n = 0
     for sample, urls in sorted(fastqs.items()):
-        #if "-c-" in sample or n:
-            #continue
         data = {"Script": "cfpipeline",
-                "Output": f"s3://{BUCKET}/projects/{project}/{analyses}/{sample}",
+                "Output": f"s3://{BUCKET}/projects/{project}/{output}/{sample}",
                 "Args": urls,
                 "Kwargs": {"--sample": sample,
                            "--reference": f"s3://{BUCKET}/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.tar.gz",
@@ -67,14 +64,15 @@ def enqueue(project, panel, analyses="analyses", samples="samples", min_family_s
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-j', "--project", required=True)
-    parser.add_argument('-p', "--panel", required=True)
-    parser.add_argument('-a', "--analyses", default=argparse.SUPPRESS)
-    parser.add_argument('-s', "--samples", default=argparse.SUPPRESS)
+    parser.add_argument('-b', "--bucket", help="AWS S3 bucket in which all files are located", required=True)
+    parser.add_argument('-j', "--project", help="location of project files. s3://{bucket}/projects/{project}/", required=True)
+    parser.add_argument('-p', "--panel", help="location of panel data. s3://{bucket}/panels/{panel}.tar.gz", required=True)
+    parser.add_argument('-i', "--input", help="location of input fastqs. s3://{bucket}/projects/{project}/{input}", default=argparse.SUPPRESS)
+    parser.add_argument('-o', "--output", help="location to write analysis output files. s3://{bucket}/projects/{project}/{output}", default=argparse.SUPPRESS)
+    parser.add_argument('-s', "--samples", help="regular expression to narrow down input fastqs. single quote to prevent shell filename expansion", default=argparse.SUPPRESS)
     parser.add_argument('-m', "--min-family-size", default=argparse.SUPPRESS)
     parser.add_argument('-u', "--umi", default=argparse.SUPPRESS)
     parser.add_argument('-c', "--cnv", default=argparse.SUPPRESS)
-    parser.add_argument('-r', "--run", nargs="*", default=argparse.SUPPRESS)
     parser.add_argument('-d', "--dry-run", action="store_const", const=True, default=argparse.SUPPRESS)
     args = parser.parse_args()
     enqueue(**vars(args))

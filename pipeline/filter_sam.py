@@ -1,16 +1,15 @@
 import pdb
 import argparse
-import json
 import sys
 import os
 import glob
-from collections import Counter
+from collections import Counter, defaultdict
 from multiprocessing import Process, Queue
 from collections.abc import Mapping
 
 from covermi import bed, Gr, Entry
 
-from .utils import run
+from .utils import run, save_stats, string2cigar
 
 try:
     from contextlib import nullcontext
@@ -77,27 +76,6 @@ def filewriter_process(output_queue, output_file):
 
 
 
-def string2cigar(cigstr):
-    if cigstr == "*":
-        return ()
-    
-    cig = []
-    num = ""
-    for char in cigstr:
-        if char.isnumeric():
-            num += char
-        else:
-            try:
-                cig.append((int(num), char))
-            except ValueError:
-                sys.exit(f"Malformed cigar string {cigstr}")
-            num = ""
-    if num:
-        raise sys.exit(f"Malformed cigar string {cigstr}")
-    return cig
-
-
-
 def cigar_len(cig, ops):
     return sum(num for num, op in cig if op in ops)
 
@@ -105,11 +83,14 @@ def cigar_len(cig, ops):
 
 def filter_sam(input_sam,
                output_file="output.filtered.sam",
-               statistics="stats.json",
+               stats_file="stats.json",
                targets="",
                max_fragment_size=1000,
                filter_fragments_shorter_than=0,
                filter_fragments_longer_than=0,
+               #filter_mapq_less_than=0,
+               #filter_low_qual_bases_greater_than=0,
+               fragment_sizes_per_target="",
                threads=0):
 
     threads = 1
@@ -124,7 +105,7 @@ def filter_sam(input_sam,
             sys.exit(f'"{targets}" contains multiple bedfiles')
         targets =  beds[0]
     
-    targets = Gr(bed(targets))
+    targets = Gr(bed(targets or ()))
     for target in targets:
         loc = f"{target.chrom}:{target.start}-{target.stop}"
         target.name = loc if target.name == "." else f"{target.name}_{loc}"
@@ -136,6 +117,7 @@ def filter_sam(input_sam,
     stats = {"fragment_sizes": Counter()}
     if targets:
         stats.update({"fragments_per_target": {bait.name: 0 for bait in details["targets"]},
+                      "fragment_sizes_per_target": defaultdict(Counter),
                       "ontarget": 0,
                       "offtarget": 0})
     
@@ -199,18 +181,23 @@ def filter_sam(input_sam,
         for worker in workers:
             worker.join()
 
+
+    include = set(fragment_sizes_per_target.split())
+    sizes = defaultdict(Counter)
+    for name, depth in stats["fragment_sizes_per_target"].items():
+        for target in set(name[name.find("_")+1:].strip().split(";")):
+            target = target.split()[0]
+            if target in include:
+                sizes[target][depth] += 1
+    stats["fragment_sizes_per_target"] = sizes
+    
+    
+    baseline = mean(baseline)
+    stats = {"copies_per_cell": {t: mean(d) / baseline for t, d in depths.items()}}
     ontarget = stats.pop("ontarget")
     offtarget = stats.pop("offtarget")
-    stats["offtarget"] = float(offtarget) / (ontarget + offtarget)
-    
-    try:
-        with open(statistics, "rt") as f:
-            old_stats = json.load(f)
-    except OSError:
-        old_stats = {}
-    old_stats.update(stats)
-    with open(statistics, "wt") as f:
-        json.dump(old_stats, f, sort_keys=True, indent=4)
+    stats["offtarget"] = float(offtarget) / (ontarget + offtarget)    
+    save_stats(stats_file, stats)
 
 
 
@@ -284,6 +271,8 @@ def _filter_read(read, stats, targets, max_fragment_size, filter_fragments_short
         if match:
             stats["fragments_per_target"][match] += 1
             stats["ontarget"] += 1
+            if size:
+                stats["fragment_sizes_per_target"][match][size] += 1
         else:
             stats["offtarget"] += 1
             return ""
@@ -303,11 +292,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_sam', help="Input sam file, must be sorted by name.")
     parser.add_argument("-o", "--output", help="Output file.", dest="output_file", default=argparse.SUPPRESS)
-    parser.add_argument("-s", "--stats", help="Statistics file.", dest="statistics", default=argparse.SUPPRESS)
+    parser.add_argument("-s", "--stats", help="Statistics file.", dest="stats_file", default=argparse.SUPPRESS)
     parser.add_argument("-b", "--bed", help="Bed file of on-target regions.", dest="targets", default=argparse.SUPPRESS)
     parser.add_argument("-m", "--max-fragment-size", help="Maximum fragment size to be considered a genuine read pair.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-f", "--filter-fragments-shorter-than", help="Filter fragments shorter than.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-F", "--filter-fragments-longer-than", help="Filter fragments longer than.", type=int, default=argparse.SUPPRESS)
+    #parser.add_argument("-M", "--filter-mapq-less-than", help="Filter fragments with mapq less than.", type=int, default=argparse.SUPPRESS)
+    #parser.add_argument("-q", "--filter-low-qual-bases-greater-than", help="Filter fragments with greater than low quality bases.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-p", "--fragment-sizes-targets", help="Target names over which to calculate fragment size distribution.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:

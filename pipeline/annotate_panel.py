@@ -68,6 +68,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel="", buffer
     
     
     targets = None
+    principal = defaultdict()
     needed_genes = set()
     needed_transcripts = set()
     if panel:
@@ -81,8 +82,8 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel="", buffer
                 needed_genes.add(name[0])
                 if len(name) > 1:
                     needed_transcripts.add(name[1])
-        
-    principal = appris(panel.paths.get("principal", None) if panel else None)
+        if "principal" in panel.paths:
+            principal = appris(panel.paths["principal"])
 
     if "refseq" in vep:
         def consequence_sort(cons):

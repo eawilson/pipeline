@@ -1,6 +1,5 @@
 import pdb
 import argparse
-import json
 import sys
 import os
 import glob
@@ -9,7 +8,7 @@ from multiprocessing import Process, Queue
 from collections.abc import Mapping
 from itertools import chain
 
-from .utils import run
+from .utils import run, save_stats, cigar2string, string2cigar
 
 try:
     from contextlib import nullcontext
@@ -119,32 +118,6 @@ def filewriter_process(output_queue, output_file):
 
 
 
-def string2cigar(cigstr):
-    if cigstr == "*":
-        return []
-    
-    cig = []
-    num = ""
-    for char in cigstr:
-        if char.isnumeric():
-            num += char
-        else:
-            try:
-                cig.append((int(num), char))
-            except ValueError:
-                sys.exit(f"Malformed cigar string {cigstr}")
-            num = ""
-    if num:
-        raise sys.exit(f"Malformed cigar string {cigstr}")
-    return cig
-
-
-
-def cigar2string(cig):
-    return "".join(str(val) for val in chain(*cig)) or "*"
-
-
-
 def trim_sam(input_sam, output_file="output.trimmed.sam", threads=0, stats_file="stats.json"):
 
     threads = 1
@@ -213,15 +186,7 @@ def trim_sam(input_sam, output_file="output.trimmed.sam", threads=0, stats_file=
         for worker in workers:
             worker.join()
 
-
-    try:
-        with open(stats_file, "rt") as f:
-            old_stats = json.load(f)
-    except OSError:
-        old_stats = {}
-    old_stats["sequencing_error_rate"] = float(stats["mismatches"]) / stats["overlap"]
-    with open(stats_file, "wt") as f:
-        json.dump(old_stats, f, sort_keys=True, indent=4)
+    save_stats(stats_file, {"sequencing_error_rate": float(stats["mismatches"]) / stats["overlap"]})
 
 
 
@@ -321,7 +286,9 @@ def _trim_read(read, stats, details):
                 rqual[i] = "!"
                 lseq[i+offset] = "N"
                 lqual[i+offset] = "!"
-
+    
+    #debugprint_pair(primary[L][SEQ], primary[R][SEQ], lread)
+    
     seq = (["".join(lseq)], ["".join(rseq)])
     qual = (["".join(lqual)], ["".join(rqual)])
     lbases = ((0, loverhang), (roverhang, 0))
@@ -360,6 +327,22 @@ def _trim_read(read, stats, details):
         segment[FLAG] = str(segment[FLAG])
     
     return "".join("\t".join(segment) for segment in segments)
+
+
+
+def debugprint_pair(left, right, lread):
+    left = (max(-lread, 0) * " ") + left
+    right = (max(lread, 0) * " ") + right
+    mismatch = []
+    for c1, c2 in zip(left, right):
+        if c1 != c2 and c1 != " " and c2 != " ":
+            mismatch.append("*")
+        else:
+            mismatch.append(" ")
+    print("".join(mismatch))
+    print(left)
+    print(right)
+    print("")
 
 
 

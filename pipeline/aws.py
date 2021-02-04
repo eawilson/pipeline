@@ -8,7 +8,7 @@ import argparse
 import pdb
 from collections import defaultdict, namedtuple
 import requests
-import covermi
+import 
 
 
 from boto3 import client
@@ -25,8 +25,7 @@ __all__ = ["am_i_an_ec2_instance",
            "s3_list", 
            "s3_list_samples", 
            "s3_open", 
-           "mount_instance_storage", 
-           "load_panel_from_s3"]
+           "mount_instance_storage"]
     
 
 
@@ -184,54 +183,3 @@ def s3_resources(*s3_urls):
         s3_get(bucket, key, filename)
         run(["tar", "-xzf", filename])
         run(["rm", filename])
-            
-    
-    
-def load_panel_from_s3(panelname):
-    s3 = client('s3')
-
-    if not os.path.exists(panelname):
-        print("Downloading {} from S3.".format(panelname))
-        gziped_panel = "{}.tar.gz".format(panelname)
-        s3.download_file("omdc-data", "panels/{}".format(gziped_panel), gziped_panel)
-        print("Unpacking {}.".format(panelname))
-        run(["tar", "xzf", gziped_panel])
-        os.unlink(gziped_panel)
-        
-    panel = covermi.Panel(panelname)
-    assembly = panel.properties.get("assembly", "GRCh37")
-    transcript_source = panel.properties.get("transcript_source", "refseq")
-
-    if not os.path.exists(assembly):
-        print("Downloading {} from S3.".format(assembly))
-        os.mkdir(assembly)
-        os.chdir(assembly)
-        objects = s3.list_objects(Bucket="omdc-data", Prefix="reference/{}/sequence".format(assembly[-2:])).get("Contents", [])
-        if len(objects) != 1:
-            raise RuntimeError("Unable to identify reference genome on S3.")
-        s3.download_file("omdc-data", objects[0]["Key"], "genome.tar.gz")
-        print("Unpacking genome.")
-        run(["tar", "xzf", "genome.tar.gz"])
-        os.unlink("genome.tar.gz")
-        os.chdir("..")
-
-    if not os.path.exists("vep"):
-        print("Downloading {} from S3.".format(transcript_source))
-        os.mkdir("vep")
-        os.chdir("vep")
-        objects = s3.list_objects(Bucket="omdc-data", Prefix="reference/{}/{}".format(assembly[-2:], transcript_source)).get("Contents", [])
-        if len(objects) != 1:
-            raise RuntimeError("Unable to identify vep data on S3.")
-        s3.download_file("omdc-data", objects[0]["Key"], "vep.tar.gz")
-        print("Unpacking vep data.")
-        run(["tar", "xzf", "vep.tar.gz"])
-        os.unlink("vep.tar.gz")
-        os.chdir("..")
-    
-    fastas = [fn for fn in os.listdir(assembly) if fn.endswith(".fna")]
-    if len(fastas) != 1:
-        raise RuntimeError("Must be exactly one fasta in reference genome.")
-    panel.properties["reference_fasta"] = os.path.join(assembly, fastas[0])
-    return panel
-
-    

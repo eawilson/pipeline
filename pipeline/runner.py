@@ -84,7 +84,10 @@ def main():
         command_line = " ".join([(f"'{token}'" if " " in token else token) for token in command_line])
         print(command_line)
         with open("{}.log.txt".format(body["Kwargs"]["--sample"]), "wb") as log:
-            completed_process = subprocess.run(command_line, shell=True, stderr=log)
+            completed_process = subprocess.run(command_line, shell=True, stderr=stderr=subprocess.STDOUT, stdout=log)
+            
+            if completed_process.returncode != 0:
+                log.write(f"PIPELINE EXITED WITH RETURN CODE {completed_process.returncode}\n".encode())
         
         print("Cleaning up.")
         for fn in os.listdir():

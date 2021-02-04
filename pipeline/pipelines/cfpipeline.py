@@ -6,20 +6,20 @@ import sys
 import argparse
 import glob
 
-from pipeline import run, Pipe
+from pipeline import run, Pipe, guess_sample_name
 
 
 
-def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_family_size=1, cnv="", threads=None):
+def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min_family_size=1, cnv="", threads=None, interleaved=False, fragment_size_targets=""):
     """Cell free pipeline.
 
     Args:
-        sample (str): Sample name, used to name output files and covermi plot.
-        input_fastqs (list of str): Paths of input paired fastqs or fastq.gzs,
+        input_fastqs (list of str): Paths of input fastqs or fastq.gzs,
             If paired fastqs then order of files is important.
         reference (str): Path to reference fasta or containing directory.
+        sample (str): Sample name, used to name output files and covermi plot.
         panel (str): Path to covermi panel which must contain targets bedfile.
-        umi (str): umi type or None if no umis.
+        umi (str): umi type or empty strng if no umis.
         vep (str): Path to vep data.
         min_family_size (int): Minimum family size, families smaller
             than this will be filtered.
@@ -27,6 +27,8 @@ def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_fa
             panel bedfile, over which to calculate copy number variation.
         threads (int): Number of threads to use, defaults to all available
             threads if not specified.
+        interleaved (bool): Each input fastq is interleaved, containing
+            alternating readss 1 and 2.
         
     Returns:
         None.
@@ -34,6 +36,11 @@ def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_fa
     
     if threads is None:
         threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
+    
+    if not sample:
+        sample = guess_sample_name(input_fastqs)
+        if not sample:
+            sys.exit("Ambiguous sample name")
     
     reference = (glob.glob(f"{reference}/*.fna") + [reference])[0]
     targets_bedfile = (glob.glob(f"{panel}/*.bed") + [None])[0] if panel else ""
@@ -43,10 +50,12 @@ def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_fa
     
     # Remove umis and do some basic fastq qc
     interleaved_fastq = f"{sample}.interleaved.fastq"
-    pipe(["udini", "--output", interleaved_fastq,
-                   "--stats", stats,
-                   "--umi", umi] + \
-                   input_fastqs)
+    command = ["udini", "--output", interleaved_fastq,
+                        "--stats", stats,
+                        "--umi", umi]
+    if interleaved:
+        command.append("--interleaved")
+    pipe(command + input_fastqs)
     
     
     unsorted_sam = f"{sample}.unsorted.sam"
@@ -123,17 +132,12 @@ def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_fa
     os.unlink(unfixed_sam)
 
 
-    sam = f"{sample}.sam"
-    pipe(["samtools", "sort", "-o", sam,
+    bam = f"{sample}.bam"
+    pipe(["samtools", "sort", "-o", bam,
                               "-@", threads, 
                               fixed_sam])
-    os.unlink(fixed_sam)
-
-
-    bam = f"{sample}.bam"
-    pipe(["samtools", "view", "-b", sam, "-o", bam])
-    os.unlink(sam)
     pipe(["samtools", "index", bam])
+    os.unlink(fixed_sam)
     
 
     mpileup = f"{sample}.mpileup"
@@ -148,14 +152,14 @@ def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_fa
     pvalue_vcf = f"{sample}.pvalue.vcf"
     with open(pvalue_vcf, "wb") as f_out:
         pipe(["varscan", "mpileup2cns", mpileup,
-                                        "--variants", 
-                                        "--output-vcf", "1", 
+                                        "--variants",
+                                        "--output-vcf", "1",
                                         "--min-coverage", "1",
-                                        "--min-var-freq", "0", 
+                                        "--min-var-freq", "0",
                                         "--min-avg-qual", "20",
                                         "--min-reads2", "3",
                                         "--p-value", "0.05",
-                                        "--strand-filter", "1"], stdout=f_out)        
+                                        "--strand-filter", "1"], stdout=f_out)
     os.unlink(mpileup)
     
     vcf = f"{sample}.vcf"
@@ -199,13 +203,15 @@ def cfpipeline(sample, input_fastqs, reference, panel="", umi="", vep="", min_fa
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_fastqs', nargs="+", help="Fastq files.")
-    parser.add_argument("-n", "--sample", help="Sample name.", required=True)
     parser.add_argument("-r", "--reference", help="Reference genome.", required=True)
+    parser.add_argument("-n", "--sample", help="Sample name.", default=argparse.SUPPRESS)
     parser.add_argument("-p", "--panel", help="Directory containing panel data.", default=argparse.SUPPRESS)
     parser.add_argument("-u", "--umi", help="Umi.", default=argparse.SUPPRESS)
     parser.add_argument("-v", "--vep", help="Directory containing vep data.", default=argparse.SUPPRESS)
     parser.add_argument("-m", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-c", "--cnv", help="Targets over which to calculate copy numbers.", default=argparse.SUPPRESS)
+    parser.add_argument("-d", "--fragment-size-targets", help="Targets over which to calculate fragment size distribution.", default=argparse.SUPPRESS)
+    parser.add_argument("-i", "--interleaved", help="Each input fastq contains alternating reads 1 and 2.", action="store_const", const=True, default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:

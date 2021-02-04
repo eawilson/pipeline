@@ -2,16 +2,16 @@ import subprocess
 import os
 import sys
 import re
+import json
 import pdb
 import datetime
 from collections import defaultdict, Counter
-
-import covermi
-from boto3 import client
-
+from collections.abc import Mapping
+from itertools import chain
 
 
-__all__ = ["run", "pipe", "Pipe"]
+
+__all__ = ["run", "pipe", "Pipe", "save_stats", "string2cigar", "cigar2string", "guess_sample_name"]
 
 #ILLUMINA_FASTQ = re.compile(r"(.+)_S([0-9]{1,2})_L([0-9]{3})_R([12])_001\.fastq(\.gz)?$") # name, s_number, lane, read, gzip
 
@@ -24,6 +24,75 @@ __all__ = ["run", "pipe", "Pipe"]
         #identifier = f.readline().split(":")
     #flowcell = identifier[2]
     #return "@RG\\tID:{}\\tSM:{}".format(flowcell, sample)
+
+
+
+def guess_sample_name(fastqs):
+    ILLUMINA_FASTQ = re.compile(r"(_S[0-9]{1,2}_L[0-9]{3}_R[12]_001)?\.fastq(\.gz)?$")
+    names = set()
+    for fastq in fastqs:
+        match = ILLUMINA_FASTQ.search(fastq)
+        if match:
+            fastq = fastq[:match.start()]
+        names.add(fastq)
+    if len(names) == 1:
+        return list(names)[0]    
+
+
+
+def string2cigar(cigstr):
+    if cigstr == "*":
+        return []
+    
+    cig = []
+    num = ""
+    for char in cigstr:
+        if char.isnumeric():
+            num += char
+        else:
+            try:
+                cig.append((int(num), char))
+            except ValueError:
+                sys.exit(f"Malformed cigar string {cigstr}")
+            num = ""
+    if num:
+        raise sys.exit(f"Malformed cigar string {cigstr}")
+    return cig
+
+
+
+def cigar2string(cig):
+    return "".join(str(val) for val in chain(*cig)) or "*"
+
+
+
+def rekey(mapping):
+    """ Recursively convert all numeric text keys to integer keys. This will
+        enable correct ordering when re-written to file.
+    """
+    new = {}
+    for k, v in mapping.items():
+        try:
+            k = int(k)
+        except ValueError:
+            pass
+        if isinstance(v, Mapping):
+            v = rekey(v)
+        new[k] = v
+    return new
+
+
+
+def save_stats(path, update):
+    try:
+        with open(path, "rt") as f_in:
+            stats = rekey(json.load(f_in))
+        stats.update(update)
+    except OSError:
+        stats = update
+    
+    with open(path, "wt") as f_out:
+        json.dump(stats, f_out, sort_keys=True, indent=4)
 
 
 
@@ -93,20 +162,3 @@ def run(args, exit_on_failure=True):
             print(line, file=sys.stderr, flush=True)
         sys.exit(completedprocess.returncode)
     return completedprocess
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
-
