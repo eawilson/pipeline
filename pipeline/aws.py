@@ -8,7 +8,6 @@ import argparse
 import pdb
 from collections import defaultdict, namedtuple
 import requests
-import 
 
 
 from boto3 import client

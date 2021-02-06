@@ -40,7 +40,7 @@ def udini(input_fastqs,
           umi_sequences="",
           stats_file="stats.json",
           min_read_length=50,
-          max_read_length=0,
+          #max_read_length=0,
           max_consecutive_ns=2):
     
     # reversed so we can pop the fastqs in the original order.
@@ -79,7 +79,7 @@ def udini(input_fastqs,
         sys.exit(f"'{umi}' is not a known UMI type")
     
     
-    valid = set(umi for umi in umi_sequences.split())
+    valid = set(umi_sequences.split())
     if any(len(umi) != umi_length for umi in valid):
         sys.exit(f"Not all UMI sequences are {umi_length} nt long")
 
@@ -90,7 +90,6 @@ def udini(input_fastqs,
     total_reads = 0
     invalid_umi_reads = [0, 0]
     invalid_short_reads = 0
-    invalid_length_reads = 0
     invalid_n_reads = 0
     fastqs = [None, None]
     lines = [[None, None, None, None], [None, None, None, None]]
@@ -99,25 +98,20 @@ def udini(input_fastqs,
             with closing(fqopen(input_fastqs.pop(), "rt")) as fastqs[R1]:
                 with closing(fqopen(input_fastqs.pop(), "rt") if not interleaved else fastqs[R1]) as fastqs[R2]:
                     
-                    eof = False
-                    while not eof:
+                    while True:
                         for i in range(8):
                             read = i // 4
                             line = fastqs[read].readline()
                             if not line:
-                                eof = True
                                 break
                             lines[read][i % 4] = line
                         
-                        if eof:
+                        if not line:
                             break
 
                         total_reads += 1
-                        if len(lines[R1][SEQ] != len(lines[R2][SEQ]:
-                            invalid_length_reads += 1
-                            continue
                         
-                        if min_read_length and len(lines[R1][SEQ]) < min_read_length:
+                        if min_read_length and (len(lines[R1][SEQ]) < min_read_length or len(lines[R2][SEQ]) < min_read_length):
                             invalid_short_reads += 1
                             continue
                         
@@ -131,10 +125,6 @@ def udini(input_fastqs,
                             sys.exit("Mismatched paired reads, names don't match")
                         
                         if umi_length:
-                            rtrim = len(lines[read][SEQ])
-                            if rtrim < max_read_length:
-                                rtrim -= umi_length + umi_stem_length
-
                             invalid_umi = False
                             umis = ["", ""]
                             for read in (R1, R2):
@@ -164,8 +154,8 @@ def udini(input_fastqs,
                                                                     lines[R2][QUAL][:umi_length])
                             for read in (R1, R2):
                                 lines[read][NAME] += f" {tag}\n"
-                                lines[read][SEQ] = lines[read][SEQ][umi_length + umi_stem_length:rtrim]
-                                lines[read][QUAL] = lines[read][QUAL][umi_length + umi_stem_length:rtrim]
+                                lines[read][SEQ] = lines[read][SEQ][umi_length + umi_stem_length:]
+                                lines[read][QUAL] = lines[read][QUAL][umi_length + umi_stem_length:]
                                     
                         else:
                             for read in (R1, R2):
@@ -178,7 +168,6 @@ def udini(input_fastqs,
     
     stats = {"total_reads": total_reads,
              "invalid_short_reads": invalid_short_reads,
-             "invalid_length_reads": invalid_length_reads,
              "invalid_n_reads": invalid_n_reads}
     if umi_sequences:
         stats["invalid_umi_reads_r1"] = invalid_umi_reads[R1]
@@ -199,7 +188,7 @@ def main():
     parser.add_argument("-q", "--umi-sequences", help="UMI sequences.", default=argparse.SUPPRESS)
 
     parser.add_argument("-m", "--min-read-length", help="Reads shoter than min-read-legth will be filtered.", default=argparse.SUPPRESS)
-    parser.add_argument("-M", "--max-read-length", help="Reads shoter than this will be assumed to have read through into th opposite umi.", default=argparse.SUPPRESS)
+    #parser.add_argument("-M", "--max-read-length", help="Reads shoter than this will be assumed to have read through into th opposite umi.", default=argparse.SUPPRESS)
     parser.add_argument("-n", "--max-consecutive-ns", help="Reads containing more Ns than max-consecutive-ns will be filtered.", default=argparse.SUPPRESS)
     
     parser.add_argument("-s", "--stats", help="Statistics file.", dest="stats_file", default=argparse.SUPPRESS)
