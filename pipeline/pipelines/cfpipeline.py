@@ -10,7 +10,7 @@ from pipeline import run, Pipe, guess_sample_name
 
 
 
-def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min_family_size=1, cnv="", threads=None, interleaved=False, fragment_size_targets=""):
+def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min_family_size=1, cnv="", sizes="", threads=None, interleaved=False, min_vaf=0.01):
     """Cell free pipeline.
 
     Args:
@@ -23,8 +23,11 @@ def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min
         vep (str): Path to vep data.
         min_family_size (int): Minimum family size, families smaller
             than this will be filtered.
+        min_vaf (float): Minimum variant allele frequency for a variant to be called.
         cnv (str): Whitespace separated list of target names, as specified in
             panel bedfile, over which to calculate copy number variation.
+        sizes (str): Whitespace separated list of reference names over which 
+            to calculate fragment size distribution.
         threads (int): Number of threads to use, defaults to all available
             threads if not specified.
         interleaved (bool): Each input fastq is interleaved, containing
@@ -58,8 +61,8 @@ def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min
     pipe(command + input_fastqs)
     
     
-    unsorted_sam = f"{sample}.unsorted.sam"
-    with open(unsorted_sam, "wb") as f_out:
+    base_sam = f"{sample}.base.sam"
+    with open(base_sam, "wb") as f_out:
         pipe(["bwa", "mem", "-t", threads, 
                             "-p", # interleaved paired end fastq
                             "-C", # Append fastq comment to sam
@@ -69,24 +72,24 @@ def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min
     os.unlink(interleaved_fastq)
     
     
-    untrimmed_sam = f"{sample}.untrimmed.sam"
+    namesorted_sam = f"{sample}.namesorted.sam"
     pipe(["samtools", "sort", "-n", # sort by name
-                              "-o", untrimmed_sam,
+                              "-o", namesorted_sam,
                               "-@", threads,
-                              unsorted_sam])
-    os.unlink(unsorted_sam)
+                              base_sam])
+    os.unlink(base_sam)
     
     
     trimmed_sam = f"{sample}.trimmed.sam"
     pipe(["trim_sam", "--output", trimmed_sam,
                       "--stats", stats,
                       "--threads", threads,
-                      untrimmed_sam])
-    os.unlink(untrimmed_sam)
+                      namesorted_sam])
+    os.unlink(namesorted_sam)
     
     
-    undeduplicated_sam = f"{sample}.undeduplicated.sam"
-    pipe(["samtools", "sort", "-o", undeduplicated_sam,
+    sorted_sam = f"{sample}.sorted.sam"
+    pipe(["samtools", "sort", "-o", sorted_sam,
                               "-@", threads,
                               trimmed_sam])
     os.unlink(trimmed_sam)
@@ -98,38 +101,46 @@ def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min
                         "--min-family-size", min_family_size,
                         "--umi", umi,
                         "--threads", threads,
-                        undeduplicated_sam])
-    os.unlink(undeduplicated_sam)
+                        sorted_sam])
+    os.unlink(sorted_sam)
     
     
-    unfiltered_sam = f"{sample}.unfiltered.sam"
+    namesorted_sam = f"{sample}.namesorted.sam"
     pipe(["samtools", "sort", "-n", # sort by name
-                              "-o", unfiltered_sam,
+                              "-o", namesorted_sam,
                               "-@", threads,
                               deduplicated_sam])
     os.unlink(deduplicated_sam)
     
     
-    filtered_sam = f"{sample}.filtered.sam"
-    pipe(["filter_sam", "--output", filtered_sam,
-                        "--bed", targets_bedfile,
-                        "--stats", stats,
-                        "--threads", threads,
-                        unfiltered_sam])
-    os.unlink(unfiltered_sam)
+    pipe(["size", "--stats", stats,
+                  "--rnames", sizes,
+                  "--sample", sample,
+                  "--output", f"{sample}.sizes.pdf",
+                  namesorted_sam])
+    
+    
+    ontarget_sam = f"{sample}.ontarget.sam"
+    pipe(["ontarget", "--output", ontarget_sam,
+                      "--bed", targets_bedfile,
+                      "--stats", stats,
+                      "--cnv", cnv,
+                      "--threads", threads,
+                      namesorted_sam])
+    os.unlink(namesorted_sam)
 
 
-    unfixed_sam = f"{sample}.unfixed.sam"
+    namesorted_sam = f"{sample}.namesorted.sam"
     pipe(["samtools", "sort", "-n", # sort by name
-                              "-o", unfixed_sam,
+                              "-o", namesorted_sam,
                               "-@", threads, 
-                              filtered_sam])
-    os.unlink(filtered_sam)
+                              ontarget_sam])
+    os.unlink(ontarget_sam)
     
 
     fixed_sam = f"{sample}.fixed.sam"
-    pipe(["samtools", "fixmate", unfixed_sam, fixed_sam])
-    os.unlink(unfixed_sam)
+    pipe(["samtools", "fixmate", namesorted_sam, fixed_sam])
+    os.unlink(namesorted_sam)
 
 
     bam = f"{sample}.bam"
@@ -139,6 +150,14 @@ def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min
     pipe(["samtools", "index", bam])
     os.unlink(fixed_sam)
     
+    
+    #if panel:
+        #pipe(["covermi_stats", "--panel", panel,
+                               #"--output", f"{sample}.covermi.pdf",
+                               #"--stats", stats,
+                               #"--sample", sample,
+                               #bam])
+
 
     mpileup = f"{sample}.mpileup"
     pipe(["samtools", "mpileup", "-o", mpileup,
@@ -162,14 +181,39 @@ def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min
                                         "--strand-filter", "1"], stdout=f_out)
     os.unlink(mpileup)
     
-    vcf = f"{sample}.vcf"
+    vcf = f"{sample}.varscan.vcf"
     pipe(["vcf_pvalue_2_phred", pvalue_vcf, "--output", vcf])
     os.unlink(pvalue_vcf)
     
+    if vep:
+        pipe(["annotate_panel", "--vep", vep,
+                                "--output", f"{sample}.varscan.annotation.tsv",
+                                "--threads", threads,
+                                "--panel", panel,
+                                vcf])
     
-    if cnv:
-        pipe(["panel_copy_number", stats, "--targets", cnv])
     
+    vardict_table = f"{sample}.vardict.tsv"
+    with open(vardict_table, "wb") as f_out:
+        pipe(["vardictjava", "-K", # include Ns in depth calculation
+                             "-deldupvar", # variants are only called if start position is inside the region interest
+                             "-G", reference,
+                             "-N", sample,
+                             "-b", bam,
+                             "-Q", "10",
+                             "-f", min_vaf,
+                             "-th", threads,
+                             "-u", # count mate pair overlap only once
+                             "-fisher", # perform work of teststrandbias.R
+                             targets_bedfile], stdout=f_out)
+    
+    vcf = f"{sample}.vcf"
+    with open(vardict_table, "rb") as f_in:
+        with open(vcf, "wb") as f_out:
+              pipe(["var2vcf_valid.pl", "-A", # output all variants at same position
+                                        "-f", min_vaf,
+                                        "-N", sample], stdin=f_in, stdout=f_out)
+    os.unlink(vardict_table)
     
     if vep:
         pipe(["annotate_panel", "--vep", vep,
@@ -177,24 +221,13 @@ def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min
                                 "--threads", threads,
                                 "--panel", panel,
                                 vcf])
-              
-    if panel:
-        pipe(["covermi_stats", "--panel", panel,
-                               "--output", f"{sample}.covermi.pdf",
-                               "--stats", stats,
-                               "--sample", sample,
-                               bam])
     
-    fragment_plot = f"{sample}.fragment.sizes.pdf"
-    pipe(["fragment_plot", stats, 
-                           "--sample", sample,
-                           "--output", fragment_plot])
     
-    vaf_plot = f"{sample}.vaf.pdf"
+    #vaf_plot = f"{sample}.vaf.pdf"
     pipe(["vcf_stats", vcf, 
                        "--stats", stats,
-                       "--sample", sample,
-                       "--output", vaf_plot])
+                       "--sample", sample])
+                       #"--output", vaf_plot])
         
     print(pipe.durations, file=sys.stderr, flush=True)
 
@@ -209,8 +242,9 @@ def main():
     parser.add_argument("-u", "--umi", help="Umi.", default=argparse.SUPPRESS)
     parser.add_argument("-v", "--vep", help="Directory containing vep data.", default=argparse.SUPPRESS)
     parser.add_argument("-m", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-f", "--min-vaf", help="Minimum variant allele frequency for a variant to be called.", type=float, default=argparse.SUPPRESS)
     parser.add_argument("-c", "--cnv", help="Targets over which to calculate copy numbers.", default=argparse.SUPPRESS)
-    parser.add_argument("-d", "--fragment-size-targets", help="Targets over which to calculate fragment size distribution.", default=argparse.SUPPRESS)
+    parser.add_argument("-d", "--sizes", help="Reference names over which to calculate fragment size distribution.", default=argparse.SUPPRESS)
     parser.add_argument("-i", "--interleaved", help="Each input fastq contains alternating reads 1 and 2.", action="store_const", const=True, default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     args = parser.parse_args()

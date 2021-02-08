@@ -3,10 +3,10 @@ import argparse
 import sys
 from collections import Counter, defaultdict
 
-from matplotlib.backends.backend_pdf import FigureCanvasPdf, PdfPages
-from matplotlib.figure import Figure
-from matplotlib.patches import Rectangle
-from matplotlib.backends.backend_pdf import PdfPages
+#from matplotlib.backends.backend_pdf import FigureCanvasPdf, PdfPages
+#from matplotlib.figure import Figure
+#from matplotlib.patches import Rectangle
+#from matplotlib.backends.backend_pdf import PdfPages
 
 from .utils import save_stats
 
@@ -30,41 +30,43 @@ def vcf_stats(vcf_path, stats_file="stats.json", output="vafs.pdf", sample=""):
     vafs = []
     with open(vcf_path, "rt") as f_in:
         for variant in f_in:
-            if not variant.startswith("#") and not variant.startswith('"#'):
-                variant = variant.split("\t")
-                total += 1
-                try:
-                    if nucleotide[variant[REF]] == nucleotide[variant[ALT]]:
-                        ti += 1
-                    else:
-                        tv += 1
-                except KeyError:
-                    pass
-                
-                if len(variant[REF]) != len(variant[ALT]):
-                    indels += 1
+            if variant.startswith("#") or variant.startswith('"#'):
+                continue
+            
+            variant = variant.split("\t")
+            total += 1
+            try:
+                if nucleotide[variant[REF]] == nucleotide[variant[ALT]]:
+                    ti += 1
                 else:
-                    snps += 1
-                
-                keys = variant[FORMAT].split(":")
-                vals = variant[SAMPLE1].strip().split(":")
-                vaf = dict(zip(keys, vals))["FREQ"]
-                vafs.append(float(vaf.rstrip("%")) / 100)
+                    tv += 1
+            except KeyError:
+                pass
+            
+            if len(variant[REF]) != len(variant[ALT]):
+                indels += 1
+            else:
+                snps += 1
+            
+            #keys = variant[FORMAT].split(":")
+            #vals = variant[SAMPLE1].strip().split(":")
+            #vaf = dict(zip(keys, vals))["FREQ"]
+            #vafs.append(float(vaf.rstrip("%")) / 100)
     
     
-    pdf = PdfPages(output)
-    figure = Figure(figsize=(11.69,8.27))
-    FigureCanvasPdf(figure)
-    ax = figure.gca()
+    #pdf = PdfPages(output)
+    #figure = Figure(figsize=(11.69,8.27))
+    #FigureCanvasPdf(figure)
+    #ax = figure.gca()
     
-    ax.hist(vafs, bins=100)
-    ax.get_yaxis().set_visible(False)
-    ax.set_xlabel("Variant Allele Frequency", fontsize=10)
-    ax.set_ylabel("Frequency", fontsize=10)
-    ax.set_title(sample, fontsize=12)
+    #ax.hist(vafs, bins=100)
+    #ax.get_yaxis().set_visible(False)
+    #ax.set_xlabel("Variant Allele Frequency", fontsize=10)
+    #ax.set_ylabel("Frequency", fontsize=10)
+    #ax.set_title(sample, fontsize=12)
     
-    pdf.savefig(figure)
-    pdf.close()
+    #pdf.savefig(figure)
+    #pdf.close()
     
     save_stats(stats_file, {"variants": {"total": total,
                                          "snp/indel": float(snps) / (indels or 1),

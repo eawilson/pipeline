@@ -3,23 +3,22 @@ import argparse
 import sys
 import os
 import glob
+import re
+from itertools import chain
 from collections import Counter, defaultdict
 from multiprocessing import Process, Queue
 from collections.abc import Mapping
+from statistics import mean
 
 from covermi import bed, Gr, Entry
 
-from .utils import run, save_stats, string2cigar
+from .utils import run, save_stats, string2cigar, CONSUMES_REF, CONSUMES_READ
 
 try:
     from contextlib import nullcontext
 except ImportError: # python <3.7
-    class nullcontext(object):
-        def __enter__(self):
-            return None
+    from .utils import nullcontext
 
-        def __exit__(self, *excinfo):
-            pass
 
 QNAME = 0
 FLAG = 1
@@ -44,18 +43,8 @@ SUPPPLEMENTARY = 0x800
 SEC_OR_SUP = SECONDARY | SUPPPLEMENTARY
 BOTH_UNMAPPED = UNMAPPED | MATE_UNMAPPED
 
-CONSUMES_REF = "MDN=X"
-CONSUMES_READ = "MIS=X"
-
 LEFT = 0
 RIGHT = 1
-
-RCOMPLEMENT = str.maketrans("ATGC", "TACG")
-
-
-
-def mean(nums):
-    return (sum(nums) * 1.0) / len(nums)
 
 
 
@@ -86,45 +75,37 @@ def cigar_len(cig, ops):
 
 
 
-def filter_sam(input_sam,
-               output_file="output.filtered.sam",
-               stats_file="stats.json",
-               targets="",
-               max_fragment_size=1000,
-               filter_fragments_shorter_than=0,
-               filter_fragments_longer_than=0,
-               #filter_mapq_less_than=0,
-               #filter_low_qual_bases_greater_than=0,
-               fragment_sizes_per_target="",
-               threads=0):
+def ontarget(input_sam,
+             bed_file,
+             output_file="output.filtered.sam",
+             stats_file="stats.json",
+             max_fragment_size=1000,
+             retain_offtarget=False,
+             cnv = "",
+             threads=0):
 
     threads = 1
     if not threads:
         threads = int(run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip())
 
-    if targets and os.path.isdir(targets):
-        beds = glob.glob(f"{targets}/*.bed")
-        if len(beds) == 0:
-            sys.exit(f'"{targets}" does not contain a bedfile')
-        elif len(beds) > 1:
-            sys.exit(f'"{targets}" contains multiple bedfiles')
-        targets =  beds[0]
+    bed_file = (glob.glob(f"{bed_file}/*.bed") + [bed_file])
+    if len(bed_file) > 2:
+        sys.exit(f'"{targets}" contains multiple bedfiles')
     
-    targets = Gr(bed(targets or ()))
+    sep = re.compile("[,;]")
+    bait2genes= {}
+    targets = Gr(bed(bed_file[0]))
     for target in targets:
-        loc = f"{target.chrom}:{target.start}-{target.stop}"
-        target.name = loc if target.name == "." else f"{target.name}_{loc}"
+        genes = set(gene.split()[0] for gene in sep.split(target.name))
+        target.name = f"{target.chrom}:{target.start}-{target.stop}-{target.name}"
+        bait2genes[target.name] = genes
+        
     details = {"targets": targets,
                "max_fragment_size": max_fragment_size,
-               "filter_fragments_shorter_than": filter_fragments_shorter_than,
-               "filter_fragments_longer_than": filter_fragments_shorter_than}
-    
-    stats = {"fragment_sizes": Counter()}
-    if targets:
-        stats.update({"fragments_per_target": {bait.name: 0 for bait in details["targets"]},
-                      "fragment_sizes_per_target": defaultdict(Counter),
-                      "ontarget": 0,
-                      "offtarget": 0})
+               "retain_offtarget": retain_offtarget}
+    stats = {"fragments_per_target": {bait.name: 0 for bait in targets},
+             "ontarget": 0,
+             "offtarget": 0}
     
     
     multithreaded = (threads > 1)
@@ -187,26 +168,37 @@ def filter_sam(input_sam,
             worker.join()
 
 
-    include = set(fragment_sizes_per_target.split())
-    sizes = defaultdict(Counter)
-    for name, depth in stats["fragment_sizes_per_target"].items():
-        for target in set(name[name.find("_")+1:].strip().split(";")):
-            target = target.split()[0]
-            if target in include:
-                sizes[target][depth] += 1
-    stats["fragment_sizes_per_target"] = sizes
-    
-    
-    baseline = mean(baseline)
-    stats = {"copies_per_cell": {t: mean(d) / baseline for t, d in depths.items()}}
     ontarget = stats.pop("ontarget")
     offtarget = stats.pop("offtarget")
-    stats["offtarget"] = float(offtarget) / (ontarget + offtarget)    
+    stats["offtarget"] = float(offtarget) / (ontarget + offtarget)
+    
+    include = set()
+    exclude = set()
+    for target in cnv.split():
+        if target.startswith("-"):
+            exclude.add(target[1:])
+        else:
+            include.add(target)
+
+    if include:
+        baseline = []
+        depths = defaultdict(list)
+        for bait, depth in stats["fragments_per_target"].items():
+            genes = bait2genes[bait]
+            matches = genes & include
+            for gene in matches:
+                depths[gene].append(depth)
+            if not matches and not genes & exclude:
+                baseline.append(depth)
+        
+        baseline = mean(baseline)
+        stats["copies_per_cell"] = {t: mean(d) / baseline for t, d in depths.items()}
+
     save_stats(stats_file, stats)
 
 
 
-def _filter_read(read, stats, targets, max_fragment_size, filter_fragments_shorter_than, filter_fragments_longer_than):
+def _filter_read(read, stats, targets, max_fragment_size, retain_offtarget):
     if not read:
         return ""
     
@@ -220,7 +212,7 @@ def _filter_read(read, stats, targets, max_fragment_size, filter_fragments_short
             non_primary.append(segment)
 
     if len(primary) != 2:
-        sys.exit("Multiple primary reads in SAM file")
+        sys.exit("SAM file not filtered by name or corrupt")
     
     # Both mapped to same reference and pointing in opposite directions
     # therefore may be a concordant read pair.
@@ -231,11 +223,12 @@ def _filter_read(read, stats, targets, max_fragment_size, filter_fragments_short
         if primary[0][FLAG] & RC:
             primary = primary[::-1]
         
+        left_cigar = string2cigar(primary[0][CIGAR])
         right_cigar = string2cigar(primary[1][CIGAR])
         start = int(primary[0][POS])
         stop = int(primary[1][POS]) + cigar_len(right_cigar, CONSUMES_REF) - 1
-        size = (int(primary[1][POS]) + cigar_len(right_cigar, CONSUMES_READ)) - start - 1
-        for num, op in string2cigar(primary[0][CIGAR]):
+        size = stop - start + 1
+        for num, op in chain(left_cigar, right_cigar):
             if op in "IS":
                 size += num
             elif op in "DN":
@@ -246,47 +239,37 @@ def _filter_read(read, stats, targets, max_fragment_size, filter_fragments_short
     else:
         size = 0
     
-    stats["fragment_sizes"][size] += 1
+
+    if size:
+        segments = [Entry(primary[0][RNAME], start, stop)]
+    else:
+        segments = []
+        non_primary = read
+    for segment in non_primary:
+        start = int(segment[POS])
+        segments.append(Entry(segment[RNAME], start, start + cigar_len(string2cigar(segment[CIGAR]), CONSUMES_REF)))
     
-    if targets:
-        if size:
-            segments = [Entry(primary[0][RNAME], start, stop)]
-            remaining = non_primary
-        else:
-            segments = []
-            remaining = read
-            
-        for segment in remaining:
-            start = int(segment[POS])
-            segments.append(Entry(segment[RNAME], start, start + cigar_len(string2cigar(segment[CIGAR]), CONSUMES_REF)))
-        
-        best_offset = None
-        match = None
-        for segment in segments:
-            for target in targets.touched_by(segment):
-                offset = abs(segment.start + segment.stop - target.start - target.stop)
-                try:
-                    if offset > best_offset:
-                        continue
-                except TypeError:
-                    pass
-                best_offset = offset
-                match = target.name
-        
-        if match:
-            stats["fragments_per_target"][match] += 1
-            stats["ontarget"] += 1
-            if size:
-                stats["fragment_sizes_per_target"][match][size] += 1
-        else:
-            stats["offtarget"] += 1
+    
+    match = None
+    for segment in segments:
+        for target in targets.touched_by(segment):
+            offset = abs(segment.start + segment.stop - target.start - target.stop)
+            try:
+                if offset > best_offset:
+                    continue
+            except NameError:
+                pass
+            best_offset = offset
+            match = target.name
+    
+    if match:
+        stats["fragments_per_target"][match] += 1
+        stats["ontarget"] += 1
+    else:
+        stats["offtarget"] += 1
+        if not retain_offtarget:
             return ""
-    
-    if filter_fragments_shorter_than and (not size or size < filter_fragments_shorter_than):
-        return ""
-    if filter_fragments_longer_than and (not size or size > filter_fragments_longer_than):
-        return ""
-    
+
     for segment in read:
         segment[FLAG] = str(segment[FLAG])
     return "".join("\t".join(segment) for segment in read)
@@ -296,19 +279,17 @@ def _filter_read(read, stats, targets, max_fragment_size, filter_fragments_short
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_sam', help="Input sam file, must be sorted by name.")
+    parser.add_argument("-b", "--bed", help="Bed file of on-target regions.", dest="bed_file", required=True)
     parser.add_argument("-o", "--output", help="Output file.", dest="output_file", default=argparse.SUPPRESS)
     parser.add_argument("-s", "--stats", help="Statistics file.", dest="stats_file", default=argparse.SUPPRESS)
-    parser.add_argument("-b", "--bed", help="Bed file of on-target regions.", dest="targets", default=argparse.SUPPRESS)
     parser.add_argument("-m", "--max-fragment-size", help="Maximum fragment size to be considered a genuine read pair.", type=int, default=argparse.SUPPRESS)
-    parser.add_argument("-f", "--filter-fragments-shorter-than", help="Filter fragments shorter than.", type=int, default=argparse.SUPPRESS)
-    parser.add_argument("-F", "--filter-fragments-longer-than", help="Filter fragments longer than.", type=int, default=argparse.SUPPRESS)
-    #parser.add_argument("-M", "--filter-mapq-less-than", help="Filter fragments with mapq less than.", type=int, default=argparse.SUPPRESS)
-    #parser.add_argument("-q", "--filter-low-qual-bases-greater-than", help="Filter fragments with greater than low quality bases.", type=int, default=argparse.SUPPRESS)
-    parser.add_argument("-p", "--fragment-sizes-targets", help="Target names over which to calculate fragment size distribution.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-r", "--retain-offtarget", help="Retain offtarget reads in output.", action='store_const', const=True)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
+    parser.add_argument("-c", "--cnv", help="Target names over which to calculate copy numbers. " \
+                                                "names preceeded by - will be excluded from baseline.", default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
-        filter_sam(**vars(args))
+        ontarget(**vars(args))
     except OSError as e:
         # File input/output error. This is not an unexpected error so just
         # print and exit rather than displaying a full stack trace.

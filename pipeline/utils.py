@@ -5,13 +5,27 @@ import re
 import json
 import pdb
 import datetime
+import shlex
 from collections import defaultdict, Counter
 from collections.abc import Mapping
 from itertools import chain
 
 
 
-__all__ = ["run", "pipe", "Pipe", "save_stats", "string2cigar", "cigar2string", "guess_sample_name"]
+__all__ = ["run", "pipe", "Pipe", "save_stats", "string2cigar", "cigar2string", "guess_sample_name", "nullcontext", "CONSUMES_REF", "CONSUMES_READ"]
+
+
+CONSUMES_REF = "MDN=X"
+CONSUMES_READ = "MIS=X"
+
+
+
+class nullcontext(object):
+    def __enter__(self):
+        return None
+
+    def __exit__(self, *excinfo):
+        pass
 
 #ILLUMINA_FASTQ = re.compile(r"(.+)_S([0-9]{1,2})_L([0-9]{3})_R([12])_001\.fastq(\.gz)?$") # name, s_number, lane, read, gzip
 
@@ -137,8 +151,7 @@ def pipe(args, exit_on_failure=True, **kwargs):
         needed. The command is echoed to stderr before the command is run.
     """
     args = [str(arg) for arg in args]
-    quoted_args = [(f'"{arg}"' if (" " in arg or arg == "") else arg) for arg in args]
-    print(" ".join(quoted_args), file=sys.stderr, flush=True)
+    print(" ".join(shlex.quote(arg) for arg in args), file=sys.stderr, flush=True)
     completedprocess = subprocess.run(args, **kwargs)
     sys.stderr.flush()
     if exit_on_failure and completedprocess.returncode:

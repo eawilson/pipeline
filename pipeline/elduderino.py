@@ -14,12 +14,8 @@ from .utils import save_stats, string2cigar
 try:
     from contextlib import nullcontext
 except ImportError: # python <3.7
-    class nullcontext(object):
-        def __enter__(self):
-            return None
+    from .utils import nullcontext
 
-        def __exit__(self, *excinfo):
-            pass
 
 QNAME = 0
 FLAG = 1
