@@ -61,7 +61,8 @@ def enqueue(bucket, project, panel, input="samples", output="analyses", samples=
     print("{} messages {}.".format(n, "processed" if dry_run else "queued"))
 
 
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', "--bucket", help="AWS S3 bucket in which all files are located", required=True)
     parser.add_argument('-j', "--project", help="location of project files. s3://{bucket}/projects/{project}/", required=True)
@@ -76,3 +77,8 @@ if __name__ == "__main__":
     parser.add_argument('-d', "--dry-run", action="store_const", const=True, default=argparse.SUPPRESS)
     args = parser.parse_args()
     enqueue(**vars(args))
+
+
+
+if __name__ == "__main__":
+    main()

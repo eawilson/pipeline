@@ -23,8 +23,9 @@ package =  {"name": "pipeline",
                                                   "size=pipeline.size:main",
                                                   "trim_sam=pipeline.trim_sam:main",
                                                   "breakpoint=pipeline.breakpoint:main",
-                                                  "bscopy=pipeline.aws.bscopy:main",
-                                                  "runner=pipeline.aws.runner:main"] },
+                                                  "bscopy=pipeline.bscopy:main",
+                                                  "enqueue=pipeline.enqueue:main",
+                                                  "runner=pipeline.runner:main"] },
             }
 
 setup(**package)
