@@ -85,6 +85,9 @@ def do_sizing(input_sam,
     median_fragment_size = {}
     with PdfPages(output) as pdf:
         for contig in chain(["total"], sorted(key for key in stats.keys() if key != "total")):
+            if not stats[contig]:
+                continue
+            
             title = f"{sample}" if contig == "total" else f"{sample} - {contig}"
             
             sizes, counts = zip(*sorted(stats[contig].items()))

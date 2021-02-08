@@ -68,7 +68,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel="", buffer
     
     
     targets = None
-    principal = defaultdict()
+    principal = {}
     needed_genes = set()
     needed_transcripts = set()
     if panel:
@@ -93,7 +93,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel="", buffer
             return [BIOTYPE[cons["biotype"]],
                     REFSEQ[prefix],
                     -int(cons["gene_id"]),
-                    principal[transcript],
+                    principal.get(transcript, 0),
                     "canonical" in cons,
                     -int(major),
                     int(minor)]
@@ -103,7 +103,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel="", buffer
             # Version numbers not in vep as of version 101, but who knows the future ...
             return [BIOTYPE[cons["biotype"]],
                     -int(cons["gene_id"].translate(DELETE_NON_DIGIT)),
-                    principal[cons["transcript_id"]],
+                    principal.get(cons["transcript_id"], 0),
                     "canonical" in cons,
                     -int(cons["transcript_id"].translate(DELETE_NON_DIGIT))]
     

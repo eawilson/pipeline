@@ -151,12 +151,12 @@ def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min
     os.unlink(fixed_sam)
     
     
-    #if panel:
-        #pipe(["covermi_stats", "--panel", panel,
-                               #"--output", f"{sample}.covermi.pdf",
-                               #"--stats", stats,
-                               #"--sample", sample,
-                               #bam])
+    if panel:
+        pipe(["covermi_stats", "--panel", panel,
+                               "--output", f"{sample}.covermi.pdf",
+                               "--stats", stats,
+                               "--sample", sample,
+                               bam])
 
 
     mpileup = f"{sample}.mpileup"
