@@ -120,11 +120,11 @@ VARDICT=VarDict-1.8.2
 wget "https://github.com/AstraZeneca-NGS/VarDictJava/releases/download/v1.8.2/$VARDICT.tar"
 tar -xf $VARDICT.tar
 rm $VARDICT.tar
-sudo mv $VARDICT/bin/
 sudo mv $VARDICT/bin/var2vcf_valid.pl /usr/local/bin
-echo '#!/bin/bash
+echo '#!/usr/bin/env bash
 APP_HOME=/usr/local/bin/VarDict-1.8.2
 CLASSPATH=$APP_HOME/lib/VarDict-1.8.2.jar:$APP_HOME/lib/commons-cli-1.2.jar:$APP_HOME/lib/commons-math3-3.6.1.jar:$APP_HOME/lib/jregex-1.2_01.jar:$APP_HOME/lib/htsjdk-2.21.1.jar
 java -Xms768m -Xmx8g -classpath "$CLASSPATH" com.astrazeneca.vardict.Main -c 1 -S 2 -E 3 -g 4 "$@"' >vardictjava
 chmod +x vardictjava
 sudo mv vardictjava /usr/local/bin
+sudo mv $VARDICT /usr/local/bin

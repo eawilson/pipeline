@@ -12,7 +12,6 @@ package =  {"name": "pipeline",
             "include_package_data": True,
             "zip_safe": True,
             "entry_points": { "console_scripts": ["cfpipeline=pipeline.pipelines.cfpipeline:main",
-                                                  "cfpipeline_trim_no_dedupe=pipeline.pipelines.cfpipeline_trim_no_dedupe:main",
                                                   "mount_instance_storage=pipeline.aws:mount_instance_storage",
                                                   "udini=pipeline.udini:main",
                                                   "elduderino=pipeline.elduderino:main",
@@ -24,8 +23,8 @@ package =  {"name": "pipeline",
                                                   "size=pipeline.size:main",
                                                   "trim_sam=pipeline.trim_sam:main",
                                                   "breakpoint=pipeline.breakpoint:main",
-                                                  "bscopy=pipeline.bscopy:main",
-                                                  "runner=pipeline.runner:main"] },
+                                                  "bscopy=pipeline.aws.bscopy:main",
+                                                  "runner=pipeline.aws.runner:main"] },
             }
 
 setup(**package)
