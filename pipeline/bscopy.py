@@ -39,9 +39,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('bsruns', nargs="+", help="Basespace runs.")
     parser.add_argument("-p", "--project", help="AWS project.", required=True)
-    parser.add_argument('-d', "--dry-run", help="Do not actually upload anything to aws.", action="store_true", default=argparse.SUPPRESS)
     parser.add_argument('-i', "--include", help="Only include fastqs matching this regular expression.", default=argparse.SUPPRESS)
     parser.add_argument('-e', "--exclude", help="Exclude fastqs matching this regular expression.", default=argparse.SUPPRESS)
+    parser.add_argument('-d', "--dry-run", help="Do not actually upload anything to aws.", action="store_true", default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         bscopy(**vars(args))

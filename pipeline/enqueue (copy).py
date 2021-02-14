@@ -2,16 +2,24 @@ from collections import defaultdict
 import json
 import argparse
 import re
-import csv
-import sys
 
 from pipeline.aws import s3_list
 import boto3
 
 
 
-def enqueue(script_args, bucket, project, panel, input="samples", output="analyses", samples=".*", manifest="", ignore_missing=False, dry_run=False):
+def enqueue(bucket, project, panel, input="samples", output="analyses", samples=".*", min_family_size=None, umi=None, cnv=None, sizes=None, dry_run=False):
     sample_regex = re.compile(samples)
+    
+    kwargs = {}
+    if min_family_size is not None:
+        kwargs["--min-family-size"] = min_family_size
+    if umi is not None:
+        kwargs["--umi"] = umi
+    if cnv is not None:
+        kwargs["--cnv"] = cnv
+    if sizes is not None:
+        kwargs["--sizes"] = sizes
     
     sqs = boto3.client("sqs")
     queue_url = sqs.get_queue_url(QueueName="samples")["QueueUrl"]
@@ -20,48 +28,24 @@ def enqueue(script_args, bucket, project, panel, input="samples", output="analys
     for key in s3_list(bucket, f"projects/{project}/{output}/", extension=".bam"):
         sample = key.split("/")[-1].split("_")[0]
         complete.add(sample)
-    
-    
+
     fastqs = defaultdict(list)
     for key in s3_list(bucket, f"projects/{project}/{input}/", extension=".fastq.gz"):
         sample = key.split("/")[-1].split("_")[0]
         if sample not in complete and sample_regex.fullmatch(sample):
             fastqs[sample] += [f"s3://{bucket}/{key}"]
     
-    
-    sample_args = {}
-    if manifest:
-        with open(manifest, "rt") as f:
-            reader = csv.DictReader(f, delimiter="\t")
-            for row in reader:
-                sample = row.pop("sample")
-                if sample in sample_args:
-                    sys.exit(f"Sample {sample} duplicated in manifest")
-                args = []
-                for key, val in row.items():
-                    args.append(f"--{key}")
-                    if val:
-                        args.append(val)
-                sample_args[sample] = args
-        
-        if not ignore_missing:
-            for name in set(fastqs) - set(sample_args):
-                print(f"Sample {name} is present in aws but not in the manifest", file=sys.stderr)
-            for name in set(sample_args) - set(fastqs):
-                print(f"Sample {name} is present in the manifest but not aws", file=sys.stderr)
-            if set(sample_args) ^ set(fastqs):
-                sys.exit("Missing samples. Aborting")
-    
     n = 0
     for sample, urls in sorted(fastqs.items()):
         data = {"Script": "cfpipeline",
                 "Output": f"s3://{bucket}/projects/{project}/{output}/{sample}",
-                "Input": urls
-                "Args": script_args + sample_args.get(sample, []) + [
-                        "--sample", sample,
-                        "--reference", f"s3://{bucket}/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.tar.gz",
-                        "--panel", f"s3://{bucket}/panels/{panel}.tar.gz",
-                        "--vep", f"s3://{bucket}/reference/vep_101_GRCh37_homo_sapiens_refseq.tar"]
+                "Args": urls,
+                "Kwargs": {"--sample": sample,
+                           "--reference": f"s3://{bucket}/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.tar.gz",
+                           "--panel": f"s3://{bucket}/panels/{panel}.tar.gz",
+                           "--vep": f"s3://{bucket}/reference/vep_101_GRCh37_homo_sapiens_refseq.tar",
+                           **kwargs,
+                           }
                 }
         
         message = json.dumps(data)
@@ -82,11 +66,13 @@ def main():
     parser.add_argument('-i', "--input", help="location of input fastqs. s3://{bucket}/projects/{project}/{input}", default=argparse.SUPPRESS)
     parser.add_argument('-o', "--output", help="location to write analysis output files. s3://{bucket}/projects/{project}/{output}", default=argparse.SUPPRESS)
     parser.add_argument('-s', "--samples", help="regular expression to narrow down input fastqs. single quote to prevent shell filename expansion", default=argparse.SUPPRESS)
-    parser.add_argument('-m', "--manifest", help="path to tsv file containging additional arguments for individual files", default=argparse.SUPPRESS)
-    parser.add_argument('-e', "--ignore-missing", help="proceed even if there are mismatches between the manifest and s3", action="store_const", const=True, default=argparse.SUPPRESS)
+    parser.add_argument('-m', "--min-family-size", default=argparse.SUPPRESS)
+    parser.add_argument('-u', "--umi", default=argparse.SUPPRESS)
+    parser.add_argument('-c', "--cnv", default=argparse.SUPPRESS)
+    parser.add_argument('-z', "--sizes", default=argparse.SUPPRESS)
     parser.add_argument('-d', "--dry-run", action="store_const", const=True, default=argparse.SUPPRESS)
-    args, script_args = parser.parse_known_args()
-    enqueue(script_args=script_args, **vars(args))
+    args = parser.parse_args()
+    enqueue(**vars(args))
 
 
 

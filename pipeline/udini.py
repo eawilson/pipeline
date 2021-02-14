@@ -40,7 +40,6 @@ def udini(input_fastqs,
           umi_sequences="",
           stats_file="stats.json",
           min_read_length=50,
-          #max_read_length=0,
           max_consecutive_ns=2):
     
     # reversed so we can pop the fastqs in the original order.
@@ -188,7 +187,6 @@ def main():
     parser.add_argument("-q", "--umi-sequences", help="UMI sequences.", default=argparse.SUPPRESS)
 
     parser.add_argument("-m", "--min-read-length", help="Reads shoter than min-read-legth will be filtered.", default=argparse.SUPPRESS)
-    #parser.add_argument("-M", "--max-read-length", help="Reads shoter than this will be assumed to have read through into th opposite umi.", default=argparse.SUPPRESS)
     parser.add_argument("-n", "--max-consecutive-ns", help="Reads containing more Ns than max-consecutive-ns will be filtered.", default=argparse.SUPPRESS)
     
     parser.add_argument("-s", "--stats", help="Statistics file.", dest="stats_file", default=argparse.SUPPRESS)

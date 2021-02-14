@@ -2,7 +2,7 @@ import os
 import subprocess
 import json
 import pdb
-import shlex
+import itertools
 import sys
 
 import boto3
@@ -65,7 +65,7 @@ def main():
     queue_url = sqs.get_queue_url(QueueName="samples")["QueueUrl"]
     while True:
         if any(os.path.isfile(fn) for fn in os.listdir()):
-            sys.exit("Working directory is not empty")
+            raise RuntimeError("Working directory is not empty.")
         
         response = sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=20)
         
@@ -77,20 +77,22 @@ def main():
         
         if body["Script"][:5].lower() == ("s3://"):    
             body["Script"] = os.path.join(".", download(s3, body["Script"], destination="downloads"))
-        body["Input"] = [download(s3, url) for url in body.get("Input", ())]
-        body["Args"] = [download(s3, arg, destination="downloads") for arg in body.get("Args", ())]
+        body["Args"] = [download(s3, url) for url in body.get("Args", ())]
+        body["Kwargs"] = {k: download(s3, v, destination="downloads") for k, v in body.get("Kwargs", {}).items()}
         
-        command_line = [body["Script"]] + body["Input"] + body["Args"]
-        print(" ".join(shlex.quote(token) for token in command_line))
+        command_line = [body["Script"]] + body.get("Args", []) + list(itertools.chain(*sorted(body.get("Kwargs", {}).items())))
+        command_line = " ".join([(f"'{token}'" if " " in token else token) for token in command_line])
+        print(command_line)
         with open("{}.log.txt".format(body["Kwargs"]["--sample"]), "wb") as log:
-            completed_process = subprocess.run(command_line, stderr=subprocess.STDOUT, stdout=log)
+            completed_process = subprocess.run(command_line, shell=True, stderr=subprocess.STDOUT, stdout=log)
+            
             if completed_process.returncode != 0:
                 log.write(f"PIPELINE EXITED WITH RETURN CODE {completed_process.returncode}\n".encode())
         
         print("Cleaning up.")
         for fn in os.listdir():
             if os.path.isfile(fn):
-                if fn not in body["Input"]:
+                if fn not in body["Args"]:
                     upload(s3, fn, body["Output"])
                 os.unlink(fn)
         
@@ -99,8 +101,8 @@ def main():
         # I believe this happens if the queue is purged while a job is in progress.
         except Exception: # Actually throws QueueDoesNotExist, but where to import it from?
             pass
-    
-    
+            
+            
     print("Complete.")
 
 

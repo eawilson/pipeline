@@ -45,6 +45,7 @@ def main():
     try:
         covermi_stats(**vars(args))
     except OSError as e:
+        raise
         # File input/output error. This is not an unexpected error so just
         # print and exit rather than displaying a full stack trace.
         sys.exit(str(e))

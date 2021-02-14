@@ -41,11 +41,6 @@ R = 1
 
 
 
-def bp(chrom, pos):
-    return "{}:{}".format(chrom, pos)
-
-
-
 def cigar_len(cig, ops):
     return sum(num for num, op in cig if op in ops)
 
@@ -73,11 +68,11 @@ def breakpoint(sam, output="translocations.tsv", mapq=10):
                     for segment in read:
                         cigar = string2cigar(segment[CIGAR])
                         if cigar and (cigar[0][1] == "S") != (cigar[-1][1] == "S"):
-                            pos = int(segment[POS])
                             if cigar[0][1] == "S":
-                                breakpoints[bp(segment[RNAME], pos)] += 1
+                                pos = int(segment[POS])
                             elif cigar[-1][1] == "S":
-                                breakpoints[bp(segment[RNAME],  + pos + cigar_len(cigar, CONSUMES_REF))] += 1
+                                pos = int(segment[POS]) + cigar_len(cigar, CONSUMES_REF)
+                            breakpoints["{}:{}".format(segment[RNAME], pos)] += 1
                 
                 current_qname = qname
                 read = []

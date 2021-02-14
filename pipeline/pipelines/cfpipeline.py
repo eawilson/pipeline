@@ -10,7 +10,7 @@ from pipeline import run, Pipe, guess_sample_name
 
 
 
-def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min_family_size=1, cnv="", sizes="", threads=None, interleaved=False, min_vaf=0.01):
+def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min_family_size=1, cnv="", sizes="", threads=None, interleaved=False, min_vaf=None, translocations=False):
     """Cell free pipeline.
 
     Args:
@@ -44,6 +44,9 @@ def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min
         sample = guess_sample_name(input_fastqs)
         if not sample:
             sys.exit("Ambiguous sample name")
+    
+    if min_vaf is None:
+        min_vaf = 0.01 if min_family_size == 1 else 0.001
     
     reference = (glob.glob(f"{reference}/*.fna") + [reference])[0]
     targets_bedfile = (glob.glob(f"{panel}/*.bed") + [None])[0] if panel else ""
@@ -94,7 +97,6 @@ def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min
                               trimmed_sam])
     os.unlink(trimmed_sam)
     
-    
     deduplicated_sam = f"{sample}.deduplicated.sam"
     pipe(["elduderino", "--output", deduplicated_sam,
                         "--stats", stats,
@@ -141,8 +143,13 @@ def cfpipeline(input_fastqs, reference, sample="", panel="", umi="", vep="", min
     fixed_sam = f"{sample}.fixed.sam"
     pipe(["samtools", "fixmate", namesorted_sam, fixed_sam])
     os.unlink(namesorted_sam)
-
-
+        
+        
+    if translocations:
+        pipe(["breakpoint", "--output", f"{sample}.translocations.tsv",
+                            fixed_sam])
+    
+    
     bam = f"{sample}.bam"
     pipe(["samtools", "sort", "-o", bam,
                               "-@", threads, 
@@ -242,9 +249,10 @@ def main():
     parser.add_argument("-u", "--umi", help="Umi.", default=argparse.SUPPRESS)
     parser.add_argument("-v", "--vep", help="Directory containing vep data.", default=argparse.SUPPRESS)
     parser.add_argument("-m", "--min-family-size", help="Minimum family size.", type=int, default=argparse.SUPPRESS)
-    parser.add_argument("-f", "--min-vaf", help="Minimum variant allele frequency for a variant to be called.", type=float, default=argparse.SUPPRESS)
+    parser.add_argument("-f", "--min-vaf", help="Minimum variant allele frequency for a variant to be called using VarDict caller.", type=float, default=argparse.SUPPRESS)
     parser.add_argument("-c", "--cnv", help="Targets over which to calculate copy numbers.", default=argparse.SUPPRESS)
     parser.add_argument("-d", "--sizes", help="Reference names over which to calculate fragment size distribution.", default=argparse.SUPPRESS)
+    parser.add_argument("-b", "--translocations", help="Call translocations (supplementary reads aligned to different chromosomes).", action="store_const", const=True, default=argparse.SUPPRESS)
     parser.add_argument("-i", "--interleaved", help="Each input fastq contains alternating reads 1 and 2.", action="store_const", const=True, default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     args = parser.parse_args()
