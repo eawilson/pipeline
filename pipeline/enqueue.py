@@ -4,29 +4,31 @@ import argparse
 import re
 import csv
 import sys
+import pdb
 
 from pipeline.aws import s3_list
 import boto3
 
 
 
-def enqueue(script_args, bucket, project, panel, input="samples", output="analyses", samples=".*", manifest="", ignore_missing=False, dry_run=False):
+def enqueue(script_args, bucket, project, panel="", input="samples", output="analyses", samples=".*", manifest="", ignore_missing=False, dry_run=False):
     sample_regex = re.compile(samples)
-    
+
     sqs = boto3.client("sqs")
     queue_url = sqs.get_queue_url(QueueName="samples")["QueueUrl"]
 
+
     complete = set()
     for key in s3_list(bucket, f"projects/{project}/{output}/", extension=".bam"):
-        sample = key.split("/")[-1].split("_")[0]
-        complete.add(sample)
+        run_sample = "/".join(key.split("/")[3:5])
+        complete.add(run_sample)
     
     
     fastqs = defaultdict(list)
-    for key in s3_list(bucket, f"projects/{project}/{input}/", extension=".fastq.gz"):
-        sample = key.split("/")[-1].split("_")[0]
-        if sample not in complete and sample_regex.fullmatch(sample):
-            fastqs[sample] += [f"s3://{bucket}/{key}"]
+    for key in s3_list(bucket, f"projects/{project}/{input}", extension=".fastq.gz"):
+        run_sample = "/".join(key.split("/")[3:5])
+        if run_sample not in complete and sample_regex.fullmatch(run_sample):
+            fastqs[run_sample] += [f"s3://{bucket}/{key}"]
     
     
     sample_args = {}
@@ -34,15 +36,17 @@ def enqueue(script_args, bucket, project, panel, input="samples", output="analys
         with open(manifest, "rt") as f:
             reader = csv.DictReader(f, delimiter="\t")
             for row in reader:
-                sample = row.pop("sample")
-                if sample in sample_args:
-                    sys.exit(f"Sample {sample} duplicated in manifest")
+                row = {k.strip(): v.strip() for k, v in row.items()}
+                
+                run_sample = "/".join([row.pop("run"), row.pop("sample")])
+                if run_sample in sample_args:
+                    sys.exit(f"Sample {run_sample} duplicated in manifest")
                 args = []
                 for key, val in row.items():
                     args.append(f"--{key}")
                     if val:
                         args.append(val)
-                sample_args[sample] = args
+                sample_args[run_sample] = args
         
         if not ignore_missing:
             for name in set(fastqs) - set(sample_args):
@@ -51,14 +55,26 @@ def enqueue(script_args, bucket, project, panel, input="samples", output="analys
                 print(f"Sample {name} is present in the manifest but not aws", file=sys.stderr)
             if set(sample_args) ^ set(fastqs):
                 sys.exit("Missing samples. Aborting")
+            for name in set(fastqs) - set(sample_args):
+                fastqs.pop(name)
     
     n = 0
-    for sample, urls in sorted(fastqs.items()):
+    for run_sample, urls in sorted(fastqs.items()):
+        try:
+            i = sample_args.get(run_sample, []).index("--panel")
+            panel = sample_args[run_sample][i+1]
+            sample_args[run_sample] = sample_args[run_sample][:i] + sample_args[run_sample][i+2:]
+        except ValueError:
+            pass
+        
+        if not panel:
+            sys.exit("No panel provided")
+        
         data = {"Script": "cfpipeline",
-                "Output": f"s3://{bucket}/projects/{project}/{output}/{sample}",
-                "Input": urls
-                "Args": script_args + sample_args.get(sample, []) + [
-                        "--sample", sample,
+                "Output": f"s3://{bucket}/projects/{project}/{output}/{run_sample}",
+                "Input": urls,
+                "Args": script_args + sample_args.get(run_sample, []) + [
+                        "--sample", run_sample.split("/")[1],
                         "--reference", f"s3://{bucket}/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.tar.gz",
                         "--panel", f"s3://{bucket}/panels/{panel}.tar.gz",
                         "--vep", f"s3://{bucket}/reference/vep_101_GRCh37_homo_sapiens_refseq.tar"]
@@ -78,7 +94,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', "--bucket", help="AWS S3 bucket in which all files are located", required=True)
     parser.add_argument('-j', "--project", help="location of project files. s3://{bucket}/projects/{project}/", required=True)
-    parser.add_argument('-p', "--panel", help="location of panel data. s3://{bucket}/panels/{panel}.tar.gz", required=True)
+    parser.add_argument('-p', "--panel", help="location of panel data. s3://{bucket}/panels/{panel}.tar.gz", default=argparse.SUPPRESS)
     parser.add_argument('-i', "--input", help="location of input fastqs. s3://{bucket}/projects/{project}/{input}", default=argparse.SUPPRESS)
     parser.add_argument('-o', "--output", help="location to write analysis output files. s3://{bucket}/projects/{project}/{output}", default=argparse.SUPPRESS)
     parser.add_argument('-s', "--samples", help="regular expression to narrow down input fastqs. single quote to prevent shell filename expansion", default=argparse.SUPPRESS)
