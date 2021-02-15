@@ -80,9 +80,14 @@ def main():
         body["Input"] = [download(s3, url) for url in body.get("Input", ())]
         body["Args"] = [download(s3, arg, destination="downloads") for arg in body.get("Args", ())]
         
+        try:
+            sample = body["Args"][body["Args"].index("--sample")+1]
+        except (ValueError, IndexError):
+            sample = "pipeline"
+        
         command_line = [body["Script"]] + body["Input"] + body["Args"]
         print(" ".join(shlex.quote(token) for token in command_line))
-        with open("{}.log.txt".format(body["Kwargs"]["--sample"]), "wb") as log:
+        with open(f"{sample}.log.txt"), "wb") as log:
             completed_process = subprocess.run(command_line, stderr=subprocess.STDOUT, stdout=log)
             if completed_process.returncode != 0:
                 log.write(f"PIPELINE EXITED WITH RETURN CODE {completed_process.returncode}\n".encode())
