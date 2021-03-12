@@ -38,12 +38,17 @@ def download(client, path, destination=""):
             path = downloadname
 
         if not os.path.exists(path):
-            print(f"Downloading {key}.")
+            print(f"Downloading {key}.", file=sys.stderr)
             client.download_file(bucket, key, downloadname)
-            if downloadname.endswith(".tar.gz") or downloadname.endswith(".tar"):
-                print(f"Unpacking {key}.")
-                args = "-xzf" if downloadname.endswith(".gz") else "-xf"
-                subprocess.run(["tar", args, os.path.basename(downloadname)], cwd=destination)
+            if downloadname.endswith(".tar.gz"):
+                tar_args = "-xzf"
+            elif downloadname.endswith(".tar"):
+                tar_args = "-xf"
+            else:
+                tar_args = ""
+            if tar_args:
+                print(f"Unpacking {key}.", file=sys.stderr)
+                subprocess.run(["tar", tar_args, os.path.basename(downloadname)], cwd=destination)
                 os.unlink(downloadname)
     return path
 
@@ -56,7 +61,7 @@ def upload(client, fn, url):
         
 
 def main():
-    print("Starting runner...")
+    print("Starting runner...", file=sys.stderr)
     if am_i_an_ec2_instance():
         os.chdir(mount_instance_storage())
     
@@ -80,19 +85,19 @@ def main():
         body["Input"] = [download(s3, url) for url in body.get("Input", ())]
         body["Args"] = [download(s3, arg, destination="downloads") for arg in body.get("Args", ())]
         
-        try:
+        if "--sample" in body["Args"][:-1]:
             sample = body["Args"][body["Args"].index("--sample")+1]
-        except (ValueError, IndexError):
-            sample = "pipeline"
+        else:
+            sample = body["Input"][0].split("/")[-1].split(".")[0]
         
         command_line = [body["Script"]] + body["Input"] + body["Args"]
-        print(" ".join(shlex.quote(token) for token in command_line))
-        with open(f"{sample}.log.txt"), "wb") as log:
+        print(" ".join(shlex.quote(token) for token in command_line), file=sys.stderr)
+        with open(f"{sample}.log.txt", "wb") as log:
             completed_process = subprocess.run(command_line, stderr=subprocess.STDOUT, stdout=log)
             if completed_process.returncode != 0:
                 log.write(f"PIPELINE EXITED WITH RETURN CODE {completed_process.returncode}\n".encode())
         
-        print("Cleaning up.")
+        print("Cleaning up.", file=sys.stderr)
         for fn in os.listdir():
             if os.path.isfile(fn):
                 if fn not in body["Input"]:
@@ -106,7 +111,7 @@ def main():
             pass
     
     
-    print("Complete.")
+    print("Complete.", file=sys.stderr)
 
 
 
