@@ -26,7 +26,7 @@ def enqueue(script_args, bucket, project, panel="", input="samples", output="ana
     
     fastqs = defaultdict(list)
     for key in s3_list(bucket, f"projects/{project}/{input}", extension=".fastq.gz"):
-        run_sample = "/".join(key.split("/")[3:5])
+        run_sample = "/".join(key.split("/")[-3:-1])
         if run_sample not in complete and sample_regex.fullmatch(run_sample):
             fastqs[run_sample] += [f"s3://{bucket}/{key}"]
     
