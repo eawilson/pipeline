@@ -10,7 +10,7 @@ from collections import defaultdict
 from itertools import chain
 
 from pipeline import run, pipe
-from covermi import Panel, Gr, DepthAltDepths, appris, Variant
+from covermi import Panel, Gr, depth_alt_depth_function, appris, Variant
 
 BIOTYPE = defaultdict(int, (("protein_coding", 1), ("pseudogene", -1)))
 REFSEQ = defaultdict(int, (("NM", 4), ("NR", 3), ("XM", 2), ("XR", 1)))
@@ -107,7 +107,6 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel="", buffer
                     "canonical" in cons,
                     -int(cons["transcript_id"].translate(DELETE_NON_DIGIT))]
     
-    depth_alt_depths = DepthAltDepths()
     annotations = []
     with open(vepjson) as f:
         for line in f:
@@ -120,10 +119,12 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel="", buffer
             
             # create variant - assume one variant per row ?always true
             row = vep_output["input"].rstrip().split("\t")
-            depth, alt_depths = depth_alt_depths(row)
-            if len(alt_depths) > 1:
-                sys.exit(f"{vcf} contains multiple variants per line")
-            variant = Variant(row[0], int(row[1]), row[3], row[4], depth=depth, alt_depth=alt_depths[0])
+            try:
+                depth, alt_depth = depth_alt_depth(row)
+            except NameError:
+                depth_alt_depth = depth_alt_depth_function(row)
+                depth, alt_depth = depth_alt_depth(row)
+            variant = Variant(row[0], int(row[1]), row[3], row[4], depth=depth, alt_depth=alt_depth)
             qual = row[5]
             filters = row[6]
             
