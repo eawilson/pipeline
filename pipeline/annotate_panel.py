@@ -108,6 +108,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel="", buffer
                     -int(cons["transcript_id"].translate(DELETE_NON_DIGIT))]
     
     annotations = []
+    depth_alt_depth = None
     with open(vepjson) as f:
         for line in f:
             vep_output = json.loads(line)
@@ -121,7 +122,7 @@ def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel="", buffer
             row = vep_output["input"].rstrip().split("\t")
             try:
                 depth, alt_depth = depth_alt_depth(row)
-            except NameError:
+            except TypeError:
                 depth_alt_depth = depth_alt_depth_function(row)
                 depth, alt_depth = depth_alt_depth(row)
             variant = Variant(row[0], int(row[1]), row[3], row[4], depth=depth, alt_depth=alt_depth)
