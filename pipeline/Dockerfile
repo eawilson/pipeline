@@ -4,19 +4,9 @@ RUN apt-get -y update && \
     apt-get -y dist-upgrade && \
     apt-get -y install --no-install-recommends python3-minimal python3-pip python3-tk && \
     apt-get -y install --no-install-recommends build-essential zlib1g-dev libbz2-dev liblzma-dev autoconf automake && \
-    apt-get -y install --no-install-recommends openjdk-8-jdk libmysqlclient-dev wget curl && \
+    apt-get -y install --no-install-recommends openjdk-8-jdk libmysqlclient-dev wget curl git && \
     cpan App::cpanminus && \
     cpanm DBD::mysql Archive::Zip Archive::Extract Try::Tiny JSON Module::Build && \
-    mkdir /usr/local/lib/site_perl && \
-    wget https://github.com/Ensembl/ensembl-vep/archive/refs/tags/release/101.0.tar.gz && \
-    tar -xzf 101.0.tar.gz && \
-    rm 101.0.tar.gz && \
-    cd ensembl-vep-release-101.0 && \
-    perl INSTALL.pl --NO_UPDATE --AUTO a -d /usr/local/lib/site_perl && \
-    cp -r  modules/Bio/EnsEMBL /usr/local/lib/site_perl/Bio && \
-    mv vep /usr/local/bin && \
-    cd .. && \
-    rm -rf ensembl-vep-release-101.0 && \
     pip3 install --no-cache-dir setuptools && \
     pip3 install --no-cache-dir boto3 matplotlib && \
     wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2 && \
@@ -54,12 +44,37 @@ RUN apt-get -y update && \
     chmod +x vardictjava && \
     mv vardictjava /usr/local/bin && \
     mv VarDict-1.8.2 /usr/local/bin && \
-    git clone git@github.com:eawilson/pipeline.git && \
-    cd pipeline && \
-    python3 setup.py develop && \
+    mkdir /usr/local/lib/site_perl && \
+    wget https://github.com/Ensembl/ensembl-vep/archive/refs/tags/release/101.0.tar.gz && \
+    tar -xzf 101.0.tar.gz && \
+    rm 101.0.tar.gz && \
+    cd ensembl-vep-release-101.0 && \
+    perl INSTALL.pl --NO_UPDATE --AUTO a -d /usr/local/lib/site_perl && \
+    cp -r  modules/Bio/EnsEMBL /usr/local/lib/site_perl/Bio && \
+    mv vep /usr/local/bin && \
     cd .. && \
+    rm -rf ensembl-vep-release-101.0 && \
+    wget https://github.com/Ensembl/ensembl-xs/archive/refs/tags/2.3.2.tar.gz && \
+    tar -xzf 2.3.2.tar.gz && \
+    rm 2.3.2.tar.gz && \
+    cd ensembl-xs-2.3.2 && \
+    perl Makefile.PL PREFIX=/usr/local/lib/site_perl && \
+    make && \
+    make test && \
+    make install && \
+    cd .. && \
+    rm -rf ensembl-xs-2.3.2 && \
+    git clone https://github.com/eawilson/pipeline.git && \
+    cd pipeline && \
+    python3 setup.py install && \
+    cd .. && \
+    rm -rf pipeline && \
     git clone https://github.com/eawilson/covermi.git && \
     cd covermi && \
     python3 setup.py install && \
-    cd ..
+    cd .. && \
+    rm -rf covermi && \
+    apt-get remove --purge wget curl git python3-pip build-essential autoconf automake -y && \
+    apt-get autoremove -y && \
+    apt-get clean
 

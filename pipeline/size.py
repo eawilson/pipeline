@@ -51,7 +51,7 @@ def do_sizing(input_sam,
               stats_file="stats.json",
               max_fragment_size=1000,
               rnames="",
-              sample="",
+              name="",
               output=""):
 
     contigs = set(rnames.split())
@@ -77,10 +77,10 @@ def do_sizing(input_sam,
         size_read(read, stats, contigs, max_fragment_size)
 
 
-    if not sample:
-        sample = os.path.basename(input_sam).split(".")[0]
+    if not name:
+        name = os.path.basename(input_sam).split(".")[0]
     if not output:
-        output = f"{sample}.sizes.pdf"
+        output = f"{name}.sizes.pdf"
     
     median_fragment_size = {}
     with PdfPages(output) as pdf:
@@ -88,7 +88,7 @@ def do_sizing(input_sam,
             if not stats[contig]:
                 continue
             
-            title = f"{sample}" if contig == "total" else f"{sample} - {contig}"
+            title = name if contig == "total" else f"{name} - {contig}"
             
             sizes, counts = zip(*sorted(stats[contig].items()))
             median_count = sum(counts) // 2
@@ -166,7 +166,7 @@ def main():
     parser.add_argument("-m", "--max-fragment-size", help="Maximum fragment size to be considered a genuine read pair.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-r", "--rnames", help="Reference sequence names over which to calculate fragment size distributions.", default=argparse.SUPPRESS)
     parser.add_argument("-o", "--output", help="Output pdf.", dest="output", default=argparse.SUPPRESS)
-    parser.add_argument("-n", "--sample", help="Sample name.", default=argparse.SUPPRESS)
+    parser.add_argument("-n", "--name", help="Sample name.", default=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         do_sizing(**vars(args))

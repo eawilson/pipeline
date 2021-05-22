@@ -17,10 +17,10 @@ ALT = 4
 FORMAT = 8
 SAMPLE1 = 9
 
-def vcf_stats(vcf_path, stats_file="stats.json", output="vafs.pdf", sample=""):
+def vcf_stats(vcf_path, stats_file="stats.json", output="vafs.pdf", name=""):
     
-    if not sample:
-        sample = os.path.basename(stats).split(".")[0]
+    if not name:
+        name = os.path.basename(vcf_path).split(".")[0]
 
     total = 0
     ti = 0
@@ -79,7 +79,7 @@ def main():
     parser.add_argument('vcf_path', help="Input vcf file.")
     parser.add_argument("-s", "--stats", help="Statistics file.", dest="stats_file", default=argparse.SUPPRESS)
     parser.add_argument("-o", "--output", help="Output pdf.", dest="output", default=argparse.SUPPRESS)
-    parser.add_argument("-n", "--sample", help="Sample name.", default=argparse.SUPPRESS)
+    parser.add_argument("-n", "--name", help="Sample name.", default=argparse.SUPPRESS)
     
     args = parser.parse_args()
     try:

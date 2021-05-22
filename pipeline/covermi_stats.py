@@ -7,7 +7,10 @@ from covermi import Panel, Cov, Plot
 from .utils import save_stats
 
 
-def covermi_stats(bam_path, panel_path, output_path="coverage.pdf", stats_file="stats.json", sample=""):
+def covermi_stats(bam_path, panel_path, output_path="coverage.pdf", stats_file="stats.json", name=""):
+    if not name:
+        name = os.path.basename(bam_path).split(".")[0]
+
     panel = Panel(panel_path)
     if "targets" in panel:
         roi = panel.targets
@@ -16,7 +19,7 @@ def covermi_stats(bam_path, panel_path, output_path="coverage.pdf", stats_file="
     else:
         return
     cov = Cov(bam_path)
-    Plot(coverage=cov, panel=panel, depth=None, title=sample, output=output_path)
+    Plot(coverage=cov, panel=panel, depth=None, title=name, output=output_path)
     
     stats = {"coverage": {},
              "coverage_by_gene": defaultdict(dict)}
@@ -39,7 +42,7 @@ def main():
     parser.add_argument("-p", "--panel", help="Covermi panel.", dest="panel_path", required=True)
     parser.add_argument("-o", "--output", help="Output coverage plot.", dest="output_path", default=argparse.SUPPRESS)
     parser.add_argument("-s", "--stats", help="Statistics file.", dest="stats_file", default=argparse.SUPPRESS)
-    parser.add_argument("-n", "--sample", help="Sample name.", default=argparse.SUPPRESS)
+    parser.add_argument("-n", "--name", help="Sample name.", default=argparse.SUPPRESS)
     
     args = parser.parse_args()
     try:
