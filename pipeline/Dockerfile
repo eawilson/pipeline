@@ -78,3 +78,7 @@ RUN apt-get -y update && \
     apt-get autoremove -y && \
     apt-get clean
 
+COPY wrap_task.py /usr/local/bin/wrap_task
+
+ENTRYPOINT ["wrap_task"]
+

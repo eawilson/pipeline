@@ -6,7 +6,7 @@ import csv
 import sys
 import pdb
 
-from pipeline.aws import s3_list, s3_exists
+from pipeline.aws import s3_list
 import boto3
 
 
@@ -58,14 +58,6 @@ def enqueue(script_args, bucket, project, panel="", input="samples", output="ana
             for name in set(fastqs) - set(sample_args):
                 fastqs.pop(name)
     
-    reference_url = f"s3://{bucket}/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.tar.gz"
-    vep_url = f"s3://{bucket}/reference/vep_101_GRCh37_homo_sapiens_refseq.tar"
-    
-    if not s3_exists(bucket, "/".join(reference_url.split("/")[3:])):
-        sys.exit(f"{reference_url} does not exist")
-    if not s3_exists(bucket, "/".join(vep_url.split("/")[3:])):
-        sys.exit(f"{vep_url} does not exist")
-
     n = 0
     for run_sample, urls in sorted(fastqs.items()):
         try:
@@ -77,18 +69,15 @@ def enqueue(script_args, bucket, project, panel="", input="samples", output="ana
         
         if not panel:
             sys.exit("No panel provided")
-        panel_url = f"s3://{bucket}/panels/{panel}.tar.gz"
-        if not s3_exists(bucket, "/".join(panel_url.split("/")[3:])):
-            sys.exit(f"{panel_url} does not exist")
         
         data = {"Script": "cfpipeline",
                 "Output": f"s3://{bucket}/projects/{project}/{output}/{run_sample}",
                 "Input": urls,
                 "Args": script_args + sample_args.get(run_sample, []) + [
                         "--sample", run_sample.split("/")[1],
-                        "--reference", reference_url,
-                        "--panel", panel_url,
-                        "--vep", vep_url]
+                        "--reference", f"s3://{bucket}/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.tar.gz",
+                        "--panel", f"s3://{bucket}/panels/{panel}.tar.gz",
+                        "--vep", f"s3://{bucket}/reference/vep_101_GRCh37_homo_sapiens_refseq.tar"]
                 }
         
         message = json.dumps(data)
