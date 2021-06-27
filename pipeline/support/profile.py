@@ -20,14 +20,15 @@ class Cpu(object):
         cpu_total = 0
         
         table = top_table()
-        user_i = table[0].index(" USER")
-        cpu_i = table[0].index("%CPU", user_i)
-        command_i = table[0].index("COMMAND", cpu_i)
+        pid_stop = table[0].index(" USER")
+        cpu_start = table[0].index(" S ", pid_stop) + 3
+        cpu_stop = table[0].index("%CPU", cpu_start) + 4
+        command_start = table[0].index("COMMAND", cpu_stop)
         for row in table[1:]:
-            if row[:user_i].strip() not in self.pre_existing_pids:
-                name = row[command_i:]
+            if row[:pid_stop].strip() not in self.pre_existing_pids:
+                name = row[command_start:]
                 if name != "top":
-                    cpu = float(row[cpu_i+1:row.index(" ", cpu_i+1)])
+                    cpu = float(row[cpu_start:cpu_stop])
                     if cpu > 0:
                         names.add(name)
                         cpu_total += cpu
@@ -43,10 +44,10 @@ def run(cmd):
 def storage():
     table = run("df").stdout.splitlines()
     used_i = table[0].index("1K-blocks") + 10
-    avail_i = table[0].index("Available", used_i)
+    avail_i = table[0].index(" Available", used_i)
     used = 0
     for row in table[1:]:
-        used += int(row[used_i:avail_i-1])
+        used += int(row[used_i:avail_i])
     return used // 1024
 
 
