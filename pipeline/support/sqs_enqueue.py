@@ -8,7 +8,6 @@ import pdb
 
 from pipeline.aws import s3_list, s3_exists
 import boto3
-from botocore.exceptions import ClientError
 
 
 def pop(arguments, *args, nargs=2, required=False):

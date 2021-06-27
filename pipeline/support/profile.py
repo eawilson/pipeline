@@ -32,7 +32,7 @@ class Cpu(object):
                     if cpu > 0:
                         names.add(name)
                         cpu_total += cpu
-        return [cpu_total, ",".join(sorted(names))]
+        return [round(cpu_total), ",".join(sorted(names))]
 
 
 
@@ -48,12 +48,12 @@ def storage():
     used = 0
     for row in table[1:]:
         used += int(row[used_i:avail_i])
-    return used // 1024
+    return round(used / 1024)
 
 
 
 def memory():
-    return int(run("free").stdout.splitlines()[1].split()[2]) // 1024
+    return round(int(run("free").stdout.splitlines()[1].split()[2]) / 1024)
 
 
 
@@ -110,8 +110,8 @@ def main():
         base_storage = storage()
         base_memory = memory()
         base_time = int(time.time())
-        process = subprocess.Popen(args)
         retcode = None
+        process = subprocess.Popen(args)
         while retcode is None:
             out_tsv.writerow([int(time.time()) - base_time, storage() - base_storage, memory() - base_memory] + cpu.usage())
             time.sleep(5)
