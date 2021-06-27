@@ -4,6 +4,7 @@ import os
 import sys
 import subprocess
 import csv
+import time
 
 
 
@@ -24,11 +25,13 @@ class Cpu(object):
         command_i = table[0].index("COMMAND", cpu_i)
         for row in table[1:]:
             if row[:user_i].strip() not in self.pre_existing_pids:
-                cpu = float(row[cpu_i:row.index(" ", cpu_i)])
-                if cpu > 0:
-                    names.add(row[command_i:])
-                cpu_total += cpu
-        return [cpu_total, sorted(names)]
+                name = row[command_i:]
+                if name != "top":
+                    cpu = float(row[cpu_i+1:row.index(" ", cpu_i+1)])
+                    if cpu > 0:
+                        names.add(name)
+                        cpu_total += cpu
+        return [cpu_total, ",".join(sorted(names))]
 
 
 
@@ -37,24 +40,24 @@ def run(cmd):
 
 
 
-def storage(self):
+def storage():
     table = run("df").stdout.splitlines()
     used_i = table[0].index("1K-blocks") + 10
     avail_i = table[0].index("Available", used_i)
     used = 0
     for row in table[1:]:
         used += int(row[used_i:avail_i-1])
-    return used
+    return used // 1024
 
 
 
 def memory():
-    return int(run("free").stdout.splitlines()[1].split()[2])
+    return int(run("free").stdout.splitlines()[1].split()[2]) // 1024
 
 
 
 def top_table():
-    return run(f"top -bn1 -w 512 -u `whoami`").stdout.splitlines()[7:]
+    return run(f"top -bn1 -w 512 -u `whoami`").stdout.splitlines()[6:]
 
 
 
@@ -98,18 +101,18 @@ def main():
     else:
         name = "script"
     
-    with open(os.path.join(output_dir, f"{name}.profile.tsv")) as f:
-        out_tsv = csv.writer(f)
-        out_tsv.writeheader(["time(s)", "storage(kB)", "memory(kB)", "cpu(%)", "processes"])
+    with open(os.path.join(output_dir, f"{name}.profile.tsv"), "wt", newline="") as f:
+        out_tsv = csv.writer(f, delimiter="\t")
+        out_tsv.writerow(["time(s)", "storage(MB)", "memory(MB)", "cpu(%)", "processes"])
 
         cpu = Cpu()
         base_storage = storage()
         base_memory = memory()
-        base_time = time.time()
+        base_time = int(time.time())
         process = subprocess.Popen(args)
         retcode = None
         while retcode is None:
-            out_tsv.writerow([time.time() - base_time, storage() - base_storage, memory() - base_memory] + cpu.usage())
+            out_tsv.writerow([int(time.time()) - base_time, storage() - base_storage, memory() - base_memory] + cpu.usage())
             time.sleep(5)
             retcode = process.poll()
     
