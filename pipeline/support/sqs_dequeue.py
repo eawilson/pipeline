@@ -8,7 +8,7 @@ import sys
 
 import boto3
 
-from pipeline import mount_instance_storage, am_i_an_ec2_instance
+from pipeline import mount_instance_storage, am_i_an_ec2_instance, sqs_client
 
 
 
@@ -20,7 +20,7 @@ def main():
     args = sys.argv[1:]
     if len(args) == 0:
         sys.exit("sqs_dequeue: No queue specified")
-    sqs = boto3.client("sqs")
+    sqs = sqs_client()
     queue_url = sqs.get_queue_url(QueueName=args[0])["QueueUrl"]
     
     if am_i_an_ec2_instance():

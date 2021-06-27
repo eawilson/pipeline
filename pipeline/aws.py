@@ -25,8 +25,35 @@ __all__ = ["am_i_an_ec2_instance",
            "s3_list_samples", 
            "s3_open", 
            "mount_instance_storage"]
-    
 
+
+
+def aws_region():
+    BASE_URL = "http://169.254.169.254/latest"
+    metadata = {}
+    session = requests.Session()
+    try:
+        response = session.put(f"{BASE_URL}/api/token",
+                            headers={"X-aws-ec2-metadata-token-ttl-seconds": "60"},
+                            timeout=3.0)
+    except requests.exceptions.ConnectionError:
+        return
+    if response.status_code != 200:
+        return
+    session.headers.update({"X-aws-ec2-metadata-token": response.text})
+    
+    response = session.get(f"{BASE_URL}/meta-data/placement/region",
+                           timeout=2.0)
+    if response.status_code == 200:
+        return response.text
+
+
+
+def boto3_client(service):
+    region_name = aws_region()
+    if region_name:
+        return client(service, region_name=region_name)
+        
 
 def am_i_an_ec2_instance():
     return InstanceMetadataFetcher(timeout=1, num_attempts=1).retrieve_iam_role_credentials()

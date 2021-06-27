@@ -19,8 +19,6 @@ def pop(arguments, *args, nargs=2, required=False):
                     val = arguments.pop(i)
                 except IndexError:
                     sys.exit(f"sqs_enqueue: {arg} is invalid")
-            if nargs > 1 and not val.lower().startswith("s3://"):
-                sys.exit(f"sqs_enqueue: {arg} is invalid")
             return val
     
     if required:
@@ -41,6 +39,8 @@ def parse_url(url):
 
 
 def main():
+    if len(sys.argv) < 2:
+        sys.exit("sqs_enqueue: No queue specified")
     args = sys.argv[2:]
     queue_name = sys.argv[1]
     
@@ -48,8 +48,8 @@ def main():
     input_url = pop(args, "-i", "--input", required=True)
     output_url = pop(args, "-o", "--output", required=True)
     panel = pop(args, "-p", "--panel", required=True)
-    reference = pop(args, "-r", "--reference") or "s3://omdc-data/reference/GCA_000001405.14_GRCh37.p13_no_alt_analysis_set_plus_hpv_panel.tar.gz"
-    vep = pop(args, "-v", "--vep") or "s3://omdc-data/reference/vep_101_GRCh37_homo_sapiens_refseq.tar"
+    reference = pop(args, "-r", "--reference") or "s3://omdc-data/reference/GRCh37_EBV_HPV_bwa_mem2.tar.gz"
+    vep = pop(args, "-v", "--vep") or "s3://omdc-data/reference/vep_104_GRCh37_homo_sapiens_refseq.tar"
     
     if not input_url.endswith("/"):
         input_url = f"{input_url}/"
@@ -57,8 +57,10 @@ def main():
         output_url = f"{output_url}/"
     if not panel.lower().startswith("s3://"):
         panel = f"s3://omdc-data/panels/{panel}"
-    if not panel.lower().endswith(".tar.gz"):
+    if not panel.endswith(".tar.gz"):
         panel = f"{panel}.tar.gz"
+    if not reference.endswith(".tar.gz"):
+        reference = f"{reference}.tar.gz"
     
     sqs = boto3.client("sqs")
     try:
@@ -82,9 +84,9 @@ def main():
     
     n = 0
     for identifier, samples in sorted(fastqs.items()):
-        command = ["cfpipeline2"] + samples + args + ["--name", identifier.split("/")[-1], "--output", f"{output_url}{identifier}", "--reference", reference, "--vep", vep, "--panel", panel]        
+        command = ["cfpipeline2"] + sorted(samples) + args + ["--name", identifier.split("/")[-1], "--output", f"{output_url}{identifier}", "--reference", reference, "--vep", vep, "--panel", panel]        
         message = json.dumps(command)
-        print(message, file=sys.stderr)
+        print(message, "\n", file=sys.stderr)
         n += 1
         if not dry_run:
             sqs.send_message(QueueUrl=queue_url, MessageBody=message)

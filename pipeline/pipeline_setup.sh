@@ -185,28 +185,33 @@ sudo mv vardictjava /usr/local/bin
 sudo mv $VARDICT /usr/local/bin
 
 
+
+#############################################################################################################################
+# Data files                                                                                                                #
+#############################################################################################################################
+
 # https://lh3.github.io/2017/11/13/which-human-reference-genome-to-use
 wget "ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz"
 gunzip hs37d5.fa.gz
-mkdir hs37d5_EBV_HPV_bwa_mem2
-chr_rename_fasta hs37d5.fa >hs37d5_EBV_HPV_bwa_mem2/hs37d5_EBV_HPV.fna
+mkdir GRCh37_EBV_HPV_bwa_mem2
+chr_rename_fasta hs37d5.fa >GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
 rm hs37d5.fa
-cat ebv_hpv.fna >>hs37d5_EBV_HPV_bwa_mem2/hs37d5_EBV_HPV.fna
-bwa-mem2 index hs37d5_EBV_HPV_bwa_mem2/hs37d5_EBV_HPV.fna
-tar -cvzf hs37d5_EBV_HPV_bwa_mem2.tar.gz hs37d5_EBV_HPV_bwa_mem2
+cat EBV_HPV.fna >>GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
+bwa-mem2 index GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
+tar -cvzf GRCh37_EBV_HPV_bwa_mem2.tar.gz GRCh37_EBV_HPV_bwa_mem2
 
 
 wget "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
 gunzip GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
 mkdir GRCh38_EBV_HPV_bwa_mem2
-mv GCA_000001405.15_GRCh38_no_alt_analysis_set.fna GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV_bwa_mem2.fna
-cat ebv_hpv.fna >>GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV_bwa_mem2.fna
-bwa-mem2 GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV_bwa_mem2.fna
+mv GCA_000001405.15_GRCh38_no_alt_analysis_set.fna GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+grep -A5000 HPV16 EBV_HPV.fna >>GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+bwa-mem2 index GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
 tar -cvzf GRCh38_EBV_HPV_bwa_mem2.tar.gz GRCh38_EBV_HPV_bwa_mem2
 
 
-
-
+wget "http://ftp.ensembl.org/pub/release-104/variation/indexed_vep_cache/homo_sapiens_refseq_vep_104_GRCh37.tar.gz"
+wget "ftp://ftp.ensembl.org/pub/release-75/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz"
 
 
 
