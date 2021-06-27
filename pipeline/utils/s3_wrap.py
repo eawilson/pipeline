@@ -2,10 +2,9 @@
 
 import os
 import subprocess
-import pdb
-import shlex
 import sys
 import tempfile
+import shlex
 
 import boto3
 
@@ -13,10 +12,10 @@ import boto3
 
 def parse_url(url):
     if url[:5].lower() != ("s3://"):
-        raise RuntimeError(f"{url} is not a valid s3 url.")
+        sys.exit(f"{url} is not a valid s3 url.")
     parts = url.split("/")
     if len(parts) < 4:
-        raise RuntimeError(f"{url} is not a valid s3 url.")
+        sys.exit(f"{url} is not a valid s3 url.")
     bucket = parts[2]
     key = "/".join(parts[3:])
     return (bucket, key)
@@ -57,7 +56,9 @@ def download_and_untar(client, path, destination=""):
 
 def upload(client, fn, url):
     bucket, key = parse_url(url)
-    key = "{}/{}".format(key, os.path.basename(fn))
+    if not key.endswith("/"):
+        key = f"{key}/"
+    key = "{}{}".format(key, os.path.basename(fn))
     print(f"Uploading {key}.", file=sys.stderr)
     client.upload_file(fn, bucket, key)
 
@@ -76,12 +77,16 @@ def main():
         stdout is also recorded and uploaded with the rest of the
         output files. This log file is named after the --name (-n) 
         argument if present or the first positional argument if not
-        preceeded by any keyword arguments. No cleanup is performed
-        after script completion as this is assumed to be a one and
-        done container task.
+        preceeded by any keyword arguments. The only cleanup that is
+        performed after script completion is the removal of the temp
+        output directory and all contained files if they have been
+        uploaded to s3.
     """
-    args = sys.argv[1:]
+    original_args = args = sys.argv[1:]
+    if len(args) == 0:
+        sys.exit("s3_wrap: No command line arguments")
     
+    s3_destination = None
     try:
         i = args.index("-o")
     except ValueError:
@@ -89,12 +94,13 @@ def main():
             i = args.index("--output")
         except ValueError:
             i = len(args)
-    if i + 1 < len(args) and args[i + 1].lower().startswith("s3://"):
-        s3_destination = args[i + 1]
-        args[i + 1] = output_dir = tempfile.mkdtemp(dir=".")
+    if i + 1 < len(args):
+        if args[i + 1].lower().startswith("s3://"):
+            s3_destination = args[i + 1]
+            args[i + 1] = tempfile.mkdtemp(dir=".")
+        output_dir = args[i + 1]
     else:
         output_dir = "."
-        s3_destination = None
         
     try:
         i = args.index("-n")
@@ -109,17 +115,18 @@ def main():
         name = args[1].split("/")[-1].split(".")[0]
     else:
         name = "script"
-        
+    
     s3 = boto3.client("s3")
-    for i, arg in enumerate(args):
+    for i, arg in enumerate(list(args)):
         if arg.lower().startswith("s3://"):
             args[i] = download_and_untar(s3, arg)
-        
-    print(" ".join(shlex.quote(arg) for arg in args), file=sys.stderr)
+    
     with open(os.path.join(output_dir, "{name}.log.txt"), "wb") as log:
-        cp = subprocess.run(args, stderr=subprocess.STDOUT, stdout=log)
-        if cp.returncode != 0:
-            msg = f"EXITED WITH RETURN CODE {cp.returncode}\n"
+        print(" ".join(shlex.quote(arg) for arg in original_args), file=log, flush=True)
+        cp = subprocess.run(["profile"] + args, stderr=subprocess.STDOUT, stdout=log)
+        retcode = cp.returncode
+        if retcode != 0:
+            msg = f"PROCESS EXITED WITH RETURN CODE {retcode}\n"
             log.write(msg.encode())
     
     if s3_destination is not None:
@@ -127,6 +134,10 @@ def main():
             fn = os.path.join(output_dir, fn)
             if os.path.isfile(fn):
                 upload(s3, fn, s3_destination)
+                os.unlink(fn)
+        os.rmdir(output_dir)
+    
+    sys.exit(retcode)
 
 
 

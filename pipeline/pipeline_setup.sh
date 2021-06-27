@@ -21,14 +21,16 @@ sudo cpanm Archive::Extract # vep
 sudo cpanm Try::Tiny # vep
 sudo cpanm JSON
 sudo cpanm Module::Build
+sudo cpanm PerlIO::gzip
 
 sudo pip3 install boto3
 sudo pip3 install matplotlib
 
 
-wget "https://api.bintray.com/content/basespace/BaseSpaceCLI-EarlyAccess-BIN/latest/\$latest/amd64-linux/bs?bt_package=latest" -O bs
-chmod +x bs
-sudo mv /usr/local/bin/bs
+wget "https://launch.basespace.illumina.com/CLI/latest/amd64-linux/bs" -O bs
+chmod u+x bs
+sudo mv bs /usr/local/bin
+
 
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
@@ -36,41 +38,79 @@ sudo ./aws/install
 rm awscliv2.zip
 sudo rm -rf aws
 
-git clone https://github.com/lh3/bwa.git
-cd bwa
+
+wget "https://github.com/lh3/bwa/releases/download/v0.7.17/bwa-0.7.17.tar.bz2"
+tar xvfj bwa-0.7.17.tar.bz2
+rm bwa-0.7.17.tar.bz2
+cd bwa-0.7.17
 make
 sudo mv bwa /usr/local/bin
 cd ..
+rm -rf bwa-0.7.17
 
-wget https://github.com/samtools/htslib/releases/download/1.10.2/htslib-1.10.2.tar.bz2
-tar xvfj htslib-1.10.2.tar.bz2
-rm htslib-1.10.2.tar.bz2
-cd htslib-1.10.2
+
+# wget "https://github.com/bwa-mem2/bwa-mem2/releases/download/v2.2.1/Source_code_including_submodules.tar.gz"
+# tar xvfz Source_code_including_submodules.tar.gz
+# rm Source_code_including_submodules.tar.gz
+# cd bwa-mem2-2.2.1
+# make CXX=g++ arch=native
+# sudo mv bwa-mem2 /usr/local/bin
+# cd ..
+# rm -rf bwa-mem2-2.2.1wget "https://github.com/lh3/bwa/releases/download/v0.7.17/bwa-0.7.17.tar.bz2"
+wget https://github.com/bwa-mem2/bwa-mem2/releases/download/v2.2.1/bwa-mem2-2.2.1_x64-linux.tar.bz2
+tar xvfj bwa-mem2-2.2.1_x64-linux.tar.bz2
+rm bwa-mem2-2.2.1_x64-linux.tar.bz2
+cd bwa-mem2-2.2.1_x64-linux
+sudo chmod u+x bwa*
+sudo mv bwa* /usr/local/bin
+cd ..
+rm -rf bwa-mem2-2.2.1_x64-linux
+
+
+tar xvfj bwa-0.7.17.tar.bz2
+rm bwa-0.7.17.tar.bz2
+cd bwa-0.7.17
+make
+sudo mv bwa /usr/local/bin
+cd ..
+rm -rf bwa-0.7.17
+
+
+wget https://github.com/samtools/htslib/releases/download/1.12/htslib-1.12.tar.bz2
+tar xvfj htslib-1.12.tar.bz2
+rm htslib-1.12.tar.bz2
+cd htslib-1.12
 autoreconf
 ./configue
 make
 sudo make install
 cd ..
+rm -rf htslib-1.12
 
-wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2
-tar xvfj samtools-1.10.tar.bz2
-rm samtools-1.10.tar.bz2
-cd samtools-1.10
+
+wget https://github.com/samtools/samtools/releases/download/1.12/samtools-1.12.tar.bz2
+tar xvfj samtools-1.12.tar.bz2
+rm samtools-1.12.tar.bz2
+cd samtools-1.12
 autoreconf
 ./configue
 make
 sudo make install
 cd ..
+rm -rf samtools-1.12
 
-wget https://github.com/samtools/bcftools/releases/download/1.10.2/bcftools-1.10.2.tar.bz2
-tar xvfj bcftools-1.10.2.tar.bz2
-rm bcftools-1.10.2.tar.bz2
-cd bcftools-1.10.2
+
+wget https://github.com/samtools/bcftools/releases/download/1.12/bcftools-1.12.tar.bz2
+tar xvfj bcftools-1.12.tar.bz2
+rm bcftools-1.12.tar.bz2
+cd bcftools-1.12
 autoreconf
 ./configue
 make
 sudo make install
 cd ..
+rm -rf bcftools-1.12
+
 
 # Not the latest version, latest version fails ?intermediate version
 wget -O VarScan.v2.3.9.jar https://sourceforge.net/projects/varscan/files/VarScan.v2.3.9.jar/download
@@ -90,31 +130,46 @@ sudo perl INSTALL.pl --AUTO a -d /usr/local/lib/site_perl
 sudo cp -r  modules/Bio/EnsEMBL /usr/local/lib/site_perl/Bio
 sudo mv vep /usr/local/bin
 cd ..
+sudo rm -rf ensembl-vep
 
 
+wget https://github.com/Ensembl/ensembl-xs/archive/refs/tags/2.3.2.tar.gz
+tar xvfz 2.3.2.tar.gz
+cd ensembl-xs-2.3.2
+perl Makefile.PL
+make
+make test
+sudo make install
+cd ..
+rm -rf ensembl-xs-2.3.2
 
-wget -O picard-2.23.4.jar https://github.com/broadinstitute/picard/releases/download/2.23.4/picard.jar
-sudo mv picard-2.23.4.jar /usr/local/bin
+
+wget -O picard-2.25.6.jar https://github.com/broadinstitute/picard/releases/download/2.25.6/picard.jar
+sudo mv picard-2.25.6.jar /usr/local/bin
 echo '#!/usr/bin/env bash
-java -jar /usr/local/bin/picard-2.23.4.jar "$@"' >picard
+java -jar /usr/local/bin/picard-2.25.6.jar "$@"' >picard
 chmod +x picard
 sudo mv picard /usr/local/bin
 
-git clone git@github.com:eawilson/pipeline.git
+
+git clone https://github.com/eawilson/pipeline.git
 cd pipeline
 sudo python3 setup.py develop
 cd ..
 
-git clone git@github.com:eawilson/dude.git
-cd dude
+
+git clone  https://github.com/eawilson/elduderino.git
+cd elduderino
 make
 sudo make install
 cd ..
 
-git clone https://github.com/eawilson/covermi.git
-cd covermi
-sudo python3 setup.py install
+
+git clone https://github.com/eawilson/CoverMi.git
+cd CoverMi
+sudo python3 setup.py develop
 cd ..
+
 
 VARDICT=VarDict-1.8.2
 wget "https://github.com/AstraZeneca-NGS/VarDictJava/releases/download/v1.8.2/$VARDICT.tar"
@@ -128,3 +183,50 @@ java -Xms768m -Xmx8g -classpath "$CLASSPATH" com.astrazeneca.vardict.Main -c 1 -
 chmod +x vardictjava
 sudo mv vardictjava /usr/local/bin
 sudo mv $VARDICT /usr/local/bin
+
+
+# https://lh3.github.io/2017/11/13/which-human-reference-genome-to-use
+wget "ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz"
+gunzip hs37d5.fa.gz
+mkdir hs37d5_EBV_HPV_bwa_mem2
+chr_rename_fasta hs37d5.fa >hs37d5_EBV_HPV_bwa_mem2/hs37d5_EBV_HPV.fna
+rm hs37d5.fa
+cat ebv_hpv.fna >>hs37d5_EBV_HPV_bwa_mem2/hs37d5_EBV_HPV.fna
+bwa-mem2 index hs37d5_EBV_HPV_bwa_mem2/hs37d5_EBV_HPV.fna
+tar -cvzf hs37d5_EBV_HPV_bwa_mem2.tar.gz hs37d5_EBV_HPV_bwa_mem2
+
+
+wget "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
+gunzip GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
+mkdir GRCh38_EBV_HPV_bwa_mem2
+chr_rename_fasta GCA_000001405.15_GRCh38_no_alt_analysis_set.fna >GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV_bwa_mem2.fna
+rm GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+cat ebv_hpv.fna >>GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV_bwa_mem2.fna
+bwa-mem2 GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV_bwa_mem2.fna
+tar -cvzf GRCh38_EBV_HPV_bwa_mem2.tar.gz GRCh38_EBV_HPV_bwa_mem2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

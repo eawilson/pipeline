@@ -265,7 +265,14 @@ def elduderino(input_sam,
         output_queue.put(None)
         for worker in workers:
             worker.join()
-
+    
+    sizes = stats["family_sizes"]
+    total_reads = sum(x*y for x, y in sizes.items())
+    total_families = sum(sizes.values())
+    stats["mean_family_size"] = total_reads / total_families
+    stats["duplicate_rate"] = sum((x-1)*y for x, y in sizes.items()) / total_reads
+    stats["triplicate_plus_rate"] = sum(max((x-2),0)*y for x, y in sizes.items()) / total_reads
+    
     save_stats(stats_file, stats)
 
 

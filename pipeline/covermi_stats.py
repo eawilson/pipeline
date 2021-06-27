@@ -1,6 +1,7 @@
 import pdb
 import argparse
 import sys
+import os
 from collections import Counter, defaultdict
 from covermi import Panel, Cov, Plot
 
