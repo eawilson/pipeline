@@ -199,8 +199,7 @@ tar -cvzf hs37d5_EBV_HPV_bwa_mem2.tar.gz hs37d5_EBV_HPV_bwa_mem2
 wget "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
 gunzip GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
 mkdir GRCh38_EBV_HPV_bwa_mem2
-chr_rename_fasta GCA_000001405.15_GRCh38_no_alt_analysis_set.fna >GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV_bwa_mem2.fna
-rm GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+mv GCA_000001405.15_GRCh38_no_alt_analysis_set.fna GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV_bwa_mem2.fna
 cat ebv_hpv.fna >>GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV_bwa_mem2.fna
 bwa-mem2 GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV_bwa_mem2.fna
 tar -cvzf GRCh38_EBV_HPV_bwa_mem2.tar.gz GRCh38_EBV_HPV_bwa_mem2
