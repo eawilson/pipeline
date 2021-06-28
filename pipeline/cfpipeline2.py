@@ -52,9 +52,9 @@ def cfpipeline2():
     args.reference = (glob.glob(f"{args.reference}/*.fna") + glob.glob(f"{args.reference}/*.fa") + glob.glob(f"{args.reference}/*.fasta") + [args.reference])[0]
     ref_dir = os.path.dirname(args.reference)
     if glob.glob(f"{ref_dir}/*.sa"):
-        bwa = ["bwa", "mem"]
+        bwa = "bwa"
     elif glob.glob(f"{ref_dir}/*.0123"):
-        bwa = ["bwa-mem2"]
+        bwa = "bwa-mem2"
     else:
         sys.exit("Invalid bwa indexes")
     targets_bedfile = (glob.glob(f"{args.panel}/*.bed") + [None])[0] if args.panel else ""
@@ -74,12 +74,11 @@ def cfpipeline2():
     
     base_sam = f"{args.name}.base.sam"
     with open(base_sam, "wb") as f_out:
-        pipe([bwa + "-t", threads, 
-                    "-p", # interleaved paired end fastq
-                    "-C", # Append fastq comment to sam
-                    "-Y", # Soft clip non-primary reads
-                    args.reference, 
-                    interleaved_fastq], stdout=f_out)
+        pipe([bwa, "mem", "-t", threads, 
+                          "-p", # interleaved paired end fastq
+                          "-C", # Append fastq comment to sam
+                          args.reference, 
+                          interleaved_fastq], stdout=f_out)
     os.unlink(interleaved_fastq)
     
 
@@ -101,12 +100,12 @@ def cfpipeline2():
     
     deduplicated_sam = f"{args.name}.deduplicated.sam"
     with open(deduplicated_sam, "wb") as f_out:
-        pipe(bwa + ["-t", threads, 
-                    "-p", # interleaved paired end fastq
-                    "-C", # Append fastq comment to sam
-                    "-Y", # Soft clip non-primary reads
-                    args.reference, 
-                    deduplicated_fastq], stdout=f_out)
+        pipe([bwa, "mem", "-t", threads, 
+                          "-p", # interleaved paired end fastq
+                          "-C", # Append fastq comment to sam
+                          "-Y", # Soft clip non-primary reads
+                          args.reference, 
+                          deduplicated_fastq], stdout=f_out)
     os.unlink(deduplicated_fastq)
 
 

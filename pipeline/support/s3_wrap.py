@@ -22,11 +22,11 @@ def parse_url(url):
 
 
 
-def download_and_untar(client, path, destination=""):
+def download_and_untar(client, path, destination="."):
     if path[:5].lower() == ("s3://"):
         bucket, key = parse_url(path)
         downloadname = key.split("/")[-1]
-        if destination:
+        if destination != ".":
             os.makedirs(destination, exist_ok=True)
             downloadname = os.path.join(destination, downloadname)
         if downloadname.endswith(".tar.gz"):
@@ -121,8 +121,10 @@ def main():
         if arg.lower().startswith("s3://"):
             args[i] = download_and_untar(s3, arg)
     
-    with open(os.path.join(output_dir, "{name}.log.txt"), "wb") as log:
-        print(" ".join(shlex.quote(arg) for arg in original_args), file=log, flush=True)
+    with open(os.path.join(output_dir, f"{name}.log.txt"), "wb") as log:
+        log.write(" ".join(shlex.quote(arg) for arg in original_args).encode())
+        log.write("\n".encode())
+        log.flush()
         cp = subprocess.run(["profile"] + args, stderr=subprocess.STDOUT, stdout=log)
         retcode = cp.returncode
         if retcode != 0:

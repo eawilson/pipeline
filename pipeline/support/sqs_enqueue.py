@@ -39,10 +39,11 @@ def parse_url(url):
 
 
 def main():
-    if len(sys.argv) < 2:
-        sys.exit("sqs_enqueue: No queue specified")
-    args = sys.argv[2:]
+    if len(sys.argv) < 3:
+        sys.exit("sqs_enqueue: Too few arguments")
+    args = sys.argv[3:]
     queue_name = sys.argv[1]
+    command = sys.argv[2]    
     
     dry_run =  pop(args, "-d", "--dry-run", nargs=1)
     input_url = pop(args, "-i", "--input", required=True)
@@ -84,8 +85,8 @@ def main():
     
     n = 0
     for identifier, samples in sorted(fastqs.items()):
-        command = ["cfpipeline2"] + sorted(samples) + args + ["--name", identifier.split("/")[-1], "--output", f"{output_url}{identifier}", "--reference", reference, "--vep", vep, "--panel", panel]        
-        message = json.dumps(command)
+        cmd = [command] + sorted(samples) + args + ["--name", identifier.split("/")[-1], "--output", f"{output_url}{identifier}", "--reference", reference, "--vep", vep, "--panel", panel]        
+        message = json.dumps(cmd)
         print(message, "\n", file=sys.stderr)
         n += 1
         if not dry_run:

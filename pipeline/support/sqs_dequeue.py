@@ -35,7 +35,7 @@ def main():
             break
         
         message = response["Messages"][0]
-        command = json.loads(message)
+        command = json.loads(message["Body"])
         if not isinstance(command, list):
             print('sqs_dequeue: Malformed message "{command}"', file=sys.stderr)
             continue
