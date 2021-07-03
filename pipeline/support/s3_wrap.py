@@ -22,34 +22,29 @@ def parse_url(url):
 
 
 
-def download_and_untar(client, path, destination="."):
+def download_and_unpack(client, path, destination="."):
     if path[:5].lower() == ("s3://"):
-        bucket, key = parse_url(path)
-        downloadname = key.split("/")[-1]
-        if destination != ".":
-            os.makedirs(destination, exist_ok=True)
-            downloadname = os.path.join(destination, downloadname)
-        if downloadname.endswith(".tar.gz"):
-            path = downloadname[:-7]
-        elif downloadname.endswith(".tar"):
-            path = downloadname[:-4]
+        fn = path.split("/")[-1]
+        if fn.endswith(".tar.gz"):
+            fn = fn[:-7]
+            cmd = f"aws s3 cp '{path}' - | tar xzf -"
+        elif fn.endswith(".tgz"):
+            fn = fn[:-4]
+            cmd = f"aws s3 cp '{path}' - | tar xzf -"
+        elif fn.endswith(".tar"):
+            fn = fn[:-4]
+            cmd = f"aws s3 cp '{path}' - | tar xf -"
+        #elif fn.endswith(".gz"):
+            #fn = fn[:-3]
+            #cmd = f"aws s3 cp '{path}' - | gzip -dc >'{fn}'"
         else:
-            path = downloadname
-
+            cmd = f"aws s3 cp '{path}' '{fn}'"
+        
+        path = fn if destination == "." else os.path.join(destination, fn)
         if not os.path.exists(path):
-            print(f"Downloading {key}.", file=sys.stderr)
-            client.download_file(bucket, key, downloadname)
-            if downloadname.endswith(".tar.gz"):
-                tar_args = "-xzf"
-            elif downloadname.endswith(".tar"):
-                tar_args = "-xf"
-            else:
-                tar_args = ""
-            if tar_args:
-                print(f"Unpacking {key}.", file=sys.stderr)
-                fn = os.path.basename(downloadname)
-                subprocess.run(["tar", tar_args, fn], cwd=destination)
-                os.unlink(downloadname)
+            print(f"Downloading {fn}", file=sys.stderr)
+            subprocess.run(cmd, shell=True, cwd=destination)
+        
     return path
 
 
@@ -99,6 +94,8 @@ def main():
             s3_destination = args[i + 1]
             args[i + 1] = tempfile.mkdtemp(dir=".")
         output_dir = args[i + 1]
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
     else:
         output_dir = "."
         
@@ -119,7 +116,7 @@ def main():
     s3 = boto3.client("s3")
     for i, arg in enumerate(list(args)):
         if arg.lower().startswith("s3://"):
-            args[i] = download_and_untar(s3, arg)
+            args[i] = download_and_unpack(s3, arg)
     
     with open(os.path.join(output_dir, f"{name}.log.txt"), "wb") as log:
         log.write(" ".join(shlex.quote(arg) for arg in original_args).encode())

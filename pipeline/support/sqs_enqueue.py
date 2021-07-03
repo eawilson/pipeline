@@ -1,10 +1,8 @@
 from collections import defaultdict
 import json
-import argparse
-import re
-import csv
 import sys
 import pdb
+import shlex
 
 from pipeline.aws import s3_list, s3_exists
 import boto3
@@ -45,7 +43,8 @@ def main():
     queue_name = sys.argv[1]
     command = sys.argv[2]    
     
-    dry_run =  pop(args, "-d", "--dry-run", nargs=1)
+    dry_run =  pop(args, "--dry-run", nargs=1)
+    single_sample =  pop(args, "--single-sample", nargs=1)
     input_url = pop(args, "-i", "--input", required=True)
     output_url = pop(args, "-o", "--output", required=True)
     panel = pop(args, "-p", "--panel", required=True)
@@ -86,11 +85,13 @@ def main():
     n = 0
     for identifier, samples in sorted(fastqs.items()):
         cmd = [command] + sorted(samples) + args + ["--name", identifier.split("/")[-1], "--output", f"{output_url}{identifier}", "--reference", reference, "--vep", vep, "--panel", panel]        
+        print(" ".join(shlex.quote(token) for token in cmd), file=sys.stderr)
         message = json.dumps(cmd)
-        print(message, "\n", file=sys.stderr)
         n += 1
         if not dry_run:
             sqs.send_message(QueueUrl=queue_url, MessageBody=message)
+        if single_sample:
+            break
 
     print("sqs_enqueue: {} messages {}.".format(n, "processed" if dry_run else "queued"), file=sys.stderr)
 
