@@ -29,7 +29,7 @@ def cfpipeline2():
     parser.add_argument("-i", "--interleaved", help="Each input fastq contains alternating reads 1 and 2.", action="store_const", const=True, default=False)
     parser.add_argument("-o", "--output", help="Path to write output files to.", default=".")
     parser.add_argument("-t", "--threads", help="Number of threads to use, defaults to all available threads if not specified.", type=int, default=None)
-    parser.add_argument("-s", "--sam-only", help="Quit after producing initial undeduplicated sam.", const=True, default=False)
+    parser.add_argument("-s", "--sam-only", help="Quit after producing initial undeduplicated sam.", action="store_const", const=True, default=False)
     args = parser.parse_args()
     
     threads = args.threads or run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
