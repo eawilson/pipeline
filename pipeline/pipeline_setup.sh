@@ -171,6 +171,13 @@ sudo python3 setup.py develop
 cd ..
 
 
+git clone https://github.com/eawilson/downsample_sam.git
+cd downsample_sam
+make
+sudo make install
+cd ..
+
+
 VARDICT=VarDict-1.8.2
 wget "https://github.com/AstraZeneca-NGS/VarDictJava/releases/download/v1.8.2/$VARDICT.tar"
 tar -xf $VARDICT.tar

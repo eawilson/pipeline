@@ -48,7 +48,7 @@ def main():
     input_url = pop(args, "-i", "--input", required=True)
     output_url = pop(args, "-o", "--output", required=True)
     panel = pop(args, "-p", "--panel", required=True)
-    reference = pop(args, "-r", "--reference") or "s3://omdc-data/reference/GRCh37_EBV_HPV_bwa_mem2.tar.gz"
+    reference = pop(args, "-r", "--reference") or "s3://omdc-data/reference/GRCh37_EBV_HPV_bwa_mem.tar.gz"
     vep = pop(args, "-v", "--vep") or "s3://omdc-data/reference/vep_104_GRCh37_homo_sapiens_refseq.tar"
     
     if not input_url.endswith("/"):
@@ -84,7 +84,7 @@ def main():
     
     n = 0
     for identifier, samples in sorted(fastqs.items()):
-        cmd = [command] + sorted(samples) + args + ["--name", identifier.split("/")[-1], "--output", f"{output_url}{identifier}", "--reference", reference, "--vep", vep, "--panel", panel]        
+        cmd = [command] + sorted(samples) + args + ["--name", identifier.split("/")[-1], "--reference", reference, "--vep", vep, "--panel", panel, "--output", f"{output_url}{identifier}"]        
         print(" ".join(shlex.quote(token) for token in cmd), file=sys.stderr)
         message = json.dumps(cmd)
         n += 1
