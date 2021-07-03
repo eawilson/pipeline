@@ -35,7 +35,7 @@ def cfpipeline2():
     threads = args.threads or run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
     
     if not args.name:
-        args.name = guess_sample_name(args.input_fastqs)
+        args.name = guess_sample_name(args.input_fastqs) 
         if not args.name:
             sys.exit("Ambiguous sample name")
     
