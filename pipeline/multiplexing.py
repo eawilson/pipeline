@@ -79,8 +79,7 @@ def multiplexing():
              
             
             sorted_sam = f"{args.name}.sorted.downsampled.sam"
-            pipe(["samtools", "sort", "-n",
-                                      "-o", sorted_sam,
+            pipe(["samtools", "sort", "-o", sorted_sam,
                                       "-@", threads,
                                       downsampled_sam])
             os.unlink(downsampled_sam)
