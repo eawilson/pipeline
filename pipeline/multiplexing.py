@@ -114,7 +114,6 @@ def multiplexing():
             
             
             pipe(["covermi_stats", "--panel", args.panel,
-                                "--output", f"{args.name}.covermi.pdf",
                                 "--stats", stats,
                                 bam])
             os.unlink(bam)
