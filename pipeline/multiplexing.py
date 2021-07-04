@@ -78,7 +78,7 @@ def multiplexing():
                                 namesorted_sam])
              
             
-            sorted_sam = f"{args.name}.sorted.sam"
+            sorted_sam = f"{args.name}.sorted.downsampled.sam"
             pipe(["samtools", "sort", "-n",
                                       "-o", sorted_sam,
                                       "-@", threads,
@@ -120,7 +120,7 @@ def multiplexing():
             
             
             with open(stats, "rt") as f:
-                data = json.load(s)
+                data = json.load(f)
             os.unlink(stats)
             writer.writerow([args.name,
                              selected_reads,
