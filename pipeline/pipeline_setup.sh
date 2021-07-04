@@ -217,6 +217,9 @@ bwa-mem2 index GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
 tar -cvzf GRCh38_EBV_HPV_bwa_mem2.tar.gz GRCh38_EBV_HPV_bwa_mem2
 
 
+mkdir vep
+perl ~/ensembl-vep/INSTALL.pl --AUTO cf --ASSEMBLY GRCh37 --SPECIES homo_sapiens_refseq --CACHEDIR ~/ephemoral/vep
+ephemoral/vep/homo_sapiens_refseq/104_GRCh37/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz
 wget "http://ftp.ensembl.org/pub/release-104/variation/indexed_vep_cache/homo_sapiens_refseq_vep_104_GRCh37.tar.gz"
 wget "ftp://ftp.ensembl.org/pub/release-75/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz"
 

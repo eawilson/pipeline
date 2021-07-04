@@ -66,6 +66,7 @@ def multiplexing():
         writer.writerow(["sample", "reads", "mean_depth", "mean_family_size", "singleton_rate", "triplicate_plus_rate"])
         
         selected_reads = 0
+        total_reads = args.interval
         while True:
             selected_reads += args.interval
             if selected_reads > total_reads:
@@ -73,10 +74,11 @@ def multiplexing():
             
             
             downsampled_sam = f"{args.name}.downsampled.sam"
-            pipe(["downsample_sam", "--output", downsampled_sam,
-                                "--number", selected_reads,
-                                namesorted_sam])
-             
+            cp = pipe(["downsample_sam", "--output", downsampled_sam,
+                                         "--number", selected_reads,
+                                         namesorted_sam], stderr=subprocess.PIPE)
+            total_reads = int(cp.stderr.decode())
+            
             
             sorted_sam = f"{args.name}.sorted.downsampled.sam"
             pipe(["samtools", "sort", "-o", sorted_sam,
