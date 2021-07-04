@@ -8,7 +8,7 @@ from covermi import Panel, Cov, Plot
 from .utils import save_stats
 
 
-def covermi_stats(bam_path, panel_path, output_path="coverage.pdf", stats_file="stats.json", name=""):
+def covermi_stats(bam_path, panel_path, output_path=None, stats_file="stats.json", name=""):
     if not name:
         name = os.path.basename(bam_path).split(".")[0]
 
@@ -20,7 +20,8 @@ def covermi_stats(bam_path, panel_path, output_path="coverage.pdf", stats_file="
     else:
         return
     cov = Cov(bam_path)
-    Plot(coverage=cov, panel=panel, depth=None, title=name, output=output_path)
+    if output_path:
+        Plot(coverage=cov, panel=panel, depth=None, title=name, output=output_path)
     
     stats = {"coverage": {},
              "coverage_by_gene": defaultdict(dict)}
