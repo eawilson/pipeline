@@ -6,10 +6,10 @@ import sys
 import argparse
 import glob
 import json
+import csv
 
 
 from pipeline import run, Pipe
-import subprocess
 
 
 def multiplexing():
@@ -50,10 +50,9 @@ def multiplexing():
     pipe = Pipe()
     
     
-    cp = subprocess.run(f"wc -l '{args.input_sam}'", shell=True, stdout=subprocess.PIPE)
-    total_reads = int(cp.stdout.encode())
+    total_reads = int(run(["wc", "-l", args.input_sam]).stdout.split()[0])
     
-    output_file = f"{name}.multiplexing.tsv"
+    output_file = f"{args.name}.multiplexing.tsv"
     with open(output_file, "wt") as f_out:
         writer = csv.writer(f_out)
         writer.writerow(["sample", "reads", "mean_depth", "mean_family_size", "singleton_rate", "triplicate_plus_rate"])
@@ -65,10 +64,18 @@ def multiplexing():
                 break
             
             
+            namesorted_sam = f"{args.name}.namesorted.sam"
+            pipe(["samtools", "sort", "-n",
+                                      "-o", namesorted_sam,
+                                      "-@", threads,
+                                      args.input_sam])
+            
+            
             downsampled_sam = f"{args.name}.downsampled.sam"
             pipe(["downsample_sam", "--output", downsampled_sam,
                                 "--number", selected_reads,
-                                args.input_sam])
+                                namesorted_sam])
+            os.unlink(namesorted_sam)
             
             
             deduplicated_fastq = f"{args.name}.deduplicated.fastq"
