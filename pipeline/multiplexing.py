@@ -21,6 +21,7 @@ def multiplexing():
     parser.add_argument("-n", "--name", help="Sample name used to name output files. Will be guessed from input sam if not provide.", default="")
     parser.add_argument("-u", "--umi", help="UMI type (prism, thruplex_hv or thruplex) or empty strng if no umis.", default="")
     parser.add_argument("-m", "--min-family-size", help="Minimum family size. Families smaller than this will be filtered", type=int, default=1)
+    parser.add_argument("-l", "--interval", help="Step size to increment downsampling by.", type=int, required=True)
     parser.add_argument("-r", "--reference", help="Path to reference genome or containing directory.", required=True)
     parser.add_argument("-p", "--panel", help="Path to covermi panel which must contain targets bedfile.", required=True)
     parser.add_argument("-o", "--output", help="Path to write output files to.", default=".")
@@ -55,11 +56,11 @@ def multiplexing():
     output_file = f"{name}.multiplexing.tsv"
     with open(output_file, "wt") as f_out:
         writer = csv.writer(f_out)
-        writer.writerow(["sample", "reads", "coverage", "mean_family_size", "singleton_rate", "triplicate_plus_rate"])
+        writer.writerow(["sample", "reads", "mean_depth", "mean_family_size", "singleton_rate", "triplicate_plus_rate"])
         
         selected_reads = 0
         while True:
-            selected_reads += 1000000
+            selected_reads += args.interval
             if selected_reads > total_reads:
                 break
             
