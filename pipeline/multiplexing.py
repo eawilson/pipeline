@@ -51,8 +51,16 @@ def multiplexing():
     
     
     total_reads = int(run(["wc", "-l", args.input_sam]).stdout.split()[0])
-    
     output_file = f"{args.name}.multiplexing.tsv"
+    
+    
+    namesorted_sam = f"{args.name}.namesorted.sam"
+    pipe(["samtools", "sort", "-n",
+                                "-o", namesorted_sam,
+                                "-@", threads,
+                                args.input_sam])
+    
+    
     with open(output_file, "wt") as f_out:
         writer = csv.writer(f_out)
         writer.writerow(["sample", "reads", "mean_depth", "mean_family_size", "singleton_rate", "triplicate_plus_rate"])
@@ -64,27 +72,27 @@ def multiplexing():
                 break
             
             
-            namesorted_sam = f"{args.name}.namesorted.sam"
-            pipe(["samtools", "sort", "-n",
-                                      "-o", namesorted_sam,
-                                      "-@", threads,
-                                      args.input_sam])
-            
-            
             downsampled_sam = f"{args.name}.downsampled.sam"
             pipe(["downsample_sam", "--output", downsampled_sam,
                                 "--number", selected_reads,
                                 namesorted_sam])
-            os.unlink(namesorted_sam)
+             
             
+            sorted_sam = f"{args.name}.sorted.sam"
+            pipe(["samtools", "sort", "-n",
+                                      "-o", sorted_sam,
+                                      "-@", threads,
+                                      downsampled_sam])
+            os.unlink(downsampled_sam)
+           
             
             deduplicated_fastq = f"{args.name}.deduplicated.fastq"
             pipe(["elduderino", "--output", deduplicated_fastq,
                                 "--stats", stats,
                                 "--min-family-size", args.min_family_size,
                                 "--umi", args.umi,
-                                downsampled_sam])
-            os.unlink(downsampled_sam)
+                                sorted_sam])
+            os.unlink(sorted_sam)
             
             
             deduplicated_sam = f"{args.name}.deduplicated.sam"
@@ -102,7 +110,6 @@ def multiplexing():
             pipe(["samtools", "sort", "-o", bam,
                                     "-@", threads, 
                                     deduplicated_sam])
-            pipe(["samtools", "index", bam])
             os.unlink(deduplicated_sam)
             
             
@@ -125,6 +132,7 @@ def multiplexing():
             f_out.flush()
             
             
+    os.unlink(namesorted_sam)
     print(pipe.durations, file=sys.stderr, flush=True)
 
 
