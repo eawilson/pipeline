@@ -58,7 +58,7 @@ def multiplexing():
         writer.writerow(["sample", "reads", "coverage", "mean_family_size", "singleton_rate", "triplicate_plus_rate"])
         
         selected_reads = 0
-        while True
+        while True:
             selected_reads += 1000000
             if selected_reads > total_reads:
                 break
@@ -113,7 +113,7 @@ def multiplexing():
                              data["coverage"]["mean_depth"],
                              data["mean_family_size"],
                              data["singleton_rate"],
-                             data["triplicate_plus_rate"])
+                             data["triplicate_plus_rate"]])
             f_out.flush()
             
             
@@ -123,7 +123,7 @@ def multiplexing():
 
 def main():
     try:
-        multiplexing]()
+        multiplexing()
     except OSError as e:
         # File input/output error. This is not an unexpected error therfore
         # print and exit rather than displaying a full stack trace.
