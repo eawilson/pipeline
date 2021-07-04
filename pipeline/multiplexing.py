@@ -96,13 +96,13 @@ def multiplexing():
             
             
             deduplicated_sam = f"{args.name}.deduplicated.sam"
-            with open(deduplicated_sam, "wb") as f_out:
+            with open(deduplicated_sam, "wb") as f:
                 pipe([bwa, "mem", "-t", threads, 
                                 "-p", # interleaved paired end fastq
                                 "-C", # Append fastq comment to sam
                                 "-Y", # Soft clip non-primary reads
                                 args.reference, 
-                                deduplicated_fastq], stdout=f_out)
+                                deduplicated_fastq], stdout=f)
             os.unlink(deduplicated_fastq)
 
 
