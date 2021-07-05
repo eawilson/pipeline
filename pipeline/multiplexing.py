@@ -48,9 +48,6 @@ def multiplexing():
     targets_bedfile = (glob.glob(f"{args.panel}/*.bed") + [None])[0]
     stats = f"{args.name}.stats.json"
     pipe = Pipe()
-    
-    
-    total_reads = int(run(["wc", "-l", args.input_sam]).stdout.split()[0])
     output_file = f"{args.name}.multiplexing.tsv"
     
     
@@ -63,21 +60,19 @@ def multiplexing():
     
     with open(output_file, "wt") as f_out:
         writer = csv.writer(f_out)
-        writer.writerow(["sample", "reads", "mean_depth", "mean_family_size", "singleton_rate", "triplicate_plus_rate"])
+        writer.writerow(["sample", "reads", "mean_depth", "mean_family_size", "singleton_rate", "triplicate_plus_rate", "quadruplicate_plus_rate"])
         
-        selected_reads = 0
-        total_reads = args.interval
-        while True:
-            selected_reads += args.interval
-            if selected_reads > total_reads:
-                break
+        requested_reads = 0
+        returned_reads = 0
+        while returned_reads == requested_reads:
+            requested_reads += args.interval
             
             
             downsampled_sam = f"{args.name}.downsampled.sam"
             cp = pipe(["downsample_sam", "--output", downsampled_sam,
-                                         "--number", selected_reads,
+                                         "--number", requested_reads,
                                          namesorted_sam], stderr=subprocess.PIPE)
-            total_reads = int(cp.stderr.decode())
+            returned_reads = int(cp.stderr.decode())
             
             
             sorted_sam = f"{args.name}.sorted.downsampled.sam"
@@ -124,11 +119,12 @@ def multiplexing():
                 data = json.load(f)
             os.unlink(stats)
             writer.writerow([args.name,
-                             selected_reads,
+                             returned_reads,
                              data["coverage"]["mean_depth"],
                              data["mean_family_size"],
                              data["singleton_rate"],
-                             data["triplicate_plus_rate"]])
+                             data["triplicate_plus_rate"],
+                             data["quadruplicate_plus_rate"]])
             f_out.flush()
             
             
