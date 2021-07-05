@@ -25,13 +25,14 @@ def chrom2int(chrom):
 
 
 
-def annotate_panel(vcf, vep, threads=None, output="output.tsv", panel="", buffer_size=None):
+def annotate_panel(vcf, vep, reference, threads=None, output="output.tsv", panel="", buffer_size=None):
     if threads is None:
         threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
 
     vepjson = "{}.vep.json".format(output[:-4])
     vep_options = ["--no_stats",
                    "--dir", vep,
+                   "--fasta", reference,
                    "--format", "vcf",
                    "--json",
                    "--offline",
@@ -233,6 +234,7 @@ def main():
     parser.add_argument('vcf', help="Input vcf file.")
     parser.add_argument("-v", "--vep", help="Directory containing vep data.", required=True)
     parser.add_argument("-o", "--output", help="Output annotated tsv.", default=argparse.SUPPRESS)
+    parser.add_argument("-r", "--reference", help="Fasta that the sample was aligned against.", required=True)
     parser.add_argument("-p", "--panel", help="Directory containing panel data.", default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-b", "--buffer-size", help="Number of variants to read into memory simultaneously. " + \

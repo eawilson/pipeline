@@ -17,11 +17,11 @@ sudo apt-get -y install unzip
 sudo cpan App::cpanminus # vep
 sudo cpanm Archive::Zip # vep
 sudo cpanm DBD::mysql # vep
-sudo cpanm Archive::Extract # vep
+sudo cpanm JSON # vep
+sudo cpanm Set::IntervalTree # vep
+sudo cpanm PerlIO::gzip # vep
 sudo cpanm Try::Tiny # vep
-sudo cpanm JSON
-sudo cpanm Module::Build
-sudo cpanm PerlIO::gzip
+
 
 sudo pip3 install boto3
 sudo pip3 install matplotlib
@@ -65,15 +65,6 @@ sudo chmod u+x bwa*
 sudo mv bwa* /usr/local/bin
 cd ..
 rm -rf bwa-mem2-2.2.1_x64-linux
-
-
-tar xvfj bwa-0.7.17.tar.bz2
-rm bwa-0.7.17.tar.bz2
-cd bwa-0.7.17
-make
-sudo mv bwa /usr/local/bin
-cd ..
-rm -rf bwa-0.7.17
 
 
 wget https://github.com/samtools/htslib/releases/download/1.12/htslib-1.12.tar.bz2
@@ -120,17 +111,7 @@ java -jar /usr/local/bin/VarScan.v2.3.9.jar "$@"' >varscan
 chmod +x varscan
 sudo mv varscan /usr/local/bin
 
-sudo bash -c "$(curl -L https://basemount.basespace.illumina.com/install)"
-
-
-sudo mkdir /usr/local/lib/site_perl
-git clone https://github.com/Ensembl/ensembl-vep.git
-cd ensembl-vep
-sudo perl INSTALL.pl --AUTO a -d /usr/local/lib/site_perl
-sudo cp -r  modules/Bio/EnsEMBL /usr/local/lib/site_perl/Bio
-sudo mv vep /usr/local/bin
-cd ..
-sudo rm -rf ensembl-vep
+sudo bash -c "$(curl -L https://basemount.basespace.illumina.com/install)" # no loger works - just copy binary
 
 
 wget https://github.com/Ensembl/ensembl-xs/archive/refs/tags/2.3.2.tar.gz
@@ -142,6 +123,16 @@ make test
 sudo make install
 cd ..
 rm -rf ensembl-xs-2.3.2
+
+
+sudo mkdir /usr/local/lib/site_perl
+git clone https://github.com/Ensembl/ensembl-vep.git
+cd ensembl-vep
+sudo perl INSTALL.pl --AUTO a -d /usr/local/lib/site_perl
+sudo cp -r  modules/Bio/EnsEMBL /usr/local/lib/site_perl/Bio
+sudo mv vep /usr/local/bin
+cd ..
+sudo rm -rf ensembl-vep
 
 
 wget -O picard-2.25.6.jar https://github.com/broadinstitute/picard/releases/download/2.25.6/picard.jar

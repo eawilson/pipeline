@@ -224,6 +224,7 @@ def cfpipeline():
     if a.vep:
         pipe(["annotate_panel", "--vep", a.vep,
                                 "--output", f"{a.name}.annotation.tsv",
+                                "--reference", a.reference,
                                 "--threads", threads,
                                 "--panel", a.panel,
                                 vcf])
