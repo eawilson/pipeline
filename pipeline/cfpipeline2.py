@@ -199,6 +199,7 @@ def cfpipeline2():
     if args.vep:
         pipe(["annotate_panel", "--vep", args.vep,
                                 "--output", f"{args.name}.varscan.annotation.tsv",
+                                "--reference", args.reference,
                                 "--threads", threads,
                                 "--panel", args.panel,
                                 vcf])

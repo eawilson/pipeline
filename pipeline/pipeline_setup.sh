@@ -116,6 +116,7 @@ sudo bash -c "$(curl -L https://basemount.basespace.illumina.com/install)" # no 
 
 wget https://github.com/Ensembl/ensembl-xs/archive/refs/tags/2.3.2.tar.gz
 tar xvfz 2.3.2.tar.gz
+rm 2.3.2.tar.gz
 cd ensembl-xs-2.3.2
 perl Makefile.PL
 make

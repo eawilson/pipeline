@@ -25,20 +25,22 @@ def chrom2int(chrom):
 
 
 
-def annotate_panel(vcf, vep, reference, threads=None, output="output.tsv", panel="", buffer_size=None):
+# reference should be a required argument as fails in vep 104 without but is made optional here for compatibility with legact code in cfpipeline.py for vep 101
+def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", panel="", buffer_size=None):
     if threads is None:
         threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
 
     vepjson = "{}.vep.json".format(output[:-4])
     vep_options = ["--no_stats",
                    "--dir", vep,
-                   "--fasta", reference,
                    "--format", "vcf",
                    "--json",
                    "--offline",
                    "--everything",
                    "--warning_file", "STDERR",
                    "--force_overwrite"]
+    if reference is not None:
+        vep_options += ["--fasta", reference]
     if int(threads) > 1:
         vep_options += ["--fork", threads]
     if "refseq" in vep:
@@ -234,7 +236,7 @@ def main():
     parser.add_argument('vcf', help="Input vcf file.")
     parser.add_argument("-v", "--vep", help="Directory containing vep data.", required=True)
     parser.add_argument("-o", "--output", help="Output annotated tsv.", default=argparse.SUPPRESS)
-    parser.add_argument("-r", "--reference", help="Fasta that the sample was aligned against.", required=True)
+    parser.add_argument("-r", "--reference", help="Fasta that the sample was aligned against.", default=argparse.SUPPRESS) # Make required once vep 101 code  no longer required
     parser.add_argument("-p", "--panel", help="Directory containing panel data.", default=argparse.SUPPRESS)
     parser.add_argument("-t", "--threads", help="Number of threads to use.", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-b", "--buffer-size", help="Number of variants to read into memory simultaneously. " + \
