@@ -25,7 +25,7 @@ def chrom2int(chrom):
 
 
 
-# reference should be a required argument as fails in vep 104 without but is made optional here for compatibility with legact code in cfpipeline.py for vep 101
+# reference should be a required argument as fails in vep 104 without but is made optional here for compatibility with legacy code in cfpipeline.py for vep 101
 def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", panel="", buffer_size=None):
     if threads is None:
         threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()

@@ -12,6 +12,7 @@ sudo apt-get -y install openjdk-8-jdk # varscan picard
 sudo apt-get -y install libmysqlclient-dev # vep
 sudo apt-get -y install python3-pip
 sudo apt-get -y install python3-tk
+sudo apt-get -y install python # gatk
 sudo apt-get -y install unzip
 
 sudo cpan App::cpanminus # vep
@@ -103,6 +104,16 @@ cd ..
 rm -rf bcftools-1.12
 
 
+wget https://github.com/broadinstitute/gatk/releases/download/4.2.0.0/gatk-4.2.0.0.zip
+unzip gatk-4.2.0.0.zip
+rm gatk-4.2.0.0.zip
+cd gatk-4.2.0.0
+sudo cp gatk /usr/local/bin
+sudo cp gatk-package-4.2.0.0-local.jar /usr/local/bin
+cd ..
+rm -rf gatk-4.2.0.0
+
+
 # Not the latest version, latest version fails ?intermediate version
 wget -O VarScan.v2.3.9.jar https://sourceforge.net/projects/varscan/files/VarScan.v2.3.9.jar/download
 sudo mv VarScan.v2.3.9.jar /usr/local/bin
@@ -136,12 +147,13 @@ cd ..
 sudo rm -rf ensembl-vep
 
 
-wget -O picard-2.25.6.jar https://github.com/broadinstitute/picard/releases/download/2.25.6/picard.jar
-sudo mv picard-2.25.6.jar /usr/local/bin
-echo '#!/usr/bin/env bash
-java -jar /usr/local/bin/picard-2.25.6.jar "$@"' >picard
-chmod +x picard
-sudo mv picard /usr/local/bin
+# No longer required as gatk now contains picard
+# wget -O picard-2.25.6.jar https://github.com/broadinstitute/picard/releases/download/2.25.6/picard.jar
+# sudo mv picard-2.25.6.jar /usr/local/bin
+# echo '#!/usr/bin/env bash
+# java -jar /usr/local/bin/picard-2.25.6.jar "$@"' >picard
+# chmod +x picard
+# sudo mv picard /usr/local/bin
 
 
 git clone https://github.com/eawilson/pipeline.git
@@ -197,6 +209,8 @@ chr_rename_fasta hs37d5.fa >GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
 rm hs37d5.fa
 cat EBV_HPV.fna >>GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
 bwa-mem2 index GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
+samtools faidx GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
+gatk CreateSequenceDictionary R=GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
 tar -cvzf GRCh37_EBV_HPV_bwa_mem2.tar.gz GRCh37_EBV_HPV_bwa_mem2
 
 
@@ -206,6 +220,8 @@ mkdir GRCh38_EBV_HPV_bwa_mem2
 mv GCA_000001405.15_GRCh38_no_alt_analysis_set.fna GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
 grep -A5000 HPV16 EBV_HPV.fna >>GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
 bwa-mem2 index GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+samtools faidx index GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+gatk CreateSequenceDictionary index GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
 tar -cvzf GRCh38_EBV_HPV_bwa_mem2.tar.gz GRCh38_EBV_HPV_bwa_mem2
 
 
