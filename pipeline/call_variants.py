@@ -34,7 +34,7 @@ def call_variants():
 
     args.callers = args.callers.lower().replace(",", " ").split()
     for caller in args.callwers:
-        if caller mot in ("varscan", "vardict", "mutect2"):
+        if caller not in ("varscan", "vardict", "mutect2"):
             sys.exit(f"{caller} is not a recognised variant caller")
 
     args.reference = os.path.abspath(args.reference)
