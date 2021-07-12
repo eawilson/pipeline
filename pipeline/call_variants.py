@@ -17,10 +17,12 @@ def call_variants():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_bam', nargs="+", help="Path of the input ba file.")
     parser.add_argument("-r", "--reference", help="Path to reference genome or containing directory.", required=True)
+    parser.add_argument("-c", "--callers", help="Variant callers to use. Valid values are varscan, vardict and mutect2. Defaults to 'varscan,vardict'.", default="varscan,vardict")
     parser.add_argument("-n", "--name", help="Sample name used to name output files. Will be guessed from input fastq if not provided", default="")
-    parser.add_argument("-p", "--panel", help="Path to covermi panel which must contain targets bedfile.", default="")
-    parser.add_argument("-v", "--vep", help="Path to vep datargs.", default="")
-    parser.add_argument("-f", "--min-vaf", help="Minimum variant allele frequency for a variant to be called when using VarDict.", type=float, default=None)
+    parser.add_argument("-p", "--panel", help="Path to covermi panel which must contain targets bedfile. Required for annotation.", default="")
+    parser.add_argument("-v", "--vep", help="Path to vep cache. Required for annotation.", default="")
+    parser.add_argument("-m", "--min-vaf", help="Minimum variant allele frequency for a variant to be called.", type=float, default=0)
+    parser.add_argument("-a", "--min-alt-reads", help="Minimum number of alt reads for a variant to be called.", type=float, default=2)
     parser.add_argument("-o", "--output", help="Path to write output files to.", default=".")
     parser.add_argument("-t", "--threads", help="Number of threads to use, defaults to all available threads if not specified.", type=int, default=None)
     args = parser.parse_args()
@@ -64,15 +66,15 @@ def call_variants():
                                         "--variants",
                                         "--output-vcf", "1",
                                         "--min-coverage", "1",
-                                        "--min-var-freq", "0",
+                                        "--min-var-freq", args.min_vaf,
                                         "--min-avg-qual", "20",
-                                        "--min-reads2", "3",
+                                        "--min-reads2", args.min_alt_reads,
                                         "--p-value", "0.05",
                                         "--strand-filter", "1"], stdout=f_out)
     os.unlink(mpileup)
 
     vcf = f"{args.name}.varscan.vcf"
-    pipe(["vcf_pvalue_2_phred", pvalue_vcf, "--output", vcf])
+    pipe(["postprocess_varscan_vcf", pvalue_vcf, "--output", vcf])
     os.unlink(pvalue_vcf)
 
     if args.vep and aegs.panel:
@@ -96,6 +98,7 @@ def call_variants():
                              "-b", args.input_bam,
                              "-Q", "10",
                              "-f", args.min_vaf,
+                             "-r", args.min_alt_reads,
                              "-th", threads,
                              "-u", # count mate pair overlap only once
                              "-fisher", # perform work of teststrandbias.R
@@ -121,10 +124,30 @@ def call_variants():
     ###############################################################################################################
     ### MUTECT2                                                                                                 ###
     ###############################################################################################################
-    vcf = f"{args.name}.mutect2.vcf"
+    unfiltered_vcf = f"{args.name}.ufiltered.mutect2.vcf"
     pipe(["gatk", "Mutect2", "-R", args.reference,
                              "-I", args.input_bam,
-                             "-O", vcf])
+                             "-O", unfiltered_vcf,
+                             "--create-output-variant-index", "false",
+                             "--max-reads-per-alignment-start", "0",
+                             "--disable-read-filter", "NotDuplicateReadFilter",
+                             "--disable-read-filter", "GoodCigarReadFilter"])
+
+    multiallelic_vcf = f"{args.name}.multiallelic.mutect2.vcf"
+    pipe(["gatk", "FilterMutectCalls", "-R", args.reference,
+                                       "-I", unfiltered_vcf,
+                                       "-O", multiallelic_vcf,
+                                       "--filtering-stats", "false",
+                                       "--create-output-variant-index", "false"])
+    os.unlink(unfiltered_vcf)
+    os.unlink(f"{unfiltered_vcf}.stats")
+
+    vcf = f"{args.name}.mutect2.vcf"
+    pipe(["postprocess_mutect2_vcf", "--output", vcf,
+                                     "--min-alt-reads", args.min_alt_reads,
+                                     "--min-vaf", args.min_vaf,
+                                     multiallelic_vcf])
+    os.unlink(multiallelic_vcf)
 
     if args.vep and args.panel:
         pipe(["annotate_panel", "--vep", args.vep,
