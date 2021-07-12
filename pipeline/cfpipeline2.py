@@ -23,6 +23,7 @@ def cfpipeline2():
     parser.add_argument("-v", "--vep", help="Path to vep datargs.", default="")
     parser.add_argument("-m", "--min-family-size", help="Minimum family size. Families smaller than this will be filtered", type=int, default=1)
     parser.add_argument("-f", "--min-vaf", help="Minimum variant allele frequency for a variant to be called when using VarDict.", type=float, default=None)
+    parser.add_argument("-a", "--min-alt-reads", help="Minimum number of alt reads for a variant to be called.", type=float, default=2)
     parser.add_argument("-c", "--cnv", help="Whitespace separated list of target names, as specified in targets bedfile, over which to calculate copy number variation.", default="")
     parser.add_argument("-d", "--sizes", help="Whitespace separated list of reference names over which to calculate fragment size distribution.", default="")
     parser.add_argument("-b", "--translocations", help="Call translocations (supplementary reads aligned to different chromosomes).", action="store_const", const=True, default=False)
@@ -30,6 +31,7 @@ def cfpipeline2():
     parser.add_argument("-o", "--output", help="Path to write output files to.", default=".")
     parser.add_argument("-t", "--threads", help="Number of threads to use, defaults to all available threads if not specified.", type=int, default=None)
     parser.add_argument("-s", "--sam-only", help="Quit after producing initial undeduplicated sam.", action="store_const", const=True, default=False)
+    parser.add_argument("-C", "--callers", help="Variant callers to use. Valid values are varscan, vardict and mutect2. Defaults to 'varscan,vardict'.", default="varscan,vardict")
     args = parser.parse_args()
 
     threads = args.threads or run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
@@ -166,7 +168,7 @@ def cfpipeline2():
 
 
     bam = f"{args.name}.bam"
-    # This step is only required to satisfy Mutect2
+    # This step is only required to satisfy Mutect2 and possibly other gatk tools
     pipe(["gatk", "AddOrReplaceReadGroups", f"I={no_read_groups_bam}", f"O={bam}", "LB=lb", "PL=ILLUMINA", "PU=pu", f"SM={args.name}"])
     os.unlink(no_read_groups_bam)
 
@@ -181,74 +183,19 @@ def cfpipeline2():
                                bam])
 
 
-    mpileup = f"{args.name}.mpileup"
-    pipe(["samtools", "mpileup", "-o", mpileup,
-                                 "-f", args.reference,
-                                 "-A",
-                                 "-B",
-                                 "-q", "10",
-                                 "-d", "10000000",
-                                 bam])
-
-    pvalue_vcf = f"{args.name}.pvalue.vcf"
-    with open(pvalue_vcf, "wb") as f_out:
-        pipe(["varscan", "mpileup2cns", mpileup,
-                                        "--variants",
-                                        "--output-vcf", "1",
-                                        "--min-coverage", "1",
-                                        "--min-var-freq", "0",
-                                        "--min-avg-qual", "20",
-                                        "--min-reads2", "3",
-                                        "--p-value", "0.05",
-                                        "--strand-filter", "1"], stdout=f_out)
-    os.unlink(mpileup)
-
-    vcf = f"{args.name}.varscan.vcf"
-    pipe(["vcf_pvalue_2_phred", pvalue_vcf, "--output", vcf])
-    os.unlink(pvalue_vcf)
-
-    if args.vep:
-        pipe(["annotate_panel", "--vep", args.vep,
-                                "--output", f"{args.name}.varscan.annotation.tsv",
-                                "--reference", args.reference,
-                                "--threads", threads,
-                                "--panel", args.panel,
-                                vcf])
-
-
-    vardict_table = f"{args.name}.vardict.tsv"
-    with open(vardict_table, "wb") as f_out:
-        pipe(["vardictjava", "-K", # include Ns in depth calculation
-                             "-deldupvar", # variants are only called if start position is inside the region interest
-                             "-G", args.reference,
-                             "-N", args.name,
-                             "-b", bam,
-                             "-Q", "10",
-                             "-f", args.min_vaf,
-                             "-th", threads,
-                             "-u", # count mate pair overlap only once
-                             "-fisher", # perform work of teststrandbias.R
-                             targets_bedfile], stdout=f_out)
-
-    vcf = f"{args.name}.vcf"
-    with open(vardict_table, "rb") as f_in:
-        with open(vcf, "wb") as f_out:
-              pipe(["var2vcf_valid.pl", "-A", # output all variants at same position
-                                        "-f", args.min_vaf,
-                                        "-N", args.name], stdin=f_in, stdout=f_out)
-    os.unlink(vardict_table)
-
-    if args.vep:
-        pipe(["annotate_panel", "--vep", args.vep,
-                                "--output", f"{args.name}.annotation.tsv",
-                                "--reference", args.reference,
-                                "--threads", threads,
-                                "--panel", args.panel,
-                                vcf])
+    pipe(["call_variants", "--reference", args.reference,
+                           "--callers", args.callers,
+                           "--name", args.name,
+                           "--panel", args.panel,
+                           "--vep", args.vep,
+                           "--min-vaf", args.min_vaf,
+                           "--min-alt-reads", args.min_family_size,
+                           "--output", ".", # We have already changed directory into the current directory
+                           "--threads", threads])
 
 
     #vaf_plot = f"{args.name}.vaf.pdf"
-    pipe(["vcf_stats", vcf, 
+    pipe(["vcf_stats", f"{args.name}.vardict.vcf", # May need to change this depending on variant caller performance
                        "--stats", stats])
                        #"--output", vaf_plot])
 
