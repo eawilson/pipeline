@@ -32,8 +32,10 @@ def call_variants():
     if not args.name:
         args.name = os.path.basename(args.input_bam).split(".")[0]
 
-    if args.min_vaf is None:
-        args.min_vaf = 0.01 if args.min_family_size == 1 else 0.001
+    args.callers = args.callers.lower().replace(",", " ").split()
+    for caller in args.callwers:
+        if caller mot in ("varscan", "vardict", "mutect2"):
+            sys.exit(f"{caller} is not a recognised variant caller")
 
     args.reference = os.path.abspath(args.reference)
     args.input_bam = os.path.abspath(input_bam)
@@ -51,111 +53,114 @@ def call_variants():
     ###############################################################################################################
     ### VARSCAN                                                                                                 ###
     ###############################################################################################################
-    mpileup = f"{args.name}.mpileup"
-    pipe(["samtools", "mpileup", "-o", mpileup,
-                                 "-f", args.reference,
-                                 "-A",
-                                 "-B",
-                                 "-q", "10",
-                                 "-d", "10000000",
-                                 args.input_bam])
+    if "varscan" in args.callers:
+        mpileup = f"{args.name}.mpileup"
+        pipe(["samtools", "mpileup", "-o", mpileup,
+                                    "-f", args.reference,
+                                    "-A",
+                                    "-B",
+                                    "-q", "10",
+                                    "-d", "10000000",
+                                    args.input_bam])
 
-    pvalue_vcf = f"{args.name}.pvalue.vcf"
-    with open(pvalue_vcf, "wb") as f_out:
-        pipe(["varscan", "mpileup2cns", mpileup,
-                                        "--variants",
-                                        "--output-vcf", "1",
-                                        "--min-coverage", "1",
-                                        "--min-var-freq", args.min_vaf,
-                                        "--min-avg-qual", "20",
-                                        "--min-reads2", args.min_alt_reads,
-                                        "--p-value", "0.05",
-                                        "--strand-filter", "1"], stdout=f_out)
-    os.unlink(mpileup)
+        pvalue_vcf = f"{args.name}.pvalue.vcf"
+        with open(pvalue_vcf, "wb") as f_out:
+            pipe(["varscan", "mpileup2cns", mpileup,
+                                            "--variants",
+                                            "--output-vcf", "1",
+                                            "--min-coverage", "1",
+                                            "--min-var-freq", args.min_vaf,
+                                            "--min-avg-qual", "20",
+                                            "--min-reads2", args.min_alt_reads,
+                                            "--p-value", "0.05",
+                                            "--strand-filter", "1"], stdout=f_out)
+        os.unlink(mpileup)
 
-    vcf = f"{args.name}.varscan.vcf"
-    pipe(["postprocess_varscan_vcf", pvalue_vcf, "--output", vcf])
-    os.unlink(pvalue_vcf)
+        vcf = f"{args.name}.varscan.vcf"
+        pipe(["postprocess_varscan_vcf", pvalue_vcf, "--output", vcf])
+        os.unlink(pvalue_vcf)
 
-    if args.vep and aegs.panel:
-        pipe(["annotate_panel", "--vep", args.vep,
-                                "--output", f"{args.name}.varscan.annotation.tsv",
-                                "--reference", args.reference,
-                                "--threads", threads,
-                                "--panel", args.panel,
-                                vcf])
+        if args.vep and aegs.panel:
+            pipe(["annotate_panel", "--vep", args.vep,
+                                    "--output", f"{args.name}.varscan.annotation.tsv",
+                                    "--reference", args.reference,
+                                    "--threads", threads,
+                                    "--panel", args.panel,
+                                    vcf])
 
 
     ###############################################################################################################
     ### VARDICT                                                                                                 ###
     ###############################################################################################################
-    vardict_table = f"{args.name}.vardict.tsv"
-    with open(vardict_table, "wb") as f_out:
-        pipe(["vardictjava", "-K", # include Ns in depth calculation
-                             "-deldupvar", # variants are only called if start position is inside the region interest
-                             "-G", args.reference,
-                             "-N", args.name,
-                             "-b", args.input_bam,
-                             "-Q", "10",
-                             "-f", args.min_vaf,
-                             "-r", args.min_alt_reads,
-                             "-th", threads,
-                             "-u", # count mate pair overlap only once
-                             "-fisher", # perform work of teststrandbias.R
-                             targets_bedfile], stdout=f_out)
+    if "vardict" in args.callers:
+        vardict_table = f"{args.name}.vardict.tsv"
+        with open(vardict_table, "wb") as f_out:
+            pipe(["vardictjava", "-K", # include Ns in depth calculation
+                                "-deldupvar", # variants are only called if start position is inside the region interest
+                                "-G", args.reference,
+                                "-N", args.name,
+                                "-b", args.input_bam,
+                                "-Q", "10",
+                                "-f", args.min_vaf,
+                                "-r", args.min_alt_reads,
+                                "-th", threads,
+                                "-u", # count mate pair overlap only once
+                                "-fisher", # perform work of teststrandbias.R
+                                targets_bedfile], stdout=f_out)
 
-    vcf = f"{args.name}.vardict.vcf"
-    with open(vardict_table, "rb") as f_in:
-        with open(vcf, "wb") as f_out:
-              pipe(["var2vcf_valid.pl", "-A", # output all variants at same position
-                                        "-f", args.min_vaf,
-                                        "-N", args.name], stdin=f_in, stdout=f_out)
-    os.unlink(vardict_table)
+        vcf = f"{args.name}.vardict.vcf"
+        with open(vardict_table, "rb") as f_in:
+            with open(vcf, "wb") as f_out:
+                pipe(["var2vcf_valid.pl", "-A", # output all variants at same position
+                                            "-f", args.min_vaf,
+                                            "-N", args.name], stdin=f_in, stdout=f_out)
+        os.unlink(vardict_table)
 
-    if args.vep and args.panel:
-        pipe(["annotate_panel", "--vep", args.vep,
-                                "--output", f"{args.name}.vardict.annotation.tsv",
-                                "--reference", args.reference,
-                                "--threads", threads,
-                                "--panel", args.panel,
-                                vcf])
+        if args.vep and args.panel:
+            pipe(["annotate_panel", "--vep", args.vep,
+                                    "--output", f"{args.name}.vardict.annotation.tsv",
+                                    "--reference", args.reference,
+                                    "--threads", threads,
+                                    "--panel", args.panel,
+                                    vcf])
 
 
     ###############################################################################################################
     ### MUTECT2                                                                                                 ###
     ###############################################################################################################
-    unfiltered_vcf = f"{args.name}.ufiltered.mutect2.vcf"
-    pipe(["gatk", "Mutect2", "-R", args.reference,
-                             "-I", args.input_bam,
-                             "-O", unfiltered_vcf,
-                             "--create-output-variant-index", "false",
-                             "--max-reads-per-alignment-start", "0",
-                             "--disable-read-filter", "NotDuplicateReadFilter",
-                             "--disable-read-filter", "GoodCigarReadFilter"])
+    if "mutect2" in args.callers:
+        unfiltered_vcf = f"{args.name}.ufiltered.mutect2.vcf"
+        pipe(["gatk", "Mutect2", "-R", args.reference,
+                                "-I", args.input_bam,
+                                "-O", unfiltered_vcf,
+                                "--create-output-variant-index", "false",
+                                "--max-reads-per-alignment-start", "0",
+                                "--disable-read-filter", "NotDuplicateReadFilter",
+                                "--disable-read-filter", "GoodCigarReadFilter"])
 
-    multiallelic_vcf = f"{args.name}.multiallelic.mutect2.vcf"
-    pipe(["gatk", "FilterMutectCalls", "-R", args.reference,
-                                       "-I", unfiltered_vcf,
-                                       "-O", multiallelic_vcf,
-                                       "--filtering-stats", "false",
-                                       "--create-output-variant-index", "false"])
-    os.unlink(unfiltered_vcf)
-    os.unlink(f"{unfiltered_vcf}.stats")
+        multiallelic_vcf = f"{args.name}.multiallelic.mutect2.vcf"
+        pipe(["gatk", "FilterMutectCalls", "-R", args.reference,
+                                        "-I", unfiltered_vcf,
+                                        "-O", multiallelic_vcf,
+                                        "--filtering-stats", "false",
+                                        "--create-output-variant-index", "false"])
+        os.unlink(unfiltered_vcf)
+        os.unlink(f"{unfiltered_vcf}.stats")
 
-    vcf = f"{args.name}.mutect2.vcf"
-    pipe(["postprocess_mutect2_vcf", "--output", vcf,
-                                     "--min-alt-reads", args.min_alt_reads,
-                                     "--min-vaf", args.min_vaf,
-                                     multiallelic_vcf])
-    os.unlink(multiallelic_vcf)
+        vcf = f"{args.name}.mutect2.vcf"
+        pipe(["postprocess_mutect2_vcf", "--output", vcf,
+                                        "--min-alt-reads", args.min_alt_reads,
+                                        "--min-vaf", args.min_vaf,
+                                        multiallelic_vcf])
+        os.unlink(multiallelic_vcf)
 
-    if args.vep and args.panel:
-        pipe(["annotate_panel", "--vep", args.vep,
-                                "--output", f"{args.name}.mutect2.annotation.tsv",
-                                "--reference", args.reference,
-                                "--threads", threads,
-                                "--panel", args.panel,
-                                vcf])
+        if args.vep and args.panel:
+            pipe(["annotate_panel", "--vep", args.vep,
+                                    "--output", f"{args.name}.mutect2.annotation.tsv",
+                                    "--reference", args.reference,
+                                    "--threads", threads,
+                                    "--panel", args.panel,
+                                    vcf])
 
 
     print(pipe.durations, file=sys.stderr, flush=True)
