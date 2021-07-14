@@ -191,7 +191,8 @@ def cfpipeline2():
                            "--min-vaf", args.min_vaf,
                            "--min-alt-reads", args.min_family_size,
                            "--output", ".", # We have already changed directory into the current directory
-                           "--threads", threads])
+                           "--threads", threads,
+                           bam])
 
 
     #vaf_plot = f"{args.name}.vaf.pdf"
