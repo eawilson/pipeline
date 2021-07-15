@@ -83,6 +83,7 @@ def cfpipeline2():
         pipe([bwa, "mem", "-t", threads, 
                           "-p", # interleaved paired end fastq
                           "-C", # Append fastq comment to sam
+                          "-v", "2", # Output errors and warnings only 
                           args.reference, 
                           interleaved_fastq], stdout=f_out)
     os.unlink(interleaved_fastq)
@@ -113,6 +114,7 @@ def cfpipeline2():
                           "-p", # interleaved paired end fastq
                           "-C", # Append fastq comment to sam
                           "-Y", # Soft clip non-primary reads
+                          "-v", "2", # Output errors and warnings only 
                           args.reference, 
                           deduplicated_fastq], stdout=f_out)
     os.unlink(deduplicated_fastq)
