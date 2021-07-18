@@ -115,10 +115,10 @@ rm -rf gatk-4.2.0.0
 
 
 # Not the latest version, latest version fails ?intermediate version
-wget -O VarScan.v2.3.9.jar https://sourceforge.net/projects/varscan/files/VarScan.v2.3.9.jar/download
-sudo mv VarScan.v2.3.9.jar /usr/local/bin
+wget -O VarScan.v2.4.2.jar https://sourceforge.net/projects/varscan/files/VarScan.v2.3.9.jar/download
+sudo mv VarScan.v2.4.2.jar /usr/local/bin
 echo '#!/usr/bin/env bash
-java -jar /usr/local/bin/VarScan.v2.3.9.jar "$@"' >varscan
+java -jar /usr/local/bin/VarScan.v2.4.2.jar "$@"' >varscan
 chmod +x varscan
 sudo mv varscan /usr/local/bin
 
@@ -217,19 +217,17 @@ tar -cvzf GRCh37_EBV_HPV_bwa_mem2.tar.gz GRCh37_EBV_HPV_bwa_mem2
 wget "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
 gunzip GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
 mkdir GRCh38_EBV_HPV_bwa_mem2
-mv GCA_000001405.15_GRCh38_no_alt_analysis_set.fna GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
-grep -A5000 HPV16 EBV_HPV.fna >>GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+cp GCA_000001405.15_GRCh38_no_alt_analysis_set.fna GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+rm GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+grep "HPV16" -A 10000 EBV_HPV.fna >>GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
 bwa-mem2 index GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
-samtools faidx index GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
-gatk CreateSequenceDictionary index GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+samtools faidx GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+gatk CreateSequenceDictionary R=GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
 tar -cvzf GRCh38_EBV_HPV_bwa_mem2.tar.gz GRCh38_EBV_HPV_bwa_mem2
 
 
 mkdir vep
-perl ~/ensembl-vep/INSTALL.pl --AUTO cf --ASSEMBLY GRCh37 --SPECIES homo_sapiens_refseq --CACHEDIR ~/ephemoral/vep
-ephemoral/vep/homo_sapiens_refseq/104_GRCh37/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz
-wget "http://ftp.ensembl.org/pub/release-104/variation/indexed_vep_cache/homo_sapiens_refseq_vep_104_GRCh37.tar.gz"
-wget "ftp://ftp.ensembl.org/pub/release-75/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz"
+perl ~/ensembl-vep/INSTALL.pl --AUTO c --ASSEMBLY GRCh37 --SPECIES homo_sapiens_refseq --CACHEDIR ~/ephemoral/vep
 
 
 

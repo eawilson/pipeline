@@ -15,14 +15,14 @@ def call_variants():
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('input_bam', nargs="+", help="Path of the input ba file.")
+    parser.add_argument('input_bam', help="Path of the input bam file.")
     parser.add_argument("-r", "--reference", help="Path to reference genome or containing directory.", required=True)
     parser.add_argument("-C", "--callers", help="Variant callers to use. Valid values are varscan, vardict and mutect2. Defaults to 'varscan,vardict'.", default="varscan,vardict")
     parser.add_argument("-n", "--name", help="Sample name used to name output files. Will be guessed from input fastq if not provided", default="")
     parser.add_argument("-p", "--panel", help="Path to covermi panel which must contain targets bedfile. Required for annotation.", default="")
     parser.add_argument("-v", "--vep", help="Path to vep cache. Required for annotation.", default="")
     parser.add_argument("-f", "--min-vaf", help="Minimum variant allele frequency for a variant to be called.", type=float, default=0)
-    parser.add_argument("-a", "--min-alt-reads", help="Minimum number of alt reads for a variant to be called.", type=float, default=0)
+    parser.add_argument("-a", "--min-alt-reads", help="Minimum number of alt reads for a variant to be called.", type=int, default=2)
     parser.add_argument("-o", "--output", help="Path to write output files to.", default=".")
     parser.add_argument("-t", "--threads", help="Number of threads to use, defaults to all available threads if not specified.", type=int, default=None)
     args = parser.parse_args()
@@ -38,7 +38,7 @@ def call_variants():
             sys.exit(f"{caller} is not a recognised variant caller")
 
     args.reference = os.path.abspath(args.reference)
-    args.input_bam = os.path.abspath(input_bam)
+    args.input_bam = os.path.abspath(args.input_bam)
     if args.panel:
         args.panel = os.path.abspath(args.panel)
     if args.vep:
@@ -46,9 +46,15 @@ def call_variants():
     os.chdir(args.output)
 
     args.reference = (glob.glob(f"{args.reference}/*.fna") + glob.glob(f"{args.reference}/*.fa") + glob.glob(f"{args.reference}/*.fasta") + [args.reference])[0]
-    targets_bedfile = (glob.glob(f"{args.panel}/*.bed") + [None])[0] if args.panel else ""
     pipe = Pipe()
 
+    targets_bedfile = glob.glob(f"{args.panel}/*.bed") if args.panel else []
+    targets_bedfile = targets_bedfile[0] if len(targets_bedfile) == 1 else ""
+
+    if "vardict" in args.callers and not targets_bedfile:
+        sys.exit(f"No targets bedfile found (required by vardict)")
+    if "mutect2" in args.callers and not os.path.exists(f"{args.input_bam}.bai"):
+        sys.exit(f"No index found for {args.input_bam} (required by mutect2)")
 
     ###############################################################################################################
     ### VARSCAN                                                                                                 ###
@@ -76,11 +82,17 @@ def call_variants():
                                             "--strand-filter", "1"], stdout=f_out)
         os.unlink(mpileup)
 
-        vcf = f"{args.name}.varscan.vcf"
+        vcf = f"{args.name}.varscan.unfiltered.vcf" if targets_bedfile else f"{args.name}.varscan.vcf"
         pipe(["postprocess_varscan_vcf", pvalue_vcf, "--output", vcf])
         os.unlink(pvalue_vcf)
 
-        if args.vep and aegs.panel:
+        if targets_bedfile:
+            unfiltered_vcf = vcf
+            vcf = f"{args.name}.varscan.vcf"
+            pipe(["filter_vcf", unfiltered_vcf, "--output", vcf, "--bed", targets_bedfile])
+            os.unlink(unfiltered_vcf)
+
+        if args.vep and args.panel:
             pipe(["annotate_panel", "--vep", args.vep,
                                     "--output", f"{args.name}.varscan.annotation.tsv",
                                     "--reference", args.reference,
@@ -108,13 +120,18 @@ def call_variants():
                                  "-fisher", # perform work of teststrandbias.R
                                  targets_bedfile], stdout=f_out)
 
-        vcf = f"{args.name}.vardict.vcf"
+        unfiltered_vcf = f"{args.name}.vardict.unfiltered.vcf"
         with open(vardict_table, "rb") as f_in:
-            with open(vcf, "wb") as f_out:
+            with open(unfiltered_vcf, "wb") as f_out:
                 pipe(["var2vcf_valid.pl", "-A", # output all variants at same position
                                           "-f", args.min_vaf,
                                           "-N", args.name], stdin=f_in, stdout=f_out)
         os.unlink(vardict_table)
+        
+        vcf = f"{args.name}.vardict.vcf"
+        # Although vardict take the targets bedfile as an argument is does call occasional variants just outside 
+        pipe(["filter_vcf", unfiltered_vcf, "--output", vcf, "--bed", targets_bedfile])
+        #os.unlink(unfiltered_vcf)
 
         if args.vep and args.panel:
             pipe(["annotate_panel", "--vep", args.vep,
@@ -129,10 +146,10 @@ def call_variants():
     ### MUTECT2                                                                                                 ###
     ###############################################################################################################
     if "mutect2" in args.callers:
-        unfiltered_vcf = f"{args.name}.ufiltered.mutect2.vcf"
+        unmutectfiltered_vcf = f"{args.name}.unmutectfiltered.mutect2.vcf"
         pipe(["gatk", "Mutect2", "-R", args.reference,
                                  "-I", args.input_bam,
-                                 "-O", unfiltered_vcf,
+                                 "-O", unmutectfiltered_vcf,
                                  "--create-output-variant-index", "false",
                                  "--max-reads-per-alignment-start", "0",
                                  "--disable-read-filter", "NotDuplicateReadFilter",
@@ -140,19 +157,25 @@ def call_variants():
 
         multiallelic_vcf = f"{args.name}.multiallelic.mutect2.vcf"
         pipe(["gatk", "FilterMutectCalls", "-R", args.reference,
-                                           "-I", unfiltered_vcf,
+                                           "-V", unmutectfiltered_vcf,
                                            "-O", multiallelic_vcf,
                                            "--filtering-stats", "false",
                                            "--create-output-variant-index", "false"])
-        os.unlink(unfiltered_vcf)
-        os.unlink(f"{unfiltered_vcf}.stats")
+        os.unlink(unmutectfiltered_vcf)
+        os.unlink(f"{unmutectfiltered_vcf}.stats")
 
-        vcf = f"{args.name}.mutect2.vcf"
+        vcf = f"{args.name}.mutect2.unfiltered.vcf" if targets_bedfile else f"{args.name}.mutect2.vcf"
         pipe(["postprocess_mutect2_vcf", "--output", vcf,
                                          "--min-alt-reads", args.min_alt_reads,
                                          "--min-vaf", args.min_vaf,
                                          multiallelic_vcf])
         os.unlink(multiallelic_vcf)
+
+        if targets_bedfile:
+            unfiltered_vcf = vcf
+            vcf = f"{args.name}.mutect2.vcf"
+            pipe(["filter_vcf", unfiltered_vcf, "--output", vcf, "--bed", targets_bedfile])
+            os.unlink(unfiltered_vcf)
 
         if args.vep and args.panel:
             pipe(["annotate_panel", "--vep", args.vep,

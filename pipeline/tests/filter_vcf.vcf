@@ -1,0 +1,47 @@
+chr1	1	snp_filtered_far_left	A	T	.	.	.
+chr1	1	ins_filtered_far_left	A	AT	.	.	.
+chr1	1	del_filtered_far_left	AC	A	.	.	.
+chr1	1	delins_padding_filtered_far_left	ACC	ATT	.	.	.
+chr1	1	delins_filtered_far_left	AC	TT	.	.	.
+							
+chr1	99	snp_filtered_1_left	A	T	.	.	.
+chr1	99	ins_filtered_1_left	A	AT	.	.	.
+chr1	98	del_filtered_1_left	AC	A	.	.	.
+chr1	97	delins_padding_filtered_1_left	ACC	ATT	.	.	.
+chr1	98	delins_filtered_1_left	AC	TT	.	.	.
+							
+chr1	100	snp_overlap_1_left	A	T	.	.	.
+chr1	100	ins_overlap_1_left	A	AT	.	.	.
+chr1	99	del_overlap_1_left	AC	A	.	.	.
+chr1	98	delins_padding_overlap_1_left	ACC	ATT	.	.	.
+chr1	99	delins_overlap_1_left	AC	TT	.	.	.
+							
+chr1	150	snp_overlap_middle	A	T	.	.	.
+chr1	150	ins_overlap_middle	A	AT	.	.	.
+chr1	150	del_overlap_middle	AC	A	.	.	.
+chr1	150	delins_padding_overlap_middle	ACC	ATT	.	.	.
+chr1	150	delins_overlap_middle	AC	TT	.	.	.
+							
+chr1	200	snp_overlap_1_right	A	T	.	.	.
+chr1	199	ins_overlap_1_right	A	AT	.	.	.
+chr1	199	del_overlap_1_right	AC	A	.	.	.
+chr1	199	delins_padding_overlap_1_right	ACC	ATT	.	.	.
+chr1	200	delins_overlap_1_right	AC	TT	.	.	.
+							
+chr1	201	snp_filtered_1_right	A	T	.	.	.
+chr1	201	ins_filtered_1_right	A	AT	.	.	.
+chr1	200	del_filtered_1_right	AC	A	.	.	.
+chr1	200	delins_padding_filtered_1_right	ACC	ATT	.	.	.
+chr1	201	delins_filtered_1_right	AC	TT	.	.	.
+							
+chr1	250	snp_filtered_far_right	A	T	.	.	.
+chr1	250	ins_filtered_far_right	A	AT	.	.	.
+chr1	250	del_filtered_far_right	AC	A	.	.	.
+chr1	250	delins_padding_filtered_far_right	ACC	ATT	.	.	.
+chr1	250	delins_filtered_far_right	AC	TT	.	.	.
+							
+chr1	450	snp_filtered_far_rightmost	A	T	.	.	.
+chr1	450	ins_filtered_far_rightmost	A	AT	.	.	.
+chr1	450	del_filtered_far_rightmost	AC	A	.	.	.
+chr1	450	delins_padding_filtered_far_rightmost	ACC	ATT	.	.	.
+chr1	450	delins_filtered_far_rightmost	AC	TT	.	.	.
