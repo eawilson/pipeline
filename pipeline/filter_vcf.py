@@ -33,7 +33,7 @@ def filter_vcf():
     args = parser.parse_args()
 
     if not args.bed.endswith(".bed"):
-        args.bed = glob.glob(f"{args.bed}/*bed")
+        args.bed = glob.glob(f"{args.bed}/*.bed")
         if len(args.bed) != 1:
             sys.exit("{args.bed} does not contain an unambiguous bed file")
         args.bed = args.bed[0]
@@ -57,14 +57,13 @@ def filter_vcf():
                 merged[-1][1] = max(merged[-1][1], stop)
         starts_by_contig[contig], stops_by_contig[contig] = zip(*merged)
 
-
     with (open(args.input_vcf, "rt") if args.input_vcf != "-" else nullcontext(sys.stdin)) as f_in:
         with (open(args.output, "wt") if args.output != "-" else nullcontext(sys.stdout)) as f_out:
             for row in f_in:
                 if row.startswith("#"):
                     f_out.write(row)
                     continue
-
+                
                 fields = row.split("\t")
                 contig = fields[0]
                 starts = starts_by_contig.get(contig)
@@ -90,7 +89,7 @@ def filter_vcf():
                         len_ref -= 1
 
                     i = bisect_right(starts, pos + len_ref - 1)
-                    if i > 0 and stops[1 - 1] >= pos:
+                    if i > 0 and stops[i - 1] >= pos:
                         f_out.write(row)
                         
 

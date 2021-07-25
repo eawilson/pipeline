@@ -131,7 +131,7 @@ def call_variants():
         vcf = f"{args.name}.vardict.vcf"
         # Although vardict take the targets bedfile as an argument is does call occasional variants just outside 
         pipe(["filter_vcf", unfiltered_vcf, "--output", vcf, "--bed", targets_bedfile])
-        #os.unlink(unfiltered_vcf)
+        os.unlink(unfiltered_vcf)
 
         if args.vep and args.panel:
             pipe(["annotate_panel", "--vep", args.vep,
