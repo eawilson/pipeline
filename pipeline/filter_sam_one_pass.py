@@ -71,10 +71,17 @@ def cigar_len(cig, ops):
 def filter_sam():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_sam', help="Input sam file.")
-    parser.add_argument("-o", "--output", required=True)
+    parser.add_argument("-o", "--output", help="Output sam file, may be sam (default) or fastq.", default="-")
     parser.add_argument("-b", "--bed", help="Bed file of regions to include in output.")
     args = parser.parse_args()
     
+    if args.output.endswith(".sam") or args.output == "-":
+        output_type = SAM
+    elif args.output.endswith(".fastq"):
+        output_type = FASTQ
+    else:
+        sys.exit(f"Invalid output file {args.output}, must be of type sam or fastq")
+
     if not args.bed.endswith(".bed"):
         args.bed = glob.glob(f"{args.bed}/*.bed")
         if len(args.bed) != 1:
@@ -98,45 +105,57 @@ def filter_sam():
             else:
                 merged[-1][1] = max(merged[-1][1], stop)
         startstops[contig] = list(zip(*merged))
+
     
-    
-    chrom = None
-    qnames = set()
+    unpaired = {}
     with (open(args.input_sam, "rt") if not args.input_sam == "-" else nullcontext(sys.stdin)) as f_in:
-        for row in f_in:
-            if row.startswith("@"):
-                continue
-            
-            fields = row.split("\t")
-            flag = int(fields[FLAG])
-            
-            if fields[RNAME] != chrom:
-                chrom = fields[RNAME]
-                #if chrom =="chr2":
-                    #break
-                print("Reading", chrom, file=sys.stderr)
-            
-            # Secondary or supplementary read or both segments unmapped
-            if flag & NON_PRIMARY or (flag & BOTH_UNMAPPED) == BOTH_UNMAPPED:
-                continue
-            
-            try:
-                starts, stops = startstops.get(fields[RNAME])
-            except TypeError:
-                continue
-            
-            start = int(fields[POS])
-            cigar = string2cigar(fields[CIGAR])
-            stop = start + cigar_len(cigar, CONSUMES_REF) - 1
-            
-            i = bisect_right(starts, stop)
-            if i > 0 and stops[i - 1] >= start:
-                qnames.add(fields[QNAME])
-
-
-    with open(args.output, "wt") as f_out:
-        for qname in qnames:
-            f_out.write(f"{qname}\n")
+        with (open(args.output, "wt") if not args.output == "-" else nullcontext(sys.stdout)) as f_out:
+            for row in f_in:
+                if row.startswith("@"):
+                    if output_type == SAM:
+                        f_out.write(row)
+                    continue
+                
+                fields = row.split("\t")
+                flag = int(fields[FLAG])
+ 
+                # Secondary or supplementary read or both segments unmapped
+                if flag & NON_PRIMARY or (flag & BOTH_UNMAPPED) == BOTH_UNMAPPED:
+                    continue
+                
+                try:
+                    mate = unpaired.pop(fields[QNAME])
+                except KeyError:
+                    unpaired[fields[QNAME]] = fields
+                    continue
+                
+                
+                for segment in (mate, fields):
+                    try:
+                        starts, stops = startstops.get(segment[RNAME])
+                    except TypeError:
+                        continue
+                    
+                    start = int(segment[POS])
+                    cigar = string2cigar(segment[CIGAR])
+                    stop = start + cigar_len(cigar, CONSUMES_REF) - 1
+                    
+                    i = bisect_right(starts, stop)
+                    if i > 0 and stops[i - 1] >= start:
+                        break
+                else:
+                    continue
+                
+                if output_type == SAM:
+                    f_out.write("\t".join(mate))
+                    f_out.write("\t".join(fields))
+                else:
+                    read1read2 = (fields, mate) if (flag & READ1) else (mate, fields)
+                    for segment in read1read2:
+                        if int(segment[FLAG]) & RC:
+                            f_out.write("@{}\n{}\n+\n{}\n".format(segment[QNAME], segment[SEQ][::-1].translate(RCOMPLEMENT), segment[QUAL].rstrip()[::-1]))
+                        else:
+                            f_out.write("@{}\n{}\n+\n{}\n".format(segment[QNAME], segment[SEQ], segment[QUAL].rstrip()))
 
 
 
