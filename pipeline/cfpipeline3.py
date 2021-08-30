@@ -156,7 +156,7 @@ def cfpipeline3():
     trimmed_sam = f"{args.name}.trimmed.sam"
     pipe(["trim", "--output", trimmed_sam,
                   "--reference", args.reference,
-                  trimmed_sam])
+                  untrimmed_sam])
     os.unlink(untrimmed_sam)
     
     
@@ -165,7 +165,7 @@ def cfpipeline3():
                               "-o", namesorted_sam,
                               "-@", threads, 
                               trimmed_sam])
-    os.unlink(ontarget_sam)
+    os.unlink(trimmed_sam)
 
 
     fixed_sam = f"{args.name}.fixed.sam"
