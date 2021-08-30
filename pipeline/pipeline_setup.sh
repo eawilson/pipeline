@@ -169,6 +169,13 @@ sudo make install
 cd ..
 
 
+git clone  https://github.com/eawilson/udini.git
+cd udini
+make
+sudo make install
+cd ..
+
+
 git clone https://github.com/eawilson/CoverMi.git
 cd CoverMi
 sudo python3 setup.py develop
