@@ -1,4 +1,3 @@
-import csv
 import math
 import argparse
 import sys
@@ -30,11 +29,9 @@ def vcf_pvalue_2_phred(input_vcf, output_vcf):
         sys.exit("Output must be a .vcf file")
     
     with open(input_vcf, "rt") as f_in:
-        reader = csv.reader(f_in, delimiter="\t")
         with open(output_vcf, "wt") as f_out:
-            writer = csv.writer(f_out, delimiter="\t")
-
-            for row in reader:
+            for row in f_in:
+                row = row.split("\t")
                 if not row[0].startswith("#"):
                     if row[5] == "." and len(row) > 9:
                         format_keyvals = dict(zip(row[8].split(":"),
@@ -51,7 +48,7 @@ def vcf_pvalue_2_phred(input_vcf, output_vcf):
                                 if phred > 255:
                                     phred = 255
                             row[5] = phred
-                writer.writerow(row)
+                f_out.write("\t".join(row))
 
 
 

@@ -115,7 +115,7 @@ rm -rf gatk-4.2.0.0
 
 
 # Not the latest version, latest version fails ?intermediate version
-wget -O VarScan.v2.4.2.jar https://sourceforge.net/projects/varscan/files/VarScan.v2.3.9.jar/download
+wget https://github.com/dkoboldt/varscan/releases/download/2.4.2/VarScan.v2.4.2.jar
 sudo mv VarScan.v2.4.2.jar /usr/local/bin
 echo '#!/usr/bin/env bash
 java -jar /usr/local/bin/VarScan.v2.4.2.jar "$@"' >varscan
