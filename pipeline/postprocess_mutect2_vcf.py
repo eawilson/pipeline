@@ -1,4 +1,3 @@
-import csv
 import math
 import argparse
 import sys
@@ -22,7 +21,7 @@ def tlod2phred(tlod):
     except OverflowError:
         return 93
     phred = -10 * log(1 / (1 + likelyhood_ration), 10)
-    return min(int(phred), 93)
+    return str(min(int(phred), 93))
 
 
 
@@ -51,11 +50,9 @@ def postprocess_mutect2_vcf(input_vcf, output_vcf=None, min_vaf=0, min_alt_reads
     format_numbers = {}
 
     with open(input_vcf, "rt") as f_in:
-        reader = csv.reader(f_in, delimiter="\t")
         with open(output_vcf, "wt") as f_out:
-            writer = csv.writer(f_out, delimiter="\t")
-
-            for row in reader:
+            for row in f_in:
+                row = row.split("\t")
                 if row[0].startswith("#"):
                     if row[0].startswith("##source="):
                         sources.append(row[0][9:])
@@ -66,7 +63,7 @@ def postprocess_mutect2_vcf(input_vcf, output_vcf=None, min_vaf=0, min_alt_reads
                     if row[0].startswith("##FORMAT="):
                         format_numbers[row[0].split("ID=")[1].split(",")[0]] = row[0].split("Number=")[1].split(",")[0]
 
-                    writer.writerow(row)
+                    f_out.write("\t".join(row))
                     continue
                 
                 if len(row) > 10:
@@ -167,7 +164,7 @@ def postprocess_mutect2_vcf(input_vcf, output_vcf=None, min_vaf=0, min_alt_reads
                     row[FILTER] = filt
                     row[INFO] = info
                     row[FORMAT_VALS] = fmat
-                    writer.writerow(row)
+                    f_out.write("\t".join(row))
 
 
 
