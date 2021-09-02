@@ -47,7 +47,7 @@ def vcf_pvalue_2_phred(input_vcf, output_vcf):
                                 phred = int(-10 * math.log(float(p_value), 10))
                                 if phred > 255:
                                     phred = 255
-                            row[5] = phred
+                            row[5] = str(phred)
                 f_out.write("\t".join(row))
 
 
