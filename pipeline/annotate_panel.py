@@ -8,13 +8,45 @@ import math
 import glob
 from collections import defaultdict
 from itertools import chain
+from scipy.stats import fisher_exact
 
 from pipeline import run, pipe
-from covermi import Panel, Gr, depth_alt_depth_function, appris, Variant
+from covermi import Panel, appris
 
 BIOTYPE = defaultdict(int, (("protein_coding", 1), ("pseudogene", -1)))
 REFSEQ = defaultdict(int, (("NM", 4), ("NR", 3), ("XM", 2), ("XR", 1)))
 DELETE_NON_DIGIT = str.maketrans("", "", "ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
+
+CHROM = 0
+QUAL = 5
+FILTERS = 6
+
+
+
+def vardict_read_data(row):
+    fmt = dict(zip(row[8].split(":"), row[9].split(":")))
+    return {"vaf": fmt["AF"], "depth": fmt["DP"], "alt_depth": fmt["VD"], "ref_fr": fmt["RD"], "alt_fr": fmt["ALD"]}
+
+
+
+def varscan2_read_data(row):
+    fmt = dict(zip(row[8].split(":"), row[9].split(":")))
+    vaf = float(fmt["FREQ"].rstrip("%"))/100
+    ref_fr = "{}:{}".format(fmt["RDF"], fmt["RDR"])
+    alt_fr = "{}:{}".format(fmt["ADF"], fmt["ADR"])
+    return {"vaf": f"{vaf:.4f}", "depth": fmt["DP"], "alt_depth": fmt["AD"], "ref_fr": ref_fr, "alt_fr": alt_fr}
+
+
+
+def mutect2_read_data(row):
+    fmt = dict(zip(row[8].split(":"), row[9].split(":")))
+    vaf = float(fmt["AF"])
+    alt_depth = fmt["AD"].split(",")[1]
+    d4 = fmt["SB"].split(",")
+    ref_fr = "{}:{}".format(*d4[:2])
+    alt_fr = "{}:{}".format(*d4[2:])
+    return {"vaf": f"{vaf:.4f}", "depth": fmt["DP"], "alt_depth": alt_depth, "ref_fr": ref_fr, "alt_fr": alt_fr}
+
 
 
 def chrom2int(chrom):
@@ -51,23 +83,26 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
     pipe(["vep", "-i", vcf, "-o", vepjson] + vep_options)
     
     
-    ## Is this really the best way to do this?
-    #format_values = -1
-    #with open(vcf, "rt") as f:
-        #for row in f:
-            #if not row.startswith("#"):
-                #break
-            #if row.startswith("##source="):
-                #source = row[9:].strip()
+    read_data = None
+    with open(vcf, "rt") as f:
+        for row in f:
+            if not row.startswith("#"):
+                break
+            if row.startswith("##source="):
+                source = row[9:].strip()
                 #if source == "strelka":
-                    #format_values = -1
-                #elif source == "VarScan2":
-                    #format_values = -1
-                #else:
-                    #print(f"Unsupported variant caller {source}", file=sys.stderr)
-            #headings = row
-    #if format_values < 0:
-    #format_values = len(headings.split()) + format_values
+                if source.startswith("VarDict")
+                    get_read_data = vardict_read_data                    
+                elif source == "VarScan2":
+                    get_read_data = varscan2_read_data
+                elif source == "Mutect2"
+                    get_read_data = mutect2_read_data                    
+            headings = row
+    
+    if read_data is None:
+        sys.exit(f"Unsupported variant caller {source}", file=sys.stderr)
+    if len(headings) > 10:
+        sys.exit("Multi-sample vcfs not suppored", file=sys.stderr)
     
     
     targets = None
@@ -111,7 +146,6 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
                     -int(cons["transcript_id"].translate(DELETE_NON_DIGIT))]
     
     annotations = []
-    depth_alt_depth = None
     with open(vepjson) as f:
         for line in f:
             vep_output = json.loads(line)
@@ -123,17 +157,15 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
             
             # create variant - assume one variant per row ?always true
             row = vep_output["input"].rstrip().split("\t")
-            try:
-                depth, alt_depth = depth_alt_depth(row)
-            except TypeError:
-                depth_alt_depth = depth_alt_depth_function(row)
-                depth, alt_depth = depth_alt_depth(row)
-            variant = Variant(row[0], int(row[1]), row[3], row[4], depth=depth, alt_depth=alt_depth)
-            qual = row[5]
-            filters = row[6]
+            read_data = get_read_data(row)
             
-            if not variant.alt_depth or (targets and not targets.touched_by(variant)):
+            if read_data["alt_depth"] == "0":
                 continue
+            
+            # https://gatk.broadinstitute.org/hc/en-us/articles/360035532152-Fisher-s-Exact-Test
+            ref_fr = [int(n) for n in data["ref_fr"].split(":")]
+            alt_fr = [int(n) for n in data["alt_fr"].split(":")]
+            fisher_strand = -10 * math.log10(fisher_exact([ref_fr, alt_fr])[1])
             
             demographics = defaultdict(list)
             for colocated in vep_output.get("colocated_variants", ()):
@@ -155,19 +187,16 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
                         if "clin_sig" in colocated:
                             demographics["clin_sig"] += colocated["clin_sig"]
                         
-                    try:
-                        frequencies = colocated["frequencies"][variant.alt or "-"]
-                    except KeyError:
-                        continue
-                        
-                    statistics = defaultdict(list)
-                    lookup = {"gnomad_afr": "gnomad", "gnomad_amr": "gnomad", "gnomad_asj": "gnomad", "gnomad_eas": "gnomad", "gnomad_fin": "gnomad", \
-                            "gnomad_nfe": "gnomad", "gnomad_oth": "gnomad", "gnomad_sas": "gnomad", "ea": "nhlbi", "aa": "nhlbi", \
-                            "afr": "1k", "amr": "1k", "asn": "1k", "eur": "1k", "eas": "1k", "sas": "1k", "gnomad": "gnomad"}
-                    for population, frequency in frequencies.items():
-                        statistics[lookup[population]] += [frequency]
-                    if statistics:
-                        demographics["maf"] = max(chain(*statistics.values()))
+                    frequencies = colocated.get("frequencies"][vep_output["allele_string"].split("/")[1])
+                    if frequencies:
+                        statistics = defaultdict(list)
+                        lookup = {"gnomad_afr": "gnomad", "gnomad_amr": "gnomad", "gnomad_asj": "gnomad", "gnomad_eas": "gnomad", "gnomad_fin": "gnomad", \
+                                "gnomad_nfe": "gnomad", "gnomad_oth": "gnomad", "gnomad_sas": "gnomad", "ea": "nhlbi", "aa": "nhlbi", \
+                                "afr": "1k", "amr": "1k", "asn": "1k", "eur": "1k", "eas": "1k", "sas": "1k", "gnomad": "gnomad"}
+                        for population, frequency in frequencies.items():
+                            statistics[lookup[population]] += [frequency]
+                        if statistics:
+                            demographics["maf"] = max(chain(*statistics.values()))
             
             if "clin_sig" in demographics:
                 demographics["clin_sig"] = sorted(set(demographics["clin_sig"]))
@@ -196,15 +225,17 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
                 gene_symbol = cons.get("gene_symbol", "")
                 annotations.append([gene_symbol,
                                     cons.get("transcript_id", ""),
-                                    variant.chrom,
+                                    row[CHROM],
                                     vep_output["start"],
                                     vep_output["allele_string"],
-                                    qual,
-                                    filters,
-                                    variant.depth,
-                                    variant.alt_depth,
-                                    "{:.4f}".format(variant.vaf),
-                                    variant.zygosity,
+                                    row[QUAL],
+                                    row[FILTERS],
+                                    read_data["vaf"],
+                                    read_data["depth"],
+                                    read_data["alt_depth"],
+                                    read_data["alt_fr"],
+                                    read_data["ref_fr"],
+                                    fisher_strand,
                                     cons.get("hgvsc", ""),
                                     cons.get("hgvsp", ""),
                                     cons.get("biotype", ""),
@@ -222,11 +253,12 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
     
     
     os.unlink(vepjson)
-    annotations.sort(key=lambda row:(chrom2int(row[2]), row[2], int(row[3]), row[4]))
+    annotations.sort(key=lambda r:(chrom2int(r[2]), r[2], int(r[3]), r[4]))
     with open(output, "wt") as f:
         writer = csv.writer(f, delimiter="\t")
-        writer.writerow(["Gene", "Transcript", "Chrom", "Pos", "Change", "Quality", "Filters", "Depth", "Alt Depth", "VAF", "Zygosity", "HGVSc", "HGVSp", "Biotype", "Impact", \
-                         "Clinical Significance (Pubmed)", "Consequences", "Sift", "Polyphen", "MAF", "Other Genes", "dbSNP",  "HGMD", "COSMIC", "Pubmed"])
+        writer.writerow(["Gene", "Transcript", "Chrom", "Pos", "Change", "Quality", "Filters", "VAF", "Depth", "Alt Depth", "Alt Depth F:R", "Ref Depth F:R",
+                         "FisherStrand", "HGVSc", "HGVSp", "Biotype", "Impact", "Clinical Significance (Pubmed)", "Consequences", "Sift", "Polyphen", "MAF",
+                         "Other Genes", "dbSNP",  "HGMD", "COSMIC", "Pubmed"])
         writer.writerows(annotations)
     
 
