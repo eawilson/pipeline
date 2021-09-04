@@ -25,15 +25,17 @@ FILTERS = 6
 
 def vardict_read_data(row):
     fmt = dict(zip(row[8].split(":"), row[9].split(":")))
-    return {"vaf": fmt["AF"], "depth": fmt["DP"], "alt_depth": fmt["VD"], "ref_fr": fmt["RD"], "alt_fr": fmt["ALD"]}
+    ref_fr = [int(n) for n in fmt["RD"].split(",")]
+    alt_fr = [int(n) for n in fmt["ALD"].split(",")]
+    return {"vaf": fmt["AF"], "depth": fmt["DP"], "alt_depth": fmt["VD"], "ref_fr": ref_fr, "alt_fr": alt_fr}
 
 
 
 def varscan2_read_data(row):
     fmt = dict(zip(row[8].split(":"), row[9].split(":")))
     vaf = float(fmt["FREQ"].rstrip("%"))/100
-    ref_fr = "{}:{}".format(fmt["RDF"], fmt["RDR"])
-    alt_fr = "{}:{}".format(fmt["ADF"], fmt["ADR"])
+    ref_fr = [int(fmt["RDF"]), int(fmt["RDR"])]
+    alt_fr = [int(fmt["ADF"]), int(fmt["ADR"])]
     return {"vaf": f"{vaf:.4f}", "depth": fmt["DP"], "alt_depth": fmt["AD"], "ref_fr": ref_fr, "alt_fr": alt_fr}
 
 
@@ -43,8 +45,8 @@ def mutect2_read_data(row):
     vaf = float(fmt["AF"])
     alt_depth = fmt["AD"].split(",")[1]
     d4 = fmt["SB"].split(",")
-    ref_fr = "{}:{}".format(*d4[:2])
-    alt_fr = "{}:{}".format(*d4[2:])
+    ref_fr = [int(n) for n in d4[:2]]
+    alt_fr = [int)n) for n in d4[2:]]
     return {"vaf": f"{vaf:.4f}", "depth": fmt["DP"], "alt_depth": alt_depth, "ref_fr": ref_fr, "alt_fr": alt_fr}
 
 
@@ -83,7 +85,7 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
     pipe(["vep", "-i", vcf, "-o", vepjson] + vep_options)
     
     
-    read_data = None
+    get_read_data = None
     with open(vcf, "rt") as f:
         for row in f:
             if not row.startswith("#"):
@@ -91,18 +93,18 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
             if row.startswith("##source="):
                 source = row[9:].strip()
                 #if source == "strelka":
-                if source.startswith("VarDict")
+                if source.startswith("VarDict"):
                     get_read_data = vardict_read_data                    
                 elif source == "VarScan2":
                     get_read_data = varscan2_read_data
-                elif source == "Mutect2"
+                elif source == "Mutect2":
                     get_read_data = mutect2_read_data                    
             headings = row
     
-    if read_data is None:
-        sys.exit(f"Unsupported variant caller {source}", file=sys.stderr)
-    if len(headings) > 10:
-        sys.exit("Multi-sample vcfs not suppored", file=sys.stderr)
+    if get_read_data is None:
+        sys.exit(f"Unsupported variant caller {source}")
+    if len(headings.split("\t")) > 10:
+        sys.exit("Multi-sample vcfs not suppored")
     
     
     targets = None
@@ -163,8 +165,6 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
                 continue
             
             # https://gatk.broadinstitute.org/hc/en-us/articles/360035532152-Fisher-s-Exact-Test
-            ref_fr = [int(n) for n in data["ref_fr"].split(":")]
-            alt_fr = [int(n) for n in data["alt_fr"].split(":")]
             fisher_strand = -10 * math.log10(fisher_exact([ref_fr, alt_fr])[1])
             
             demographics = defaultdict(list)
@@ -187,8 +187,9 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
                         if "clin_sig" in colocated:
                             demographics["clin_sig"] += colocated["clin_sig"]
                         
-                    frequencies = colocated.get("frequencies"][vep_output["allele_string"].split("/")[1])
+                    frequencies = colocated.get("frequencies")
                     if frequencies:
+                        frequencies = frequencies.get(vep_output["allele_string"].split("/")[1], {})
                         statistics = defaultdict(list)
                         lookup = {"gnomad_afr": "gnomad", "gnomad_amr": "gnomad", "gnomad_asj": "gnomad", "gnomad_eas": "gnomad", "gnomad_fin": "gnomad", \
                                 "gnomad_nfe": "gnomad", "gnomad_oth": "gnomad", "gnomad_sas": "gnomad", "ea": "nhlbi", "aa": "nhlbi", \
@@ -233,8 +234,8 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
                                     read_data["vaf"],
                                     read_data["depth"],
                                     read_data["alt_depth"],
-                                    read_data["alt_fr"],
-                                    read_data["ref_fr"],
+                                    "{}:{}".format(*read_data["alt_fr"]),
+                                    "{}{}".format(*read_data["ref_fr"]),
                                     fisher_strand,
                                     cons.get("hgvsc", ""),
                                     cons.get("hgvsp", ""),
