@@ -208,7 +208,7 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", 
                 most_severe_consequence = vep_output["most_severe_consequence"]
                 for cons in sorted(chain(*[v for k, v in vep_output.items() if k.endswith("_consequences")]), key=lambda x:x.get("biotype", ""), reverse=True):
                     # We are only going to use biotype and impact so probably does not matter which one we choose so long as we are consistent
-                    if most_severe_consequence in c["consequence_terms"]:
+                    if most_severe_consequence in cons["consequence_terms"]:
                         break
                 other_genes = ()
             
