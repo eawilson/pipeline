@@ -121,6 +121,7 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="", panel="", 
                    "--warning_file", "STDERR",
                    "--force_overwrite"]
     if reference is not None:
+        reference = (glob.glob(f"{reference}/*.fna") + glob.glob(f"{reference}/*.fa") + glob.glob(f"{reference}/*.fasta") + [reference])[0]
         vep_options += ["--fasta", reference]
     if int(threads) > 1:
         vep_options += ["--fork", threads]

@@ -130,14 +130,13 @@ def main():
             args[i] = download_and_unpack(s3, arg)
     
     if no_log:
-        subprocess.run(profile + args)
+        retcode = subprocess.run(profile + args).returncode
     else:
         with open(os.path.join(output_dir, f"{name}.{command}.log.txt"), "wb") as log:
             log.write(" ".join(shlex.quote(arg) for arg in args).encode())
             log.write("\n".encode())
             log.flush()
-            cp = subprocess.run(profile + args, stderr=subprocess.STDOUT, stdout=log)
-            retcode = cp.returncode
+            retcode = = subprocess.run(profile + args, stderr=subprocess.STDOUT, stdout=log).returncode
             if retcode != 0:
                 msg = f"PROCESS EXITED WITH RETURN CODE {retcode}\n"
                 log.write(msg.encode())
