@@ -18,7 +18,7 @@ def call_variants():
     parser.add_argument('input_bam', help="Path of the input bam file.")
     parser.add_argument("-r", "--reference", help="Path to reference genome or containing directory.", required=True)
     parser.add_argument("-C", "--callers", help="Variant callers to use. Valid values are varscan, vardict and mutect2. Defaults to 'varscan,vardict'.", default="varscan,vardict")
-    parser.add_argument("-n", "--name", help="Sample name used to name output files. Will be guessed from input fastq if not provided", default="")
+    parser.add_argument("-n", "--name", help="Sample name used to name output files. Will be guessed from input bam if not provided", default="")
     parser.add_argument("-p", "--panel", help="Path to covermi panel which must contain targets bedfile. Required for annotation.", default="")
     parser.add_argument("-v", "--vep", help="Path to vep cache. Required for annotation.", default="")
     parser.add_argument("-f", "--min-vaf", help="Minimum variant allele frequency for a variant to be called.", type=float, default=0)
@@ -30,7 +30,8 @@ def call_variants():
     threads = args.threads or run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
 
     if not args.name:
-        args.name = os.path.basename(args.input_bam).split(".")[0]
+        fn = os.path.basename(args.input_bam)
+        args.name = fn[:-4] if fn.endswith(".bam") else fn
 
     args.callers = args.callers.lower().replace(",", " ").split()
     for caller in args.callers:
