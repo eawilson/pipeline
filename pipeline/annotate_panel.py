@@ -102,10 +102,15 @@ def parse_colocated(vep_output):
 
 
 # reference should be a required argument as fails in vep 104 without but is made optional here for compatibility with legacy code in cfpipeline.py for vep 101
-def annotate_panel(vcf, vep, reference=None, threads=None, output="output.tsv", panel="", buffer_size=None):
+def annotate_panel(vcf, vep, reference=None, threads=None, output="", panel="", buffer_size=None):
     if threads is None:
         threads = run(["getconf", "_NPROCESSORS_ONLN"]).stdout.strip()
-
+    
+    if not output:
+        output = "."
+    if os.path.isdir(output):
+        output = os.path.join(output, "{}.annotation.tsv".format(vcf[:-4] if vcf.endswith(".vcf") else vcf))
+    
     vepjson = "{}.vep.json".format(output[:-4])
     vep_options = ["--no_stats",
                    "--dir", vep,
