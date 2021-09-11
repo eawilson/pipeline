@@ -46,6 +46,7 @@ def main():
     # remove options meant for sqs_enqueue rather tha target prorgam
     dry_run = pop(args, "--dry-run", nargs=1)
     single_sample =  pop(args, "--single-sample", nargs=1)
+    no_name =  pop(args, "--no-name", nargs=1)
     
     input_extension = ".bam"
     output_extension = ".fastq.gz"
@@ -95,7 +96,9 @@ def main():
     
     n = 0
     for identifier, samples in sorted(fastqs.items()):
-        cmd = [command] + sorted(samples) + args + ["--name", identifier.split("/")[-1], "--output", f"{output_url}{identifier}"]        
+        cmd = [command] + sorted(samples) + args + ["--output", f"{output_url}{identifier}"]
+        if not no_name:
+            cmd.extend(["--name", identifier.split("/")[-1]])
         print(" ".join(shlex.quote(token) for token in cmd), file=sys.stderr)
         message = json.dumps(cmd)
         n += 1
