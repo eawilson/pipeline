@@ -77,9 +77,20 @@ def main():
         output directory and all contained files if they have been
         uploaded to s3.
     """
-    original_args = args = sys.argv[1:]
+    args = sys.argv[1:]
     if len(args) == 0:
         sys.exit("s3_wrap: No command line arguments")
+    command = args[0]
+    
+    no_log = "--no-log" in args
+    if no_log:
+        args.remove("--no-log")
+    
+    profile = ["profile"]
+    if "--no-profile" in args:
+        args.remove("--no-profile")
+        profile = []
+    
     
     s3_destination = None
     try:
@@ -118,15 +129,18 @@ def main():
         if arg.lower().startswith("s3://"):
             args[i] = download_and_unpack(s3, arg)
     
-    with open(os.path.join(output_dir, f"{name}.log.txt"), "wb") as log:
-        log.write(" ".join(shlex.quote(arg) for arg in original_args).encode())
-        log.write("\n".encode())
-        log.flush()
-        cp = subprocess.run(["profile"] + args, stderr=subprocess.STDOUT, stdout=log)
-        retcode = cp.returncode
-        if retcode != 0:
-            msg = f"PROCESS EXITED WITH RETURN CODE {retcode}\n"
-            log.write(msg.encode())
+    if no_log:
+        subprocess.run(profile + args)
+    else:
+        with open(os.path.join(output_dir, f"{name}.{command}.log.txt"), "wb") as log:
+            log.write(" ".join(shlex.quote(arg) for arg in args).encode())
+            log.write("\n".encode())
+            log.flush()
+            cp = subprocess.run(profile + args, stderr=subprocess.STDOUT, stdout=log)
+            retcode = cp.returncode
+            if retcode != 0:
+                msg = f"PROCESS EXITED WITH RETURN CODE {retcode}\n"
+                log.write(msg.encode())
     
     if s3_destination is not None:
         for fn in os.listdir(output_dir):

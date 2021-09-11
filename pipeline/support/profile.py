@@ -75,6 +75,7 @@ def main():
     args = sys.argv[1:]
     if len(args) == 0:
         sys.exit("profile: No command line arguments")
+    command = args[0]
     
     try:
         i = args.index("-o")
@@ -102,7 +103,7 @@ def main():
     else:
         name = "script"
     
-    with open(os.path.join(output_dir, f"{name}.profile.tsv"), "wt", newline="") as f:
+    with open(os.path.join(output_dir, f"{name}.{command}.profile.tsv"), "wt", newline="") as f:
         out_tsv = csv.writer(f, delimiter="\t")
         out_tsv.writerow(["time(s)", "storage(MB)", "memory(MB)", "cpu(%)", "processes"])
 
