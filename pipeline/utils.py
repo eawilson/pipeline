@@ -42,15 +42,19 @@ class nullcontext(object):
 
 
 def guess_sample_name(fastqs):
-    ILLUMINA_FASTQ = re.compile(r"(_S[0-9]{1,2}_L[0-9]{3}_R[12]_001)?\.fastq(\.gz)?$")
-    names = set()
-    for fastq in fastqs:
-        match = ILLUMINA_FASTQ.search(fastq)
-        if match:
-            fastq = fastq[:match.start()]
-        names.add(fastq)
-    if len(names) == 1:
-        return list(names)[0]    
+    ILLUMINA_FASTQ = re.compile(r"_S[0-9]{1,2}_L[0-9]{3}_R[12]_001\.fastq(\.gz)?$")
+    OTHER_FASTQ = re.compile(r"_R?[1-2]\.fastq(\.gz)?$")
+    name = None
+    for regex in (ILLUMINA_FASTQ, OTHER_FASTQ):
+        if not name:
+            for fastq in fastqs:
+                match = regex.search(fastq)
+                if match:
+                    guess = fastq[:match.start()]
+                    if name and guess != name:
+                        return None
+                    name = guess    
+    return name
 
 
 
