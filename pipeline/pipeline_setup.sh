@@ -156,34 +156,34 @@ sudo rm -rf ensembl-vep
 # sudo mv picard /usr/local/bin
 
 
-git clone https://github.com/eawilson/pipeline.git
-cd pipeline
+wget https://github.com/eawilson/pipeline/archive/refs/tags/v1.1.0.tar.gz
+cd pipeline-v1.1.0
 sudo python3 setup.py develop
 cd ..
 
 
-git clone  https://github.com/eawilson/elduderino.git
-cd elduderino
+wget https://github.com/eawilson/elduderino/archive/refs/tags/v1.2.0.tar.gz
+cd elduderino-v1.2.0
 make
 sudo make install
 cd ..
 
 
-git clone  https://github.com/eawilson/udini.git
-cd udini
+wget https://github.com/eawilson/udini/archive/refs/tags/v1.0.0.tar.gz
+cd udini-v1.0.0
 make
 sudo make install
 cd ..
 
 
-git clone https://github.com/eawilson/CoverMi.git
-cd CoverMi
+wget https://github.com/eawilson/CoverMi/archive/refs/tags/v6.0.0.tar.gz
+cd CoverMi-6.0.0
 sudo python3 setup.py develop
 cd ..
 
 
-git clone https://github.com/eawilson/downsample_sam.git
-cd downsample_sam
+wget https://github.com/eawilson/downsample_sam/archive/refs/tags/v1.0.0.tar.gz
+cd downsample_sam-v1.0.0
 make
 sudo make install
 cd ..
