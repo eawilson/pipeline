@@ -19,7 +19,7 @@ def tlod2phred(tlod):
     try:
         likelyhood_ration= 10 ** float(tlod)
     except OverflowError:
-        return 93
+        return "93"
     phred = -10 * log(1 / (1 + likelyhood_ration), 10)
     return str(min(int(phred), 93))
 

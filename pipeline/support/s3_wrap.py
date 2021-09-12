@@ -136,7 +136,7 @@ def main():
             log.write(" ".join(shlex.quote(arg) for arg in args).encode())
             log.write("\n".encode())
             log.flush()
-            retcode = = subprocess.run(profile + args, stderr=subprocess.STDOUT, stdout=log).returncode
+            retcode = subprocess.run(profile + args, stderr=subprocess.STDOUT, stdout=log).returncode
             if retcode != 0:
                 msg = f"PROCESS EXITED WITH RETURN CODE {retcode}\n"
                 log.write(msg.encode())
