@@ -6,14 +6,16 @@ import sys
 import argparse
 import glob
 
-from pipeline import run, Pipe, guess_sample_name
+from pipeline import run, Pipe, guess_sample_name, __version__
 
 
 
 def cfpipeline():
     """Cell free pipeline.
     """
-
+    
+    print(f"cfpipeline {__version__}", file=sys.stderr)
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('input_fastqs', nargs="+", help="Paths of input fastq or fastq.gz files. Order is important if paired end reads.")
     parser.add_argument("-r", "--reference", help="Path to reference genome or containing directory.", required=True)

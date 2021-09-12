@@ -1,7 +1,11 @@
 from setuptools import setup, Extension
+import os
+
+with open(os.path.join(os.path.dirname(__file__), "aireal", "version.py")) as f_in:
+    exec(f_in.read())
 
 package =  {"name": "pipeline",
-            "version": "0.1",
+            "version": __version__,
             "description": "NGS sequencing bioinformatics pipeline",
             "url": "",
             "author": "Ed Wilson",
