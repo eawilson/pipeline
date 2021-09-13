@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+
+set -e
+
 sudo apt-get -y update
 sudo apt-get -y dist-upgrade
 
@@ -15,7 +19,7 @@ sudo apt-get -y install python3-tk
 sudo apt-get -y install python # gatk
 sudo apt-get -y install unzip
 
-sudo cpan App::cpanminus # vep
+yes | sudo cpan App::cpanminus # vep
 sudo cpanm Archive::Zip # vep
 sudo cpanm DBD::mysql # vep
 sudo cpanm JSON # vep
@@ -35,7 +39,7 @@ sudo mv bs /usr/local/bin
 
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
-sudo ./aws/install
+sudo ./aws/install --update
 rm awscliv2.zip
 sudo rm -rf aws
 
@@ -73,7 +77,7 @@ tar xvfj htslib-1.12.tar.bz2
 rm htslib-1.12.tar.bz2
 cd htslib-1.12
 autoreconf
-./configue
+./configure
 make
 sudo make install
 cd ..
@@ -85,7 +89,7 @@ tar xvfj samtools-1.12.tar.bz2
 rm samtools-1.12.tar.bz2
 cd samtools-1.12
 autoreconf
-./configue
+./configure
 make
 sudo make install
 cd ..
@@ -97,7 +101,7 @@ tar xvfj bcftools-1.12.tar.bz2
 rm bcftools-1.12.tar.bz2
 cd bcftools-1.12
 autoreconf
-./configue
+./configure
 make
 sudo make install
 cd ..
@@ -125,75 +129,44 @@ sudo mv varscan /usr/local/bin
 sudo bash -c "$(curl -L https://basemount.basespace.illumina.com/install)" # no loger works - just copy binary
 
 
-wget https://github.com/Ensembl/ensembl-xs/archive/refs/tags/2.3.2.tar.gz
-tar xvfz 2.3.2.tar.gz
-rm 2.3.2.tar.gz
-cd ensembl-xs-2.3.2
-perl Makefile.PL
-make
-make test
-sudo make install
-cd ..
-rm -rf ensembl-xs-2.3.2
-
-
-sudo mkdir /usr/local/lib/site_perl
-git clone https://github.com/Ensembl/ensembl-vep.git
-cd ensembl-vep
-sudo perl INSTALL.pl --AUTO a -d /usr/local/lib/site_perl
-sudo cp -r  modules/Bio/EnsEMBL /usr/local/lib/site_perl/Bio
-sudo mv vep /usr/local/bin
-cd ..
-sudo rm -rf ensembl-vep
-
-
-# No longer required as gatk now contains picard
-# wget -O picard-2.25.6.jar https://github.com/broadinstitute/picard/releases/download/2.25.6/picard.jar
-# sudo mv picard-2.25.6.jar /usr/local/bin
-# echo '#!/usr/bin/env bash
-# java -jar /usr/local/bin/picard-2.25.6.jar "$@"' >picard
-# chmod +x picard
-# sudo mv picard /usr/local/bin
-
-
-wget https://github.com/eawilson/pipeline/archive/refs/tags/v1.1.0.tar.gz -O pipeline-v1.1.0.tar.gz
-tar xvzf pipeline-v1.1.0.tar.gz
-rm pipeline-v1.1.0.tar.gz
-cd pipeline-v1.1.0
+wget https://github.com/eawilson/pipeline/archive/refs/tags/v1.1.0.tar.gz -O pipeline-1.1.0.tar.gz
+tar xvzf pipeline-1.1.0.tar.gz
+rm pipeline-1.1.0.tar.gz
+cd pipeline-1.1.0
 sudo python3 setup.py develop
 cd ..
 
 
-wget https://github.com/eawilson/elduderino/archive/refs/tags/v1.2.0.tar.gz -O elduderino-v1.2.0.tar.gz
-tar xvzf elduderino-v1.2.0.tar.gz
-rm elduderino-v1.2.0.tar.gz
-cd elduderino-v1.2.0
+wget https://github.com/eawilson/elduderino/archive/refs/tags/v1.2.0.tar.gz -O elduderino-1.2.0.tar.gz
+tar xvzf elduderino-1.2.0.tar.gz
+rm elduderino-1.2.0.tar.gz
+cd elduderino-1.2.0
 make
 sudo make install
 cd ..
 
 
-wget https://github.com/eawilson/udini/archive/refs/tags/v1.0.0.tar.gz -O udini-v1.0.0.tar.gz
-tar xvzf udini-v1.0.0.tar.gz
-rm udini-v1.0.0.tar.gz
-cd udini-v1.0.0
+wget https://github.com/eawilson/udini/archive/refs/tags/v1.0.0.tar.gz -O udini-1.0.0.tar.gz
+tar xvzf udini-1.0.0.tar.gz
+rm udini-1.0.0.tar.gz
+cd udini-1.0.0
 make
 sudo make install
 cd ..
 
 
-wget https://github.com/eawilson/CoverMi/archive/refs/tags/v6.0.0.tar.gz -O CoverMi-v6.0.0.tar.gz
-tar xvzf CoverMi-v6.0.0.tar.gz
-rm CoverMi-v6.0.0.tar.gz
+wget https://github.com/eawilson/CoverMi/archive/refs/tags/v6.0.0.tar.gz -O CoverMi-6.0.0.tar.gz
+tar xvzf CoverMi-6.0.0.tar.gz
+rm CoverMi-6.0.0.tar.gz
 cd CoverMi-6.0.0
 sudo python3 setup.py develop
 cd ..
 
 
-wget https://github.com/eawilson/downsample_sam/archive/refs/tags/v1.0.0.tar.gz -O downsample_sam-v1.0.0.tar.gz
-tar xvzf downsample_sam-v1.0.0.tar.gz
-rm downsample_sam-v1.0.0.tar.gz
-cd downsample_sam-v1.0.0
+wget https://github.com/eawilson/downsample_sam/archive/refs/tags/v1.0.0.tar.gz -O downsample_sam-1.0.0.tar.gz
+tar xvzf downsample_sam-1.0.0.tar.gz
+rm downsample_sam-1.0.0.tar.gz
+cd downsample_sam-1.0.0
 make
 sudo make install
 cd ..
@@ -202,11 +175,11 @@ cd ..
 wget https://sourceforge.net/projects/fastuniq/files/FastUniq-1.1.tar.gz/download -O FastUniq-1.1.tar.gz
 tar xvzf FastUniq-1.1.tar.gz
 rm FastUniq-1.1.tar.gz
-cd FastUniq
+cd FastUniq/source
 make
 sudo mv fastuniq /usr/local/bin
-cd ..
-rm FastUniq
+cd ../..
+rm -r FastUniq
 
 
 VARDICT=VarDict-1.8.2
@@ -222,6 +195,27 @@ chmod +x vardictjava
 sudo mv vardictjava /usr/local/bin
 sudo mv $VARDICT /usr/local/bin
 
+
+sudo mkdir /usr/local/lib/site_perl
+git clone https://github.com/Ensembl/ensembl-vep.git
+cd ensembl-vep
+sudo perl INSTALL.pl --AUTO a -d /usr/local/lib/site_perl
+sudo cp -r  modules/Bio/EnsEMBL /usr/local/lib/site_perl/Bio
+sudo mv vep /usr/local/bin
+cd ..
+sudo rm -rf ensembl-vep
+
+
+wget https://github.com/Ensembl/ensembl-xs/archive/refs/tags/2.3.2.tar.gz
+tar xvfz 2.3.2.tar.gz
+rm 2.3.2.tar.gz
+cd ensembl-xs-2.3.2
+perl Makefile.PL
+make
+make test
+sudo make install
+cd ..
+rm -rf ensembl-xs-2.3.2
 
 
 #############################################################################################################################

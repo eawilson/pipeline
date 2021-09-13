@@ -1,7 +1,7 @@
 from setuptools import setup, Extension
 import os
 
-with open(os.path.join(os.path.dirname(__file__), "aireal", "version.py")) as f_in:
+with open(os.path.join(os.path.dirname(__file__), "pipeline",  "version.py")) as f_in:
     exec(f_in.read())
 
 package =  {"name": "pipeline",

@@ -14,7 +14,7 @@ def rossiPipeline():
     """Cell free pipeline.
     """
     
-    print(f"{} {}".format(__file__, __version__), file=sys.stderr)
+    print(f"rossiPipeline {__version__}", file=sys.stderr)
     
     parser = argparse.ArgumentParser()
     parser.add_argument('input_fastqs', nargs="+", help="Paths of input fastq or fastq.gz files. Order is important if paired end reads.")
