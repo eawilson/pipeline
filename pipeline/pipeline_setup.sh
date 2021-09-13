@@ -156,37 +156,57 @@ sudo rm -rf ensembl-vep
 # sudo mv picard /usr/local/bin
 
 
-wget https://github.com/eawilson/pipeline/archive/refs/tags/v1.1.0.tar.gz
+wget https://github.com/eawilson/pipeline/archive/refs/tags/v1.1.0.tar.gz -O pipeline-v1.1.0.tar.gz
+tar xvzf pipeline-v1.1.0.tar.gz
+rm pipeline-v1.1.0.tar.gz
 cd pipeline-v1.1.0
 sudo python3 setup.py develop
 cd ..
 
 
-wget https://github.com/eawilson/elduderino/archive/refs/tags/v1.2.0.tar.gz
+wget https://github.com/eawilson/elduderino/archive/refs/tags/v1.2.0.tar.gz -O elduderino-v1.2.0.tar.gz
+tar xvzf elduderino-v1.2.0.tar.gz
+rm elduderino-v1.2.0.tar.gz
 cd elduderino-v1.2.0
 make
 sudo make install
 cd ..
 
 
-wget https://github.com/eawilson/udini/archive/refs/tags/v1.0.0.tar.gz
+wget https://github.com/eawilson/udini/archive/refs/tags/v1.0.0.tar.gz -O udini-v1.0.0.tar.gz
+tar xvzf udini-v1.0.0.tar.gz
+rm udini-v1.0.0.tar.gz
 cd udini-v1.0.0
 make
 sudo make install
 cd ..
 
 
-wget https://github.com/eawilson/CoverMi/archive/refs/tags/v6.0.0.tar.gz
+wget https://github.com/eawilson/CoverMi/archive/refs/tags/v6.0.0.tar.gz -O CoverMi-v6.0.0.tar.gz
+tar xvzf CoverMi-v6.0.0.tar.gz
+rm CoverMi-v6.0.0.tar.gz
 cd CoverMi-6.0.0
 sudo python3 setup.py develop
 cd ..
 
 
-wget https://github.com/eawilson/downsample_sam/archive/refs/tags/v1.0.0.tar.gz
+wget https://github.com/eawilson/downsample_sam/archive/refs/tags/v1.0.0.tar.gz -O downsample_sam-v1.0.0.tar.gz
+tar xvzf downsample_sam-v1.0.0.tar.gz
+rm downsample_sam-v1.0.0.tar.gz
 cd downsample_sam-v1.0.0
 make
 sudo make install
 cd ..
+
+
+wget https://sourceforge.net/projects/fastuniq/files/FastUniq-1.1.tar.gz/download -O FastUniq-1.1.tar.gz
+tar xvzf FastUniq-1.1.tar.gz
+rm FastUniq-1.1.tar.gz
+cd FastUniq
+make
+sudo mv fastuniq /usr/local/bin
+cd ..
+rm FastUniq
 
 
 VARDICT=VarDict-1.8.2
