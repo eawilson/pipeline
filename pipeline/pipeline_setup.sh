@@ -54,14 +54,6 @@ cd ..
 rm -rf bwa-0.7.17
 
 
-# wget "https://github.com/bwa-mem2/bwa-mem2/releases/download/v2.2.1/Source_code_including_submodules.tar.gz"
-# tar xvfz Source_code_including_submodules.tar.gz
-# rm Source_code_including_submodules.tar.gz
-# cd bwa-mem2-2.2.1
-# make CXX=g++ arch=native
-# sudo mv bwa-mem2 /usr/local/bin
-# cd ..
-# rm -rf bwa-mem2-2.2.1wget "https://github.com/lh3/bwa/releases/download/v0.7.17/bwa-0.7.17.tar.bz2"
 wget https://github.com/bwa-mem2/bwa-mem2/releases/download/v2.2.1/bwa-mem2-2.2.1_x64-linux.tar.bz2
 tar xvfj bwa-mem2-2.2.1_x64-linux.tar.bz2
 rm bwa-mem2-2.2.1_x64-linux.tar.bz2
@@ -126,7 +118,7 @@ java -jar /usr/local/bin/VarScan.v2.4.2.jar "$@"' >varscan
 chmod +x varscan
 sudo mv varscan /usr/local/bin
 
-sudo bash -c "$(curl -L https://basemount.basespace.illumina.com/install)" # no loger works - just copy binary
+sudo bash -c "$(curl -L https://basemount.basespace.illumina.com/install)"
 
 
 wget https://github.com/eawilson/pipeline/archive/refs/tags/v1.1.0.tar.gz -O pipeline-1.1.0.tar.gz
@@ -222,33 +214,33 @@ rm -rf ensembl-xs-2.3.2
 # Data files                                                                                                                #
 #############################################################################################################################
 
-# https://lh3.github.io/2017/11/13/which-human-reference-genome-to-use
-wget "ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz"
-gunzip hs37d5.fa.gz
-mkdir GRCh37_EBV_HPV_bwa_mem2
-chr_rename_fasta hs37d5.fa >GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
-rm hs37d5.fa
-cat EBV_HPV.fna >>GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
-bwa-mem2 index GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
-samtools faidx GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
-gatk CreateSequenceDictionary R=GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
-tar -cvzf GRCh37_EBV_HPV_bwa_mem2.tar.gz GRCh37_EBV_HPV_bwa_mem2
-
-
-wget "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
-gunzip GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
-mkdir GRCh38_EBV_HPV_bwa_mem2
-cp GCA_000001405.15_GRCh38_no_alt_analysis_set.fna GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
-rm GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
-grep "HPV16" -A 10000 EBV_HPV.fna >>GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
-bwa-mem2 index GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
-samtools faidx GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
-gatk CreateSequenceDictionary R=GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
-tar -cvzf GRCh38_EBV_HPV_bwa_mem2.tar.gz GRCh38_EBV_HPV_bwa_mem2
-
-
-mkdir vep
-perl ~/ensembl-vep/INSTALL.pl --AUTO c --ASSEMBLY GRCh37 --SPECIES homo_sapiens_refseq --CACHEDIR ~/ephemoral/vep
+# # https://lh3.github.io/2017/11/13/which-human-reference-genome-to-use
+# wget "ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz"
+# gunzip hs37d5.fa.gz
+# mkdir GRCh37_EBV_HPV_bwa_mem2
+# chr_rename_fasta hs37d5.fa >GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
+# rm hs37d5.fa
+# cat EBV_HPV.fna >>GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
+# bwa-mem2 index GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
+# samtools faidx GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
+# gatk CreateSequenceDictionary R=GRCh37_EBV_HPV_bwa_mem2/GRCh37_EBV_HPV.fna
+# tar -cvzf GRCh37_EBV_HPV_bwa_mem2.tar.gz GRCh37_EBV_HPV_bwa_mem2
+# 
+# 
+# wget "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
+# gunzip GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
+# mkdir GRCh38_EBV_HPV_bwa_mem2
+# cp GCA_000001405.15_GRCh38_no_alt_analysis_set.fna GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+# rm GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+# grep "HPV16" -A 10000 EBV_HPV.fna >>GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+# bwa-mem2 index GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+# samtools faidx GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+# gatk CreateSequenceDictionary R=GRCh38_EBV_HPV_bwa_mem2/GRCh38_EBV_HPV.fna
+# tar -cvzf GRCh38_EBV_HPV_bwa_mem2.tar.gz GRCh38_EBV_HPV_bwa_mem2
+# 
+# 
+# mkdir vep
+# perl ~/ensembl-vep/INSTALL.pl --AUTO c --ASSEMBLY GRCh37 --SPECIES homo_sapiens_refseq --CACHEDIR ~/ephemoral/vep
 
 
 
