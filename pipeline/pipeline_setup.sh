@@ -147,6 +147,15 @@ sudo make install
 cd ..
 
 
+wget https://github.com/eawilson/trim/archive/refs/tags/v1.0.0.tar.gz -O trim-1.0.0.tar.gz
+tar xvzf trim-1.0.0.tar.gz
+rm trim-1.0.0.tar.gz
+cd trim-1.0.0
+make
+sudo make install
+cd ..
+
+
 wget https://github.com/eawilson/CoverMi/archive/refs/tags/v6.0.0.tar.gz -O CoverMi-6.0.0.tar.gz
 tar xvzf CoverMi-6.0.0.tar.gz
 rm CoverMi-6.0.0.tar.gz
