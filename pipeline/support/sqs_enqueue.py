@@ -48,8 +48,8 @@ def main():
     single_sample =  pop(args, "--single-sample", nargs=1)
     no_name =  pop(args, "--no-name", nargs=1)
     
-    input_extension = ".bam"
-    output_extension = ".fastq.gz"
+    input_extension = ".fastq.gz"
+    output_extension = ".bam"
     
     input_url = pop(args, "-i", "--input", required=True)
     wildcards = input_url.count("*")
@@ -83,16 +83,15 @@ def main():
     bams = set()
     bucket, stem = parse_url(output_url)
     for key in s3_list(bucket, stem, extension=output_extension):
-        identifier = "/".join(key[len(stem):].split("/")[-3:-1])
+        identifier = "/".join(key.split("/")[-3:-1])
         bams.add(identifier)
     
     fastqs = defaultdict(list)
     bucket, stem = parse_url(input_url)
     for key in s3_list(bucket, stem, extension=input_extension):
-        identifier = "/".join(key[len(stem):].split("/")[-3:-1])
+        identifier = "/".join(key.split("/")[-3:-1])
         if identifier not in bams:
             fastqs[identifier] += [f"s3://{bucket}/{key}"]
-    
     
     n = 0
     for identifier, samples in sorted(fastqs.items()):
