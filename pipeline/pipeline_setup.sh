@@ -30,6 +30,7 @@ sudo cpanm Try::Tiny # vep
 
 sudo pip3 install boto3
 sudo pip3 install matplotlib
+sudo pip3 install scipy
 
 
 wget "https://launch.basespace.illumina.com/CLI/latest/amd64-linux/bs" -O bs
