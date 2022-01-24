@@ -213,7 +213,7 @@ def cfPipeline():
                            "--panel", args.panel,
                            "--vep", args.vep,
                            "--min-vaf", args.min_vaf,
-                           "--min-alt-reads", args.min_family_size,
+                           "--min-alt-reads", 2,
                            "--output", ".", # We have already changed directory into the current directory
                            "--threads", threads,
                            bam])
