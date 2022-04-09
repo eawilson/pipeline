@@ -2,35 +2,58 @@
 
 set -e
 
-sudo apt-get -y update
+cd ~
+
+sudo apt-get -y update || (apt-get -y update && apt-get -y install sudo)
 sudo apt-get -y dist-upgrade
 
-sudo apt-get -y install build-essential
-sudo apt-get -y install zlib1g-dev # bwa, htslib
-sudo apt-get -y install libbz2-dev # htslib
-sudo apt-get -y install liblzma-dev # htslib
-sudo apt-get -y install autoconf # htslib
-sudo apt-get -y install libcurl4-gnutls-dev # htslib
-sudo apt-get -y install libncurses5-dev # samtools
-sudo apt-get -y install openjdk-8-jdk # varscan picard
-sudo apt-get -y install libmysqlclient-dev # vep
-sudo apt-get -y install python3-pip
-sudo apt-get -y install python3-tk
-sudo apt-get -y install python # gatk
+sudo apt-get -y install wget curl git
 sudo apt-get -y install unzip
+sudo apt-get -y install build-essential
 
-yes | sudo cpan App::cpanminus # vep
-sudo cpanm Archive::Zip # vep
-sudo cpanm DBD::mysql # vep
-sudo cpanm JSON # vep
-sudo cpanm Set::IntervalTree # vep
-sudo cpanm PerlIO::gzip # vep
-sudo cpanm Try::Tiny # vep
+# covermi
+sudo apt-get -y install libjpeg-dev
+
+# bwa, htslib
+sudo apt-get -y install zlib1g-dev 
+
+# htslib
+sudo apt-get -y install libbz2-dev
+sudo apt-get -y install liblzma-dev
+sudo apt-get -y install autoconf
+sudo apt-get -y install libcurl4-gnutls-dev
+
+# samtools
+sudo apt-get -y install libncurses5-dev
+
+# varscan picard
+sudo apt-get -y install openjdk-8-jdk
+
+# vep
+sudo apt-get -y install libmysqlclient-dev
+
+# gatk
+sudo apt-get -y install python
+
+
+sudo apt-get -y install python3-pip
+#sudo apt-get -y install python3-tk
+
+# vep
+yes | sudo cpan App::cpanminus
+sudo cpanm Archive::Zip
+sudo cpanm DBD::mysql
+sudo cpanm JSON
+sudo cpanm Set::IntervalTree
+sudo cpanm PerlIO::gzip
+sudo cpanm Try::Tiny
 
 
 sudo pip3 install boto3
-sudo pip3 install matplotlib
 sudo pip3 install scipy
+
+# covermi
+sudo pip3 install matplotlib
 
 
 wget "https://launch.basespace.illumina.com/CLI/latest/amd64-linux/bs" -O bs
@@ -114,8 +137,8 @@ rm -rf gatk-4.2.0.0
 # Not the latest version, latest version fails ?intermediate version
 wget https://github.com/dkoboldt/varscan/releases/download/2.4.2/VarScan.v2.4.2.jar
 sudo mv VarScan.v2.4.2.jar /usr/local/bin
-echo '#!/usr/bin/env bash
-java -jar /usr/local/bin/VarScan.v2.4.2.jar "$@"' >varscan
+echo '#!/usr/bin/env bash' >varscan
+echo 'java -jar /usr/local/bin/VarScan.v2.4.2.jar "$@"' >>varscan
 chmod +x varscan
 sudo mv varscan /usr/local/bin
 
@@ -189,23 +212,25 @@ wget "https://github.com/AstraZeneca-NGS/VarDictJava/releases/download/v1.8.2/$V
 tar -xf $VARDICT.tar
 rm $VARDICT.tar
 sudo mv $VARDICT/bin/var2vcf_valid.pl /usr/local/bin
-echo '#!/usr/bin/env bash
-APP_HOME=/usr/local/bin/VarDict-1.8.2
-CLASSPATH=$APP_HOME/lib/VarDict-1.8.2.jar:$APP_HOME/lib/commons-cli-1.2.jar:$APP_HOME/lib/commons-math3-3.6.1.jar:$APP_HOME/lib/jregex-1.2_01.jar:$APP_HOME/lib/htsjdk-2.21.1.jar
-java -Xms768m -Xmx8g -classpath "$CLASSPATH" com.astrazeneca.vardict.Main -c 1 -S 2 -E 3 -g 4 "$@"' >vardictjava
+echo '#!/usr/bin/env bash' >vardictjava
+echo 'APP_HOME=/usr/local/bin/VarDict-1.8.2' >>vardictjava
+echo 'CLASSPATH=$APP_HOME/lib/VarDict-1.8.2.jar:$APP_HOME/lib/commons-cli-1.2.jar:$APP_HOME/lib/commons-math3-3.6.1.jar:$APP_HOME/lib/jregex-1.2_01.jar:$APP_HOME/lib/htsjdk-2.21.1.jar' >>vardictjava
+echo 'java -Xms768m -Xmx8g -classpath "$CLASSPATH" com.astrazeneca.vardict.Main -c 1 -S 2 -E 3 -g 4 "$@"' >>vardictjava
 chmod +x vardictjava
 sudo mv vardictjava /usr/local/bin
 sudo mv $VARDICT /usr/local/bin
 
 
 sudo mkdir /usr/local/lib/site_perl
-git clone https://github.com/Ensembl/ensembl-vep.git
-cd ensembl-vep
+wget "https://github.com/Ensembl/ensembl-vep/archive/refs/tags/release/104.3.tar.gz"
+tar xzvf 104.3.tar.gz
+rm 104.3.tar.gz
+cd ensembl-vep-release-104.3
 sudo perl INSTALL.pl --AUTO a -d /usr/local/lib/site_perl
 sudo cp -r  modules/Bio/EnsEMBL /usr/local/lib/site_perl/Bio
 sudo mv vep /usr/local/bin
 cd ..
-sudo rm -rf ensembl-vep
+sudo rm -rf ensembl-vep-release-104.3
 
 
 wget https://github.com/Ensembl/ensembl-xs/archive/refs/tags/2.3.2.tar.gz
@@ -214,7 +239,8 @@ rm 2.3.2.tar.gz
 cd ensembl-xs-2.3.2
 perl Makefile.PL
 make
-make test
+# tests fail if run as root
+((`id -u` != 0)) && make test
 sudo make install
 cd ..
 rm -rf ensembl-xs-2.3.2
