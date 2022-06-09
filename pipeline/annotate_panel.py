@@ -225,7 +225,11 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="", panel="", 
                 continue
             
             # https://gatk.broadinstitute.org/hc/en-us/articles/360035532152-Fisher-s-Exact-Test
-            fisher_strand = -10 * math.log10(fisher_exact([read_data["ref_fr"], read_data["alt_fr"]])[1])
+            exact = fisher_exact([read_data["ref_fr"], read_data["alt_fr"]])[1]
+            if exact:
+                fisher_strand = "{:.1f}".format(-10 * math.log10(exact))
+            else:
+                fisher_strand = ""
             
             demographics = parse_colocated(vep_output)
 
@@ -241,7 +245,7 @@ def annotate_panel(vcf, vep, reference=None, threads=None, output="", panel="", 
                                 read_data["alt_depth"],
                                 "{}:{}".format(*read_data["alt_fr"]),
                                 "{}:{}".format(*read_data["ref_fr"]),
-                                "{:.1f}".format(fisher_strand),
+                                fisher_strand,
                                 cons.get("hgvsc", ""),
                                 cons.get("hgvsp", ""),
                                 cons.get("biotype", ""),
