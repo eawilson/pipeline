@@ -23,7 +23,9 @@ def main():
         args.output = os.path.join(args.output, "Dockerfile")
     
     with open(args.output, "wt") as f_out:
-        f_out.write("FROM public.ecr.aws/lts/ubuntu:18.04_stable\n\n")
+        f_out.write("FROM public.ecr.aws/lts/ubuntu:20.04_stable\n\n")
+        f_out.write("ARG DEBIAN_FRONTEND=noninteractive\n")
+        f_out.write("ENV TZ=Etc/UTC\n\n")
         f_out.write(" && \\\n".join(script))
         f_out.write('\n')#\nENTRYPOINT ["cfPipeline"]\n')
 

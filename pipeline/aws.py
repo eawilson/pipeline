@@ -49,6 +49,27 @@ def aws_region():
 
 
 
+def spot_interuption():
+    BASE_URL = "http://169.254.169.254/latest"
+    metadata = {}
+    session = requests.Session()
+    try:
+        response = session.put(f"{BASE_URL}/api/token",
+                            headers={"X-aws-ec2-metadata-token-ttl-seconds": "60"},
+                            timeout=3.0)
+    except requests.exceptions.ConnectionError:
+        return {}
+    
+    if response.status_code == 200:
+        session.headers.update({"X-aws-ec2-metadata-token": response.text})        
+        response = session.get(f"{BASE_URL}/meta-data/spot/instance-action",
+                            timeout=2.0)
+        if response.status_code == 200:
+            return response.json()
+    return {}
+
+
+
 def boto3_client(service):
     region_name = aws_region()
     if region_name:

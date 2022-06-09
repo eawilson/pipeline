@@ -1,9 +1,13 @@
-FROM public.ecr.aws/lts/ubuntu:18.04_stable
+FROM public.ecr.aws/lts/ubuntu:20.04_stable
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
 
 RUN set -e && \
     cd ~ && \
     sudo apt-get -y update || (apt-get -y update && apt-get -y install sudo) && \
     sudo apt-get -y dist-upgrade && \
+    sudo apt-get -y install tzdata && \
     sudo apt-get -y install wget curl git && \
     sudo apt-get -y install unzip && \
     sudo apt-get -y install build-essential && \
@@ -173,7 +177,7 @@ RUN set -e && \
     cd ensembl-xs-2.3.2 && \
     perl Makefile.PL && \
     make && \
-    ((`id -u` != 0)) && make test && \
+    [ `id -u` -eq 0 ] || make test && \
     sudo make install && \
     cd .. && \
     rm -rf ensembl-xs-2.3.2

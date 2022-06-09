@@ -7,6 +7,9 @@ cd ~
 sudo apt-get -y update || (apt-get -y update && apt-get -y install sudo)
 sudo apt-get -y dist-upgrade
 
+# only needed for docker instalation
+sudo apt-get -y install tzdata
+
 sudo apt-get -y install wget curl git
 sudo apt-get -y install unzip
 sudo apt-get -y install build-essential
@@ -240,7 +243,7 @@ cd ensembl-xs-2.3.2
 perl Makefile.PL
 make
 # tests fail if run as root
-((`id -u` != 0)) && make test
+[ `id -u` -eq 0 ] || make test
 sudo make install
 cd ..
 rm -rf ensembl-xs-2.3.2
